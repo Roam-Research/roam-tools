@@ -1,0 +1,24 @@
+{
+  "name": "roam-mcp",
+  "version": "0.1.0",
+  "description": "Roam Research MCP server and CLI",
+  "type": "module",
+  "main": "dist/mcp/index.js",
+  "bin": {
+    "roam-cli": "dist/cli/index.js"
+  },
+  "scripts": {
+    "mcp": "tsx src/mcp/index.ts",
+    "cli": "tsx src/cli/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
