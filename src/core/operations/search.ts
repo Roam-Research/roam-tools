@@ -8,11 +8,17 @@ export interface SearchParams {
   limit?: number;
 }
 
+interface RoamSearchResult {
+  ":block/uid": string;
+  ":block/string"?: string;
+  ":node/title"?: string;
+}
+
 export class SearchOperations {
   constructor(private client: RoamClient) {}
 
   async search(params: SearchParams): Promise<SearchResult[]> {
-    const result = await this.client.call<SearchResult[]>("data.search", [
+    const response = await this.client.call<RoamSearchResult[]>("data.search", [
       {
         "search-str": params.query,
         "search-blocks": params.searchBlocks ?? true,
@@ -21,6 +27,14 @@ export class SearchOperations {
       },
     ]);
 
-    return result.result || [];
+    if (!response.success || !response.result) {
+      return [];
+    }
+
+    return response.result.map((r) => ({
+      uid: r[":block/uid"],
+      string: r[":block/string"],
+      title: r[":node/title"],
+    }));
   }
 }

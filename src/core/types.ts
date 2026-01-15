@@ -48,9 +48,9 @@ export interface FocusedBlock {
 
 // Search result
 export interface SearchResult {
-  "block/uid"?: string;
-  "block/string"?: string;
-  "node/title"?: string;
+  uid: string;
+  string?: string;
+  title?: string;
 }
 
 // Client config
