@@ -86,7 +86,17 @@ export class BlockOperations {
   }
 
   async getBacklinks(params: GetBacklinksParams): Promise<Block[]> {
-    // TODO: implement with query for blocks referencing this uid
-    throw new Error("Not implemented");
+    const response = await this.client.call<Array<[Record<string, unknown>]>>("data.q", [
+      `[:find (pull ?b [:block/string :block/uid :block/open :block/heading])
+        :where
+        [?target :block/uid "${params.uid}"]
+        [?b :block/refs ?target]]`,
+    ]);
+
+    if (!response.success || !response.result) {
+      return [];
+    }
+
+    return response.result.map(([block]) => this.transformBlock(block));
   }
 }
