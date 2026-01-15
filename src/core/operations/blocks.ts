@@ -45,8 +45,31 @@ export class BlockOperations {
   }
 
   async get(params: GetBlockParams): Promise<Block | null> {
-    // TODO: implement with pull
-    throw new Error("Not implemented");
+    const response = await this.client.call<Record<string, unknown>>("data.pull", [
+      "[:block/string :block/uid :block/open :block/heading {:block/children [:block/string :block/uid :block/open :block/heading {:block/children ...}]}]",
+      `[:block/uid "${params.uid}"]`,
+    ]);
+
+    if (!response.success || !response.result) {
+      return null;
+    }
+
+    return this.transformBlock(response.result);
+  }
+
+  private transformBlock(r: Record<string, unknown>): Block {
+    return {
+      uid: r[":block/uid"] as string,
+      string: r[":block/string"] as string,
+      open: r[":block/open"] as boolean | undefined,
+      heading: r[":block/heading"] as number | undefined,
+      children: this.transformChildren(r[":block/children"] as Record<string, unknown>[] | undefined),
+    };
+  }
+
+  private transformChildren(children: Record<string, unknown>[] | undefined): Block[] | undefined {
+    if (!children) return undefined;
+    return children.map((c) => this.transformBlock(c));
   }
 
   async update(params: UpdateBlockParams): Promise<void> {
