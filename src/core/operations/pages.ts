@@ -20,18 +20,18 @@ export class PageOperations {
   constructor(private client: RoamClient) {}
 
   async create(params: CreatePageParams): Promise<string> {
-    // Uses fromMarkdown if markdown provided, otherwise just creates empty page
     if (params.markdown) {
       await this.client.call("data.page.fromMarkdown", [
-        { page: { title: params.title, uid: params.uid } },
-        params.markdown,
+        {
+          page: { title: params.title, uid: params.uid },
+          "markdown-string": params.markdown,
+        },
       ]);
     } else {
       await this.client.call("data.page.create", [
         { page: { title: params.title, uid: params.uid } },
       ]);
     }
-    // TODO: return the uid
     return params.uid || "";
   }
 
