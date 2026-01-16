@@ -8,6 +8,9 @@ export class RoamClient {
   private port: number | null = null;
 
   constructor(config: RoamClientConfig) {
+    if (!config.graphName) {
+      throw new Error("graphName is required");
+    }
     this.graphName = config.graphName;
     if (config.port) {
       this.port = config.port;
