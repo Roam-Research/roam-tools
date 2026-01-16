@@ -12,6 +12,12 @@ export interface JsonSchemaProperty {
   oneOf?: Array<{ type: string; enum?: string[] }>;
 }
 
+// Common graph property for all tools
+const graphProperty: JsonSchemaProperty = {
+  type: "string",
+  description: "Graph name (optional - auto-detects if omitted)",
+};
+
 // Tool definition type
 export interface ToolDefinition {
   name: string;
@@ -35,6 +41,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         title: { type: "string", description: "Page title" },
         markdown: { type: "string", description: "Markdown content for the page" },
       },
@@ -49,6 +56,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         parentUid: { type: "string", description: "UID of parent block or page" },
         markdown: { type: "string", description: "Markdown content for the block" },
         order: {
@@ -67,6 +75,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         uid: { type: "string", description: "Block UID" },
         string: { type: "string", description: "New text content" },
         open: { type: "boolean", description: "Collapse state" },
@@ -84,6 +93,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         uid: { type: "string", description: "Block UID to delete" },
       },
       required: ["uid"],
@@ -98,6 +108,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         uid: { type: "string", description: "Page UID to delete" },
       },
       required: ["uid"],
@@ -113,6 +124,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         query: { type: "string", description: "Search query" },
         searchPages: { type: "boolean", description: "Include pages (default: true)" },
         searchBlocks: { type: "boolean", description: "Include blocks (default: true)" },
@@ -129,6 +141,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         uid: { type: "string", description: "Page UID" },
         title: { type: "string", description: "Page title (alternative to uid)" },
       },
@@ -142,6 +155,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         uid: { type: "string", description: "Block UID" },
       },
       required: ["uid"],
@@ -155,6 +169,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         uid: { type: "string", description: "UID of page or block to get backlinks for" },
       },
       required: ["uid"],
@@ -168,7 +183,9 @@ export const tools: ToolDefinition[] = [
     description: "Get the currently focused block in Roam",
     inputSchema: {
       type: "object",
-      properties: {},
+      properties: {
+        graph: graphProperty,
+      },
     },
     operation: "navigation",
     method: "getFocusedBlock",
@@ -178,7 +195,9 @@ export const tools: ToolDefinition[] = [
     description: "Get the UID of the page currently open in the main window",
     inputSchema: {
       type: "object",
-      properties: {},
+      properties: {
+        graph: graphProperty,
+      },
     },
     operation: "navigation",
     method: "getCurrentPage",
@@ -189,6 +208,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         uid: { type: "string", description: "UID of page or block" },
         title: { type: "string", description: "Page title (alternative to uid)" },
       },
@@ -203,6 +223,7 @@ export const tools: ToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        graph: graphProperty,
         uid: { type: "string", description: "UID of page or block" },
         type: {
           type: "string",
