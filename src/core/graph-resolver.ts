@@ -1,7 +1,11 @@
 // src/core/graph-resolver.ts
 import { readFile } from "fs/promises";
+import { exec } from "child_process";
+import { promisify } from "util";
 import { homedir } from "os";
 import { join } from "path";
+
+const execAsync = promisify(exec);
 
 // In-memory state for last used graph
 let lastUsedGraph: string | null = null;
@@ -29,6 +33,36 @@ async function getPort(): Promise<number> {
   return config.port;
 }
 
+// Get the last graph from config file
+async function getLastGraphFromConfig(): Promise<string | null> {
+  const config = await getConfig();
+  return config["last-graph"] || null;
+}
+
+// Open Roam via deep link
+async function openRoamDeepLink(graphName: string): Promise<void> {
+  const deepLink = `roam://#/app/${graphName}`;
+  await execAsync(`open "${deepLink}"`);
+}
+
+// Sleep helper
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Check if error is a connection error
+function isConnectionError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return (
+      error.message.includes("ECONNREFUSED") ||
+      error.message.includes("fetch failed") ||
+      error.message.includes("network") ||
+      error.cause !== undefined
+    );
+  }
+  return false;
+}
+
 // Graph info from Roam API
 interface GraphInfo {
   name: string;
@@ -42,9 +76,8 @@ interface GraphsResponse {
   error?: string;
 }
 
-// Fetch list of open graphs from Roam
-export async function getOpenGraphs(): Promise<string[]> {
-  const port = await getPort();
+// Fetch list of open graphs from Roam (with retry after opening Roam)
+async function fetchOpenGraphs(port: number): Promise<string[]> {
   const url = `http://localhost:${port}/api/graphs/open`;
 
   const response = await fetch(url, {
@@ -58,8 +91,13 @@ export async function getOpenGraphs(): Promise<string[]> {
     throw new Error(data.error || "Failed to get open graphs");
   }
 
-  // Extract graph names from the response
   return (data.result || []).map((g) => g.name);
+}
+
+// Fetch list of open graphs from Roam
+export async function getOpenGraphs(): Promise<string[]> {
+  const port = await getPort();
+  return fetchOpenGraphs(port);
 }
 
 // Resolve which graph to use
@@ -70,8 +108,40 @@ export async function resolveGraph(providedGraph?: string): Promise<string> {
     return providedGraph;
   }
 
-  // Fetch open graphs
-  const openGraphs = await getOpenGraphs();
+  const port = await getPort();
+
+  // Try to fetch open graphs
+  let openGraphs: string[];
+  try {
+    openGraphs = await fetchOpenGraphs(port);
+  } catch (error) {
+    // If connection failed, try to open Roam with a known graph
+    if (isConnectionError(error)) {
+      // Determine which graph to open
+      const graphToOpen = lastUsedGraph || (await getLastGraphFromConfig());
+
+      if (!graphToOpen) {
+        throw new Error(
+          "Roam is not running and no graph name is available. Please provide a graph name or open Roam manually."
+        );
+      }
+
+      // Open Roam with the deep link
+      await openRoamDeepLink(graphToOpen);
+      await sleep(3000); // Wait for Roam to start
+
+      // Retry fetching open graphs
+      try {
+        openGraphs = await fetchOpenGraphs(port);
+      } catch {
+        throw new Error(
+          `Failed to connect to Roam after opening. Please ensure Roam is running with graph "${graphToOpen}".`
+        );
+      }
+    } else {
+      throw error;
+    }
+  }
 
   // No graphs open
   if (openGraphs.length === 0) {
