@@ -4,31 +4,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { RoamClient } from "../core/client.js";
-import {
-  PageOperations,
-  BlockOperations,
-  SearchOperations,
-  NavigationOperations,
-} from "../core/operations/index.js";
-import { tools, createRouter } from "../core/tools.js";
-
-// Get graph name from env or args
-const graphName = process.env.ROAM_GRAPH || process.argv[2];
-if (!graphName) {
-  console.error("Usage: roam-mcp <graph-name> or set ROAM_GRAPH env var");
-  process.exit(1);
-}
-
-const client = new RoamClient({ graphName });
-const operations = {
-  pages: new PageOperations(client),
-  blocks: new BlockOperations(client),
-  search: new SearchOperations(client),
-  navigation: new NavigationOperations(client),
-};
-
-const router = createRouter(operations);
+import { tools, routeToolCall } from "../core/tools.js";
 
 const server = new Server(
   { name: "roam-mcp", version: "0.1.0" },
@@ -49,7 +25,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   try {
-    const result = await router(name, args as Record<string, unknown>);
+    const result = await routeToolCall(name, args as Record<string, unknown>);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -65,7 +41,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`Roam MCP server running for graph: ${graphName}`);
+  console.error("Roam MCP server running");
 }
 
 main().catch(console.error);
