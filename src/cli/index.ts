@@ -1,22 +1,14 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { RoamClient } from "../core/client.js";
-import {
-  PageOperations,
-  BlockOperations,
-  SearchOperations,
-  NavigationOperations,
-} from "../core/operations/index.js";
-import { tools, createRouter, type JsonSchemaProperty } from "../core/tools.js";
+import { tools, routeToolCall, type JsonSchemaProperty } from "../core/tools.js";
 
 const program = new Command();
 
 program
   .name("roam")
   .description("Roam Research CLI")
-  .version("0.1.0")
-  .option("-g, --graph <name>", "Graph name (or set ROAM_GRAPH env var)");
+  .version("0.1.0");
 
 // Build commands dynamically from shared tool definitions
 tools.forEach((tool) => {
@@ -39,22 +31,6 @@ tools.forEach((tool) => {
 
   // Handler
   cmd.action(async (options) => {
-    const graphName = program.opts().graph || process.env.ROAM_GRAPH;
-    if (!graphName) {
-      console.error("Error: Graph name required. Use -g <name> or set ROAM_GRAPH env var");
-      process.exit(1);
-    }
-
-    const client = new RoamClient({ graphName });
-    const operations = {
-      pages: new PageOperations(client),
-      blocks: new BlockOperations(client),
-      search: new SearchOperations(client),
-      navigation: new NavigationOperations(client),
-    };
-
-    const router = createRouter(operations);
-
     // Convert CLI options back to tool args
     // parent-uid -> parentUid
     const args: Record<string, unknown> = {};
@@ -63,7 +39,8 @@ tools.forEach((tool) => {
         const camelKey = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
         const propSchema = tool.inputSchema.properties[camelKey];
         // Check for number type (direct or via oneOf)
-        const hasNumberType = propSchema?.type === "number" ||
+        const hasNumberType =
+          propSchema?.type === "number" ||
           propSchema?.oneOf?.some((o) => o.type === "number");
         const hasBooleanType = propSchema?.type === "boolean";
 
@@ -78,7 +55,7 @@ tools.forEach((tool) => {
     }
 
     try {
-      const result = await router(tool.name, args);
+      const result = await routeToolCall(tool.name, args);
       console.log(JSON.stringify(result, null, 2));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
