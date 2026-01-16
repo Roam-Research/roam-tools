@@ -3,6 +3,14 @@ import type { PageOperations } from "./operations/pages.js";
 import type { BlockOperations } from "./operations/blocks.js";
 import type { SearchOperations } from "./operations/search.js";
 import type { NavigationOperations } from "./operations/navigation.js";
+import { RoamClient } from "./client.js";
+import {
+  PageOperations as PageOpsClass,
+  BlockOperations as BlockOpsClass,
+  SearchOperations as SearchOpsClass,
+  NavigationOperations as NavOpsClass,
+} from "./operations/index.js";
+import { resolveGraph } from "./graph-resolver.js";
 
 // JSON Schema property type
 export interface JsonSchemaProperty {
@@ -252,26 +260,45 @@ export function findTool(name: string): ToolDefinition | undefined {
   return tools.find((t) => t.name === name);
 }
 
-// Create a router function that maps tool names to operation methods
-export function createRouter(operations: Operations) {
-  return async (toolName: string, args: Record<string, unknown>): Promise<unknown> => {
-    const tool = findTool(toolName);
-    if (!tool) {
-      throw new Error(`Unknown tool: ${toolName}`);
-    }
+// Create a router function that resolves graph and dispatches to operations
+export async function routeToolCall(
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<unknown> {
+  const tool = findTool(toolName);
+  if (!tool) {
+    throw new Error(`Unknown tool: ${toolName}`);
+  }
 
-    const op = operations[tool.operation];
-    const method = (op as unknown as Record<string, unknown>)[tool.method] as (
-      args: Record<string, unknown>
-    ) => Promise<unknown>;
+  // Extract graph from args and resolve it
+  const { graph, ...restArgs } = args;
+  const resolvedGraph = await resolveGraph(graph as string | undefined);
 
-    const result = await method.call(op, args);
-
-    // For void operations, return { success: true }
-    if (tool.returnsSuccess) {
-      return { success: true };
-    }
-
-    return result;
+  // Create client and operations for this call
+  const client = new RoamClient({ graphName: resolvedGraph });
+  const operations: Operations = {
+    pages: new PageOpsClass(client),
+    blocks: new BlockOpsClass(client),
+    search: new SearchOpsClass(client),
+    navigation: new NavOpsClass(client),
   };
+
+  const op = operations[tool.operation];
+  const method = (op as unknown as Record<string, unknown>)[tool.method] as (
+    args: Record<string, unknown>
+  ) => Promise<unknown>;
+
+  const result = await method.call(op, restArgs);
+
+  // For void operations, return { success: true }
+  if (tool.returnsSuccess) {
+    return { success: true };
+  }
+
+  return result;
+}
+
+// Backwards compatibility: createRouter still works but uses routeToolCall internally
+export function createRouter(_operations?: Operations) {
+  return routeToolCall;
 }
