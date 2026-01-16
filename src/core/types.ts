@@ -55,6 +55,6 @@ export interface SearchResult {
 
 // Client config
 export interface RoamClientConfig {
-  graphName: string;
+  graphName?: string;
   port?: number;
 }
