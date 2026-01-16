@@ -130,9 +130,12 @@ export async function resolveGraph(providedGraph?: string): Promise<string> {
       await openRoamDeepLink(graphToOpen);
       await sleep(3000); // Wait for Roam to start
 
+      // Re-read port from config (Roam writes it on startup)
+      const newPort = await getPort();
+
       // Retry fetching open graphs
       try {
-        openGraphs = await fetchOpenGraphs(port);
+        openGraphs = await fetchOpenGraphs(newPort);
       } catch {
         throw new Error(
           `Failed to connect to Roam after opening. Please ensure Roam is running with graph "${graphToOpen}".`

@@ -59,10 +59,9 @@ export class RoamClient {
   }
 
   async call<T = unknown>(action: string, args: unknown[] = []): Promise<RoamResponse<T>> {
-    const port = await this.getPort();
-    const url = `http://localhost:${port}/api/${this.graphName}`;
-
     const doRequest = async (): Promise<RoamResponse<T>> => {
+      const port = await this.getPort();
+      const url = `http://localhost:${port}/api/${this.graphName}`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,6 +75,8 @@ export class RoamClient {
     } catch (error) {
       // If connection failed, try opening Roam and retry once
       if (this.isConnectionError(error)) {
+        // Reset cached port so we re-read from config after Roam starts
+        this.port = null;
         await this.openRoamDeepLink();
         await this.sleep(3000); // Wait 3 seconds for Roam to start
         return await doRequest();
