@@ -6,21 +6,39 @@ import { join } from "path";
 // In-memory state for last used graph
 let lastUsedGraph: string | null = null;
 
-// Get the API port from ~/.roam-api-port
-async function getPort(): Promise<number> {
+// Config file type
+interface RoamLocalApiConfig {
+  port: number;
+  "last-graph"?: string;
+}
+
+// Get the API config from ~/.roam-local-api.json
+async function getConfig(): Promise<RoamLocalApiConfig> {
   try {
-    const portFile = join(homedir(), ".roam-api-port");
-    const content = await readFile(portFile, "utf-8");
-    return parseInt(content.trim(), 10);
+    const configFile = join(homedir(), ".roam-local-api.json");
+    const content = await readFile(configFile, "utf-8");
+    return JSON.parse(content) as RoamLocalApiConfig;
   } catch {
-    return 3333;
+    return { port: 3333 };
   }
+}
+
+// Get the API port
+async function getPort(): Promise<number> {
+  const config = await getConfig();
+  return config.port;
+}
+
+// Graph info from Roam API
+interface GraphInfo {
+  name: string;
+  type: string;
 }
 
 // Response type from Roam API
 interface GraphsResponse {
   success: boolean;
-  result?: string[];
+  result?: GraphInfo[];
   error?: string;
 }
 
@@ -40,7 +58,8 @@ export async function getOpenGraphs(): Promise<string[]> {
     throw new Error(data.error || "Failed to get open graphs");
   }
 
-  return data.result || [];
+  // Extract graph names from the response
+  return (data.result || []).map((g) => g.name);
 }
 
 // Resolve which graph to use

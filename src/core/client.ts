@@ -21,9 +21,10 @@ export class RoamClient {
     if (this.port) return this.port;
 
     try {
-      const portFile = join(homedir(), ".roam-api-port");
-      const content = await readFile(portFile, "utf-8");
-      this.port = parseInt(content.trim(), 10);
+      const configFile = join(homedir(), ".roam-local-api.json");
+      const content = await readFile(configFile, "utf-8");
+      const config = JSON.parse(content) as { port: number };
+      this.port = config.port;
       return this.port;
     } catch {
       // Default port if file doesn't exist
