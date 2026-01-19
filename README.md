@@ -48,5 +48,5 @@ npm run cli <graph-name> <command>
 - `get_focused_block` - Current focused block
 - `get_main_window` - Current main window view (outline, log, graph, diagram, pdf, search, or custom)
 - `get_sidebar_windows` - All open windows in the right sidebar
-- `open` - Navigate to page/block
+- `open_main_window` - Navigate to page/block
 - `open_sidebar` - Open in right sidebar

@@ -223,7 +223,7 @@ export const tools: ToolDefinition[] = [
     method: "getSidebarWindows",
   },
   {
-    name: "open",
+    name: "open_main_window",
     description: "Navigate to a page or block in the main window",
     inputSchema: {
       type: "object",
