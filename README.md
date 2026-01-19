@@ -46,6 +46,7 @@ npm run cli <graph-name> <command>
 
 **Navigation:**
 - `get_focused_block` - Current focused block
-- `get_current_page` - Current page UID
+- `get_main_window` - Current main window view (outline, log, graph, diagram, pdf, search, or custom)
+- `get_sidebar_windows` - All open windows in the right sidebar
 - `open` - Navigate to page/block
 - `open_sidebar` - Open in right sidebar

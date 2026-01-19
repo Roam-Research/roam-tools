@@ -199,8 +199,8 @@ export const tools: ToolDefinition[] = [
     method: "getFocusedBlock",
   },
   {
-    name: "get_current_page",
-    description: "Get the UID of the page currently open in the main window",
+    name: "get_main_window",
+    description: "Get the current view in the main window (outline, log, graph, diagram, pdf, search, or custom)",
     inputSchema: {
       type: "object",
       properties: {
@@ -208,7 +208,19 @@ export const tools: ToolDefinition[] = [
       },
     },
     operation: "navigation",
-    method: "getCurrentPage",
+    method: "getMainWindow",
+  },
+  {
+    name: "get_sidebar_windows",
+    description: "Get all open windows in the right sidebar",
+    inputSchema: {
+      type: "object",
+      properties: {
+        graph: graphProperty,
+      },
+    },
+    operation: "navigation",
+    method: "getSidebarWindows",
   },
   {
     name: "open",

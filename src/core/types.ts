@@ -40,10 +40,41 @@ export interface SidebarWindow {
   order?: number;
 }
 
+// Sidebar window as returned by getWindows
+export interface SidebarWindowInfo {
+  type: WindowType;
+  "window-id": string;
+  "block-uid"?: string;
+  "mentions-uid"?: string;
+  "search-query-str"?: string;
+  order?: number;
+  "pinned-to-top?"?: boolean;
+  collapsed?: boolean;
+}
+
 // Focused block info
 export interface FocusedBlock {
   "block-uid": string;
   "window-id": string;
+}
+
+// Main window view types
+export type MainWindowViewType =
+  | "outline"
+  | "log"
+  | "graph"
+  | "diagram"
+  | "pdf"
+  | "search"
+  | "custom";
+
+export interface MainWindowView {
+  type: MainWindowViewType;
+  uid?: string;
+  title?: string;
+  "block-string"?: string;
+  id?: string;
+  args?: unknown[];
 }
 
 // Search result

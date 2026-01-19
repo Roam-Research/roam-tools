@@ -1,5 +1,5 @@
 import type { RoamClient } from "../client.js";
-import type { FocusedBlock, SidebarWindow } from "../types.js";
+import type { FocusedBlock, MainWindowView, SidebarWindowInfo } from "../types.js";
 
 export interface OpenParams {
   uid?: string;
@@ -19,9 +19,14 @@ export class NavigationOperations {
     return result.result || null;
   }
 
-  async getCurrentPage(): Promise<string | null> {
-    const result = await this.client.call<string>("ui.mainWindow.getOpenPageOrBlockUid", []);
+  async getMainWindow(): Promise<MainWindowView | null> {
+    const result = await this.client.call<MainWindowView>("ui.mainWindow.getOpenView", []);
     return result.result || null;
+  }
+
+  async getSidebarWindows(): Promise<SidebarWindowInfo[]> {
+    const result = await this.client.call<SidebarWindowInfo[]>("ui.rightSidebar.getWindows", []);
+    return result.result || [];
   }
 
   async open(params: OpenParams): Promise<void> {
