@@ -6,6 +6,16 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { tools, routeToolCall } from "../core/tools.js";
 
+// Detect MIME type from base64 image data by checking magic bytes (fallback)
+function detectImageMimeType(base64: string): string | null {
+  if (base64.startsWith("/9j/")) return "image/jpeg";
+  if (base64.startsWith("iVBOR")) return "image/png";
+  if (base64.startsWith("R0lG")) return "image/gif";
+  if (base64.startsWith("UklGR")) return "image/webp";
+  if (base64.startsWith("Qk")) return "image/bmp";
+  return null;
+}
+
 const server = new Server(
   { name: "roam-mcp", version: "0.1.0" },
   { capabilities: { tools: {} } }
@@ -32,14 +42,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       name === "file_get" &&
       result &&
       typeof result === "object" &&
-      "base64" in result &&
-      "mimetype" in result
+      "base64" in result
     ) {
-      const { base64, mimetype } = result as { base64: string; mimetype: string };
+      const { base64, mimetype } = result as { base64: string; mimetype?: string };
+      const mimeType = mimetype || detectImageMimeType(base64);
 
-      if (mimetype.startsWith("image/")) {
+      if (mimeType?.startsWith("image/")) {
         return {
-          content: [{ type: "image", data: base64, mimeType: mimetype }],
+          content: [{ type: "image", data: base64, mimeType }],
         };
       }
       // Non-image file - return as text with base64

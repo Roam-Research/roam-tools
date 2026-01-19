@@ -6,8 +6,8 @@ export interface FileGetParams {
 
 export interface FileGetResult {
   base64: string;
-  mimetype: string;
-  filename: string;
+  mimetype?: string;
+  filename?: string;
 }
 
 export class FileOperations {
