@@ -44,17 +44,16 @@ export class BlockOperations {
     return "";
   }
 
-  async get(params: GetBlockParams): Promise<Block | null> {
-    const response = await this.client.call<Record<string, unknown>>("data.pull", [
-      "[:block/string :block/uid :block/open :block/heading {:block/children [:block/string :block/uid :block/open :block/heading {:block/children ...}]}]",
-      `[:block/uid "${params.uid}"]`,
+  async get(params: GetBlockParams): Promise<string | null> {
+    const response = await this.client.call<string>("data.ai.getBlockMd", [
+      { uid: params.uid },
     ]);
 
     if (!response.success || !response.result) {
       return null;
     }
 
-    return this.transformBlock(response.result);
+    return response.result;
   }
 
   private transformBlock(r: Record<string, unknown>): Block {

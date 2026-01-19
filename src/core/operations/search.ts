@@ -1,5 +1,5 @@
 import type { RoamClient } from "../client.js";
-import type { SearchResult } from "../types.js";
+import type { SearchResult, Template } from "../types.js";
 
 export interface SearchParams {
   query: string;
@@ -36,5 +36,17 @@ export class SearchOperations {
       string: r[":block/string"],
       title: r[":node/title"],
     }));
+  }
+
+  async searchTemplates(params: { query?: string }): Promise<Template[]> {
+    const response = await this.client.call<Template[]>("data.ai.searchTemplates", [
+      { query: params.query },
+    ]);
+
+    if (!response.success || !response.result) {
+      return [];
+    }
+
+    return response.result;
   }
 }

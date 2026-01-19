@@ -1,5 +1,4 @@
 import type { RoamClient } from "../client.js";
-import type { Page, Block } from "../types.js";
 
 export interface CreatePageParams {
   title: string;
@@ -35,37 +34,16 @@ export class PageOperations {
     return params.uid || "";
   }
 
-  async get(params: GetPageParams): Promise<Page | null> {
-    const eid = params.uid
-      ? `[:block/uid "${params.uid}"]`
-      : `[:node/title "${params.title}"]`;
-
-    const response = await this.client.call<Record<string, unknown>>("data.pull", [
-      "[:node/title :block/uid {:block/children [:block/string :block/uid :block/open :block/heading {:block/children ...}]}]",
-      eid,
+  async get(params: GetPageParams): Promise<string | null> {
+    const response = await this.client.call<string>("data.ai.getPageMd", [
+      params.uid ? { uid: params.uid } : { title: params.title },
     ]);
 
     if (!response.success || !response.result) {
       return null;
     }
 
-    const r = response.result;
-    return {
-      uid: r[":block/uid"] as string,
-      title: r[":node/title"] as string,
-      children: this.transformChildren(r[":block/children"] as Record<string, unknown>[] | undefined),
-    };
-  }
-
-  private transformChildren(children: Record<string, unknown>[] | undefined): Block[] | undefined {
-    if (!children) return undefined;
-    return children.map((c) => ({
-      uid: c[":block/uid"] as string,
-      string: c[":block/string"] as string,
-      open: c[":block/open"] as boolean | undefined,
-      heading: c[":block/heading"] as number | undefined,
-      children: this.transformChildren(c[":block/children"] as Record<string, unknown>[] | undefined),
-    }));
+    return response.result;
   }
 
   async delete(params: DeletePageParams): Promise<void> {

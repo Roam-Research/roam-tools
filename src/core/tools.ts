@@ -60,7 +60,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "create_block",
-    description: "Create a new block under a parent, using markdown content",
+    description:
+      "Create a new block under a parent, using markdown content. Supports nested bulleted lists - pass a markdown string with `- ` list items and indentation to create an entire block hierarchy in a single call",
     inputSchema: {
       type: "object",
       properties: {
@@ -144,8 +145,23 @@ export const tools: ToolDefinition[] = [
     method: "search",
   },
   {
+    name: "search_templates",
+    description:
+      "Search Roam templates by name. Templates are blocks tagged with [[roam/templates]]. Returns template name, uid, and content as simple markdown. Prefer searching with keywords first; only omit query to list all templates if keyword search fails to find what you need.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        graph: graphProperty,
+        query: { type: "string", description: "Keywords to filter templates by name (case-insensitive). Try relevant keywords first before listing all." },
+      },
+    },
+    operation: "search",
+    method: "searchTemplates",
+  },
+  {
     name: "get_page",
-    description: "Get a page's content and children",
+    description:
+      "Get a page's content as markdown. Returns content with embedded UIDs for your reference - use these UIDs for follow-up operations (create_block, get_block, etc.) but do NOT expose raw UIDs to the user in your responses unless they specifically ask for them",
     inputSchema: {
       type: "object",
       properties: {
@@ -159,7 +175,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "get_block",
-    description: "Get a block's content and children",
+    description:
+      "Get a block's content as markdown. Returns content with embedded UIDs for your reference - use these UIDs for follow-up operations but do NOT expose raw UIDs to the user in your responses unless they specifically ask for them",
     inputSchema: {
       type: "object",
       properties: {

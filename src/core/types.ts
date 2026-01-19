@@ -84,6 +84,13 @@ export interface SearchResult {
   title?: string;
 }
 
+// Template result
+export interface Template {
+  name: string;
+  uid: string;
+  content: string;
+}
+
 // Client config
 export interface RoamClientConfig {
   graphName?: string;
