@@ -40,8 +40,9 @@ npm run cli <graph-name> <command>
 
 **Read:**
 - `search` - Search pages/blocks
-- `get_page` - Get page with children
-- `get_block` - Get block with children
+- `search_templates` - Search Roam templates by name
+- `get_page` - Get page content as markdown
+- `get_block` - Get block content as markdown
 - `get_backlinks` - Get references to a page/block
 
 **Navigation:**
