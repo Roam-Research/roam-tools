@@ -3,12 +3,14 @@ import type { PageOperations } from "./operations/pages.js";
 import type { BlockOperations } from "./operations/blocks.js";
 import type { SearchOperations } from "./operations/search.js";
 import type { NavigationOperations } from "./operations/navigation.js";
+import type { FileOperations } from "./operations/files.js";
 import { RoamClient } from "./client.js";
 import {
   PageOperations as PageOpsClass,
   BlockOperations as BlockOpsClass,
   SearchOperations as SearchOpsClass,
   NavigationOperations as NavOpsClass,
+  FileOperations as FileOpsClass,
 } from "./operations/index.js";
 import { resolveGraph } from "./graph-resolver.js";
 
@@ -35,7 +37,7 @@ export interface ToolDefinition {
     properties: Record<string, JsonSchemaProperty>;
     required?: string[];
   };
-  operation: "pages" | "blocks" | "search" | "navigation";
+  operation: "pages" | "blocks" | "search" | "navigation" | "files";
   method: string;
   returnsSuccess?: boolean; // For void operations that should return { success: true }
 }
@@ -274,6 +276,21 @@ export const tools: ToolDefinition[] = [
     method: "openSidebar",
     returnsSuccess: true,
   },
+  // File operations
+  {
+    name: "file_get",
+    description: "Fetch a file hosted on Roam (handles decryption for encrypted graphs)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        graph: graphProperty,
+        url: { type: "string", description: "Firebase storage URL of the file" },
+      },
+      required: ["url"],
+    },
+    operation: "files",
+    method: "get",
+  },
 ];
 
 // Operations interface for the router
@@ -282,6 +299,7 @@ export interface Operations {
   blocks: BlockOperations;
   search: SearchOperations;
   navigation: NavigationOperations;
+  files: FileOperations;
 }
 
 // Find a tool by name
@@ -310,6 +328,7 @@ export async function routeToolCall(
     blocks: new BlockOpsClass(client),
     search: new SearchOpsClass(client),
     navigation: new NavOpsClass(client),
+    files: new FileOpsClass(client),
   };
 
   const op = operations[tool.operation];

@@ -51,3 +51,6 @@ npm run cli <graph-name> <command>
 - `get_sidebar_windows` - All open windows in the right sidebar
 - `open_main_window` - Navigate to page/block
 - `open_sidebar` - Open in right sidebar
+
+**Files:**
+- `file_get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
