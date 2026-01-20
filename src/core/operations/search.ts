@@ -27,11 +27,11 @@ export class SearchOperations {
       },
     ]);
 
-    if (!response.success || !response.result) {
-      return [];
+    if (!response.success) {
+      throw new Error(response.error || "Search failed");
     }
 
-    return response.result.map((r) => ({
+    return (response.result || []).map((r) => ({
       uid: r[":block/uid"],
       string: r[":block/string"],
       title: r[":node/title"],
@@ -43,10 +43,10 @@ export class SearchOperations {
       { query: params.query },
     ]);
 
-    if (!response.success || !response.result) {
-      return [];
+    if (!response.success) {
+      throw new Error(response.error || "Template search failed");
     }
 
-    return response.result;
+    return response.result || [];
   }
 }

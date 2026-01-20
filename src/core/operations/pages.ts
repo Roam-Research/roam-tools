@@ -19,17 +19,21 @@ export class PageOperations {
   constructor(private client: RoamClient) {}
 
   async create(params: CreatePageParams): Promise<string> {
+    let response;
     if (params.markdown) {
-      await this.client.call("data.page.fromMarkdown", [
+      response = await this.client.call("data.page.fromMarkdown", [
         {
           page: { title: params.title, uid: params.uid },
           "markdown-string": params.markdown,
         },
       ]);
     } else {
-      await this.client.call("data.page.create", [
+      response = await this.client.call("data.page.create", [
         { page: { title: params.title, uid: params.uid } },
       ]);
+    }
+    if (!response.success) {
+      throw new Error(response.error || "Failed to create page");
     }
     return params.uid || "";
   }
@@ -39,14 +43,17 @@ export class PageOperations {
       params.uid ? { uid: params.uid } : { title: params.title },
     ]);
 
-    if (!response.success || !response.result) {
-      return null;
+    if (!response.success) {
+      throw new Error(response.error || "Failed to get page");
     }
 
-    return response.result;
+    return response.result || null;
   }
 
   async delete(params: DeletePageParams): Promise<void> {
-    await this.client.call("data.page.delete", [{ page: { uid: params.uid } }]);
+    const response = await this.client.call("data.page.delete", [{ page: { uid: params.uid } }]);
+    if (!response.success) {
+      throw new Error(response.error || "Failed to delete page");
+    }
   }
 }

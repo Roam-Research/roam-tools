@@ -16,30 +16,45 @@ export class NavigationOperations {
 
   async getFocusedBlock(): Promise<FocusedBlock | null> {
     const result = await this.client.call<FocusedBlock>("ui.getFocusedBlock", []);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to get focused block");
+    }
     return result.result || null;
   }
 
   async getMainWindow(): Promise<MainWindowView | null> {
     const result = await this.client.call<MainWindowView>("ui.mainWindow.getOpenView", []);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to get main window");
+    }
     return result.result || null;
   }
 
   async getSidebarWindows(): Promise<SidebarWindowInfo[]> {
     const result = await this.client.call<SidebarWindowInfo[]>("ui.rightSidebar.getWindows", []);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to get sidebar windows");
+    }
     return result.result || [];
   }
 
   async open(params: OpenParams): Promise<void> {
+    let response;
     if (params.uid) {
       // Could be a page or block - openBlock handles both
-      await this.client.call("ui.mainWindow.openBlock", [{ block: { uid: params.uid } }]);
+      response = await this.client.call("ui.mainWindow.openBlock", [{ block: { uid: params.uid } }]);
     } else if (params.title) {
-      await this.client.call("ui.mainWindow.openPage", [{ page: { title: params.title } }]);
+      response = await this.client.call("ui.mainWindow.openPage", [{ page: { title: params.title } }]);
+    } else {
+      return;
+    }
+    if (!response.success) {
+      throw new Error(response.error || "Failed to open window");
     }
   }
 
   async openSidebar(params: OpenSidebarParams): Promise<void> {
-    await this.client.call("ui.rightSidebar.addWindow", [
+    const response = await this.client.call("ui.rightSidebar.addWindow", [
       {
         window: {
           type: params.type || "outline",
@@ -47,5 +62,8 @@ export class NavigationOperations {
         },
       },
     ]);
+    if (!response.success) {
+      throw new Error(response.error || "Failed to open sidebar");
+    }
   }
 }

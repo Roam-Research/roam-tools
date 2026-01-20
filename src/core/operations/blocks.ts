@@ -31,7 +31,7 @@ export class BlockOperations {
 
   async create(params: CreateBlockParams): Promise<string> {
     // Uses fromMarkdown for easier AI-generated content
-    await this.client.call("data.block.fromMarkdown", [
+    const response = await this.client.call("data.block.fromMarkdown", [
       {
         location: {
           "parent-uid": params.parentUid,
@@ -40,6 +40,9 @@ export class BlockOperations {
         "markdown-string": params.markdown,
       },
     ]);
+    if (!response.success) {
+      throw new Error(response.error || "Failed to create block");
+    }
     // TODO: return created block uid
     return "";
   }
@@ -49,11 +52,11 @@ export class BlockOperations {
       { uid: params.uid },
     ]);
 
-    if (!response.success || !response.result) {
-      return null;
+    if (!response.success) {
+      throw new Error(response.error || "Failed to get block");
     }
 
-    return response.result;
+    return response.result || null;
   }
 
   private transformBlock(r: Record<string, unknown>): Block {
@@ -77,11 +80,17 @@ export class BlockOperations {
     if (params.open !== undefined) block.open = params.open;
     if (params.heading !== undefined) block.heading = params.heading;
 
-    await this.client.call("data.block.update", [{ block }]);
+    const response = await this.client.call("data.block.update", [{ block }]);
+    if (!response.success) {
+      throw new Error(response.error || "Failed to update block");
+    }
   }
 
   async delete(params: DeleteBlockParams): Promise<void> {
-    await this.client.call("data.block.delete", [{ block: { uid: params.uid } }]);
+    const response = await this.client.call("data.block.delete", [{ block: { uid: params.uid } }]);
+    if (!response.success) {
+      throw new Error(response.error || "Failed to delete block");
+    }
   }
 
   async getBacklinks(params: GetBacklinksParams): Promise<Block[]> {
@@ -92,10 +101,10 @@ export class BlockOperations {
         [?b :block/refs ?target]]`,
     ]);
 
-    if (!response.success || !response.result) {
-      return [];
+    if (!response.success) {
+      throw new Error(response.error || "Failed to get backlinks");
     }
 
-    return response.result.map(([block]) => this.transformBlock(block));
+    return (response.result || []).map(([block]) => this.transformBlock(block));
   }
 }

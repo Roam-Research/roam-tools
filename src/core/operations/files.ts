@@ -18,8 +18,11 @@ export class FileOperations {
       { url: params.url, format: "base64" },
     ]);
 
-    if (!response.success || !response.result) {
-      throw new Error("Failed to get file");
+    if (!response.success) {
+      throw new Error(response.error || "Failed to get file");
+    }
+    if (!response.result) {
+      throw new Error("No file data returned");
     }
 
     return response.result;
