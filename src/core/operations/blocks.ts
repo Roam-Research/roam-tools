@@ -23,7 +23,26 @@ export interface DeleteBlockParams {
 }
 
 export interface GetBacklinksParams {
+  uid?: string;
+  title?: string;
+  offset?: number;
+  limit?: number;
+  sort?: "created-date" | "edited-date" | "daily-note-date";
+  sortOrder?: "asc" | "desc";
+  search?: string;
+  includePath?: boolean;
+}
+
+export interface BacklinkResult {
   uid: string;
+  type?: "page";
+  markdown: string;
+  path?: Array<{ uid: string; title?: string; string?: string }>;
+}
+
+export interface GetBacklinksResponse {
+  total: number;
+  results: BacklinkResult[];
 }
 
 export class BlockOperations {
@@ -93,18 +112,24 @@ export class BlockOperations {
     }
   }
 
-  async getBacklinks(params: GetBacklinksParams): Promise<Block[]> {
-    const response = await this.client.call<Array<[Record<string, unknown>]>>("data.q", [
-      `[:find (pull ?b [:block/string :block/uid :block/open :block/heading])
-        :where
-        [?target :block/uid "${params.uid}"]
-        [?b :block/refs ?target]]`,
-    ]);
+  async getBacklinks(params: GetBacklinksParams): Promise<GetBacklinksResponse> {
+    const apiParams: Record<string, unknown> = {};
+
+    if (params.uid !== undefined) apiParams.uid = params.uid;
+    if (params.title !== undefined) apiParams.title = params.title;
+    if (params.offset !== undefined) apiParams.offset = params.offset;
+    if (params.limit !== undefined) apiParams.limit = params.limit;
+    if (params.sort !== undefined) apiParams.sort = params.sort;
+    if (params.sortOrder !== undefined) apiParams.sortOrder = params.sortOrder;
+    if (params.search !== undefined) apiParams.search = params.search;
+    if (params.includePath !== undefined) apiParams.includePath = params.includePath;
+
+    const response = await this.client.call<GetBacklinksResponse>("data.ai.getBacklinksMd", [apiParams]);
 
     if (!response.success) {
       throw new Error(response.error || "Failed to get backlinks");
     }
 
-    return (response.result || []).map(([block]) => this.transformBlock(block));
+    return response.result || { total: 0, results: [] };
   }
 }

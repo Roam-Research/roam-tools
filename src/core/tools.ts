@@ -192,14 +192,35 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "get_backlinks",
-    description: "Get all blocks that reference a given page or block",
+    description:
+      "Get paginated backlinks (linked references) for a page or block, formatted as markdown. Returns total count and results with optional breadcrumb paths.",
     inputSchema: {
       type: "object",
       properties: {
         graph: graphProperty,
-        uid: { type: "string", description: "UID of page or block to get backlinks for" },
+        uid: { type: "string", description: "UID of page or block (required if no title)" },
+        title: { type: "string", description: "Page title (required if no uid)" },
+        offset: { type: "number", description: "Skip first N results (default: 0)" },
+        limit: { type: "number", description: "Max results to return (default: 20)" },
+        sort: {
+          type: "string",
+          enum: ["created-date", "edited-date", "daily-note-date"],
+          description: "Sort order (default: created-date)",
+        },
+        sortOrder: {
+          type: "string",
+          enum: ["asc", "desc"],
+          description: "Sort direction (default: desc)",
+        },
+        search: {
+          type: "string",
+          description: "Filter results by text match (searches block, parents, children, page title)",
+        },
+        includePath: {
+          type: "boolean",
+          description: "Include breadcrumb path to each result (default: true)",
+        },
       },
-      required: ["uid"],
     },
     operation: "blocks",
     method: "getBacklinks",
