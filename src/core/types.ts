@@ -77,11 +77,24 @@ export interface MainWindowView {
   args?: unknown[];
 }
 
+// Search result path item
+export interface SearchResultPath {
+  uid: string;
+  title: string;
+}
+
 // Search result
 export interface SearchResult {
   uid: string;
-  string?: string;
-  title?: string;
+  markdown: string;
+  path: SearchResultPath[];
+  type?: "page"; // Only present for page results
+}
+
+// Search response with pagination
+export interface SearchResponse {
+  total: number;
+  results: SearchResult[];
 }
 
 // Template result

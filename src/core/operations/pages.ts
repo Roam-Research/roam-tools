@@ -9,6 +9,7 @@ export interface CreatePageParams {
 export interface GetPageParams {
   title?: string;
   uid?: string;
+  maxDepth?: number;
 }
 
 export interface DeletePageParams {
@@ -39,9 +40,10 @@ export class PageOperations {
   }
 
   async get(params: GetPageParams): Promise<string | null> {
-    const response = await this.client.call<string>("data.ai.getPageMd", [
-      params.uid ? { uid: params.uid } : { title: params.title },
-    ]);
+    const apiParams: Record<string, unknown> = params.uid ? { uid: params.uid } : { title: params.title };
+    if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
+
+    const response = await this.client.call<string>("data.ai.getPageMd", [apiParams]);
 
     if (!response.success) {
       throw new Error(response.error || "Failed to get page");

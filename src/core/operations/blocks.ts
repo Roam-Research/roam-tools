@@ -9,6 +9,7 @@ export interface CreateBlockParams {
 
 export interface GetBlockParams {
   uid: string;
+  maxDepth?: number;
 }
 
 export interface UpdateBlockParams {
@@ -31,6 +32,7 @@ export interface GetBacklinksParams {
   sortOrder?: "asc" | "desc";
   search?: string;
   includePath?: boolean;
+  maxDepth?: number;
 }
 
 export interface BacklinkResult {
@@ -67,9 +69,10 @@ export class BlockOperations {
   }
 
   async get(params: GetBlockParams): Promise<string | null> {
-    const response = await this.client.call<string>("data.ai.getBlockMd", [
-      { uid: params.uid },
-    ]);
+    const apiParams: Record<string, unknown> = { uid: params.uid };
+    if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
+
+    const response = await this.client.call<string>("data.ai.getBlockMd", [apiParams]);
 
     if (!response.success) {
       throw new Error(response.error || "Failed to get block");
@@ -123,6 +126,7 @@ export class BlockOperations {
     if (params.sortOrder !== undefined) apiParams.sortOrder = params.sortOrder;
     if (params.search !== undefined) apiParams.search = params.search;
     if (params.includePath !== undefined) apiParams.includePath = params.includePath;
+    if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
     const response = await this.client.call<GetBacklinksResponse>("data.ai.getBacklinksMd", [apiParams]);
 

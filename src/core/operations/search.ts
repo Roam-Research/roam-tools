@@ -1,41 +1,33 @@
 import type { RoamClient } from "../client.js";
-import type { SearchResult, Template } from "../types.js";
+import type { SearchResponse, Template } from "../types.js";
 
 export interface SearchParams {
   query: string;
-  searchBlocks?: boolean;
-  searchPages?: boolean;
+  offset?: number;
   limit?: number;
-}
-
-interface RoamSearchResult {
-  ":block/uid": string;
-  ":block/string"?: string;
-  ":node/title"?: string;
+  includePath?: boolean;
+  maxDepth?: number;
 }
 
 export class SearchOperations {
   constructor(private client: RoamClient) {}
 
-  async search(params: SearchParams): Promise<SearchResult[]> {
-    const response = await this.client.call<RoamSearchResult[]>("data.search", [
-      {
-        "search-str": params.query,
-        "search-blocks": params.searchBlocks ?? true,
-        "search-pages": params.searchPages ?? true,
-        limit: params.limit ?? 100,
-      },
-    ]);
+  async search(params: SearchParams): Promise<SearchResponse> {
+    const apiParams: Record<string, unknown> = {
+      query: params.query,
+      offset: params.offset ?? 0,
+      limit: params.limit ?? 100,
+      includePath: params.includePath ?? true,
+    };
+    if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
+
+    const response = await this.client.call<SearchResponse>("data.ai.searchMd", [apiParams]);
 
     if (!response.success) {
       throw new Error(response.error || "Search failed");
     }
 
-    return (response.result || []).map((r) => ({
-      uid: r[":block/uid"],
-      string: r[":block/string"],
-      title: r[":node/title"],
-    }));
+    return response.result || { total: 0, results: [] };
   }
 
   async searchTemplates(params: { query?: string }): Promise<Template[]> {

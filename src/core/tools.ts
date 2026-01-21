@@ -131,15 +131,23 @@ export const tools: ToolDefinition[] = [
   // Read operations
   {
     name: "search",
-    description: "Search for pages and blocks by text",
+    description:
+      "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths.",
     inputSchema: {
       type: "object",
       properties: {
         graph: graphProperty,
         query: { type: "string", description: "Search query" },
-        searchPages: { type: "boolean", description: "Include pages (default: true)" },
-        searchBlocks: { type: "boolean", description: "Include blocks (default: true)" },
+        offset: { type: "number", description: "Skip first N results (default: 0)" },
         limit: { type: "number", description: "Max results (default: 100)" },
+        includePath: {
+          type: "boolean",
+          description: "Include breadcrumb path to each result (default: true)",
+        },
+        maxDepth: {
+          type: "number",
+          description: "Max depth of children to include in markdown (default: 2)",
+        },
       },
       required: ["query"],
     },
@@ -149,7 +157,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "search_templates",
     description:
-      "Search Roam templates by name. Templates are blocks tagged with [[roam/templates]]. Returns template name, uid, and content as simple markdown. Prefer searching with keywords first; only omit query to list all templates if keyword search fails to find what you need.",
+      "Search Roam templates by name. When the user mentions 'my X template' or 'the X template', use this tool to find it. Templates are user-created reusable content blocks tagged with [[roam/templates]]. Returns template name, uid, and content as markdown.",
     inputSchema: {
       type: "object",
       properties: {
@@ -163,13 +171,17 @@ export const tools: ToolDefinition[] = [
   {
     name: "get_page",
     description:
-      "Get a page's content as markdown. Returns content with embedded UIDs for your reference - use these UIDs for follow-up operations (create_block, get_block, etc.) but do NOT expose raw UIDs to the user in your responses unless they specifically ask for them",
+      "Get a page's content as markdown. Returns content with <roam> metadata tags containing UIDs for your reference - use these UIDs for follow-up operations (create_block, get_block, etc.) but do NOT include <roam> tags in your responses to the user. Use maxDepth to get an overview of large pages.",
     inputSchema: {
       type: "object",
       properties: {
         graph: graphProperty,
         uid: { type: "string", description: "Page UID" },
         title: { type: "string", description: "Page title (alternative to uid)" },
+        maxDepth: {
+          type: "number",
+          description: "Max depth of children to include in markdown (omit for full tree)",
+        },
       },
     },
     operation: "pages",
@@ -178,12 +190,16 @@ export const tools: ToolDefinition[] = [
   {
     name: "get_block",
     description:
-      "Get a block's content as markdown. Returns content with embedded UIDs for your reference - use these UIDs for follow-up operations but do NOT expose raw UIDs to the user in your responses unless they specifically ask for them",
+      "Get a block's content as markdown. Returns content with <roam> metadata tags containing UIDs for your reference - use these UIDs for follow-up operations but do NOT include <roam> tags in your responses to the user. Use maxDepth to get an overview of large blocks.",
     inputSchema: {
       type: "object",
       properties: {
         graph: graphProperty,
         uid: { type: "string", description: "Block UID" },
+        maxDepth: {
+          type: "number",
+          description: "Max depth of children to include in markdown (omit for full tree)",
+        },
       },
       required: ["uid"],
     },
@@ -219,6 +235,10 @@ export const tools: ToolDefinition[] = [
         includePath: {
           type: "boolean",
           description: "Include breadcrumb path to each result (default: true)",
+        },
+        maxDepth: {
+          type: "number",
+          description: "Max depth of children to include in markdown (default: 2)",
         },
       },
     },
