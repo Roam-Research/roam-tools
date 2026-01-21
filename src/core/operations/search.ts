@@ -21,7 +21,7 @@ export class SearchOperations {
     };
     if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
-    const response = await this.client.call<SearchResponse>("data.ai.searchMd", [apiParams]);
+    const response = await this.client.call<SearchResponse>("data.ai.search", [apiParams]);
 
     if (!response.success) {
       throw new Error(response.error || "Search failed");

@@ -43,7 +43,7 @@ export class PageOperations {
     const apiParams: Record<string, unknown> = params.uid ? { uid: params.uid } : { title: params.title };
     if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
-    const response = await this.client.call<string>("data.ai.getPageMd", [apiParams]);
+    const response = await this.client.call<string>("data.ai.getPage", [apiParams]);
 
     if (!response.success) {
       throw new Error(response.error || "Failed to get page");

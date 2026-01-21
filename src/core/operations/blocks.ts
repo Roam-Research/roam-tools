@@ -72,7 +72,7 @@ export class BlockOperations {
     const apiParams: Record<string, unknown> = { uid: params.uid };
     if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
-    const response = await this.client.call<string>("data.ai.getBlockMd", [apiParams]);
+    const response = await this.client.call<string>("data.ai.getBlock", [apiParams]);
 
     if (!response.success) {
       throw new Error(response.error || "Failed to get block");
@@ -128,7 +128,7 @@ export class BlockOperations {
     if (params.includePath !== undefined) apiParams.includePath = params.includePath;
     if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
-    const response = await this.client.call<GetBacklinksResponse>("data.ai.getBacklinksMd", [apiParams]);
+    const response = await this.client.call<GetBacklinksResponse>("data.ai.getBacklinks", [apiParams]);
 
     if (!response.success) {
       throw new Error(response.error || "Failed to get backlinks");
