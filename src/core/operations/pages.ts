@@ -58,4 +58,14 @@ export class PageOperations {
       throw new Error(response.error || "Failed to delete page");
     }
   }
+
+  async getGuidelines(): Promise<string | null> {
+    const response = await this.client.call<string>("data.ai.getGraphGuidelines", []);
+
+    if (!response.success) {
+      throw new Error(response.error || "Failed to get graph guidelines");
+    }
+
+    return response.result || null;
+  }
 }

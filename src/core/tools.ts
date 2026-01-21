@@ -42,12 +42,27 @@ export interface ToolDefinition {
   returnsSuccess?: boolean; // For void operations that should return { success: true }
 }
 
-// All 13 tool definitions
+// All tool definitions
 export const tools: ToolDefinition[] = [
+  // Graph-level operations
+  {
+    name: "get_graph_guidelines",
+    description:
+      "IMPORTANT: Call this tool first when starting to work with a graph. Returns user-defined instructions and preferences for AI agents operating on this graph. The user may have specified important context, naming conventions, or constraints that should guide your behavior.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        graph: graphProperty,
+      },
+    },
+    operation: "pages",
+    method: "getGuidelines",
+  },
   // Content operations
   {
     name: "create_page",
-    description: "Create a new page in Roam, optionally with markdown content",
+    description:
+      "Create a new page in Roam, optionally with markdown content. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -63,7 +78,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "create_block",
     description:
-      "Create a new block under a parent, using markdown content. Supports nested bulleted lists - pass a markdown string with `- ` list items and indentation to create an entire block hierarchy in a single call",
+      "Create a new block under a parent, using markdown content. Supports nested bulleted lists - pass a markdown string with `- ` list items and indentation to create an entire block hierarchy in a single call. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -82,7 +97,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "update_block",
-    description: "Update an existing block's content or properties",
+    description:
+      "Update an existing block's content or properties. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -100,7 +116,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "delete_block",
-    description: "Delete a block and all its children",
+    description:
+      "Delete a block and all its children. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -115,7 +132,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "delete_page",
-    description: "Delete a page and all its contents",
+    description:
+      "Delete a page and all its contents. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -132,7 +150,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "search",
     description:
-      "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths.",
+      "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -157,7 +175,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "search_templates",
     description:
-      "Search Roam templates by name. When the user mentions 'my X template' or 'the X template', use this tool to find it. Templates are user-created reusable content blocks tagged with [[roam/templates]]. Returns template name, uid, and content as markdown.",
+      "Search Roam templates by name. When the user mentions 'my X template' or 'the X template', use this tool to find it. Templates are user-created reusable content blocks tagged with [[roam/templates]]. Returns template name, uid, and content as markdown. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -171,7 +189,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "get_page",
     description:
-      "Get a page's content as markdown. Returns content with <roam> metadata tags containing UIDs for your reference - use these UIDs for follow-up operations (create_block, get_block, etc.) but do NOT include <roam> tags in your responses to the user. Use maxDepth to get an overview of large pages.",
+      "Get a page's content as markdown. Returns content with <roam> metadata tags containing UIDs for your reference - use these UIDs for follow-up operations (create_block, get_block, etc.) but do NOT include <roam> tags in your responses to the user. Use maxDepth to get an overview of large pages. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -190,7 +208,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "get_block",
     description:
-      "Get a block's content as markdown. Returns content with <roam> metadata tags containing UIDs for your reference - use these UIDs for follow-up operations but do NOT include <roam> tags in your responses to the user. Use maxDepth to get an overview of large blocks.",
+      "Get a block's content as markdown. Returns content with <roam> metadata tags containing UIDs for your reference - use these UIDs for follow-up operations but do NOT include <roam> tags in your responses to the user. Use maxDepth to get an overview of large blocks. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -209,7 +227,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "get_backlinks",
     description:
-      "Get paginated backlinks (linked references) for a page or block, formatted as markdown. Returns total count and results with optional breadcrumb paths.",
+      "Get paginated backlinks (linked references) for a page or block, formatted as markdown. Returns total count and results with optional breadcrumb paths. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -248,7 +266,8 @@ export const tools: ToolDefinition[] = [
   // Navigation operations
   {
     name: "get_focused_block",
-    description: "Get the currently focused block in Roam",
+    description:
+      "Get the currently focused block in Roam. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -260,7 +279,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "get_main_window",
-    description: "Get the current view in the main window (outline, log, graph, diagram, pdf, search, or custom)",
+    description:
+      "Get the current view in the main window (outline, log, graph, diagram, pdf, search, or custom). Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -272,7 +292,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "get_sidebar_windows",
-    description: "Get all open windows in the right sidebar",
+    description:
+      "Get all open windows in the right sidebar. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -284,7 +305,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "open_main_window",
-    description: "Navigate to a page or block in the main window",
+    description:
+      "Navigate to a page or block in the main window. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -299,7 +321,8 @@ export const tools: ToolDefinition[] = [
   },
   {
     name: "open_sidebar",
-    description: "Open a page or block in the right sidebar",
+    description:
+      "Open a page or block in the right sidebar. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -320,7 +343,8 @@ export const tools: ToolDefinition[] = [
   // File operations
   {
     name: "file_get",
-    description: "Fetch a file hosted on Roam (handles decryption for encrypted graphs)",
+    description:
+      "Fetch a file hosted on Roam (handles decryption for encrypted graphs). Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
