@@ -189,7 +189,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "get_page",
     description:
-      "Get a page's content as markdown. Returns content with <roam> metadata tags containing UIDs for your reference - use these UIDs for follow-up operations (create_block, get_block, etc.) but do NOT include <roam> tags in your responses to the user. Use maxDepth to get an overview of large pages. Note: Call get_graph_guidelines first when starting to work with a graph.",
+      "Get a page's content as markdown. Returns content with <roam> metadata tags containing UIDs - use these for follow-up operations but strip them when showing content to the user. Show remaining content verbatim, never paraphrase. Use maxDepth for large pages. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {
@@ -208,7 +208,7 @@ export const tools: ToolDefinition[] = [
   {
     name: "get_block",
     description:
-      "Get a block's content as markdown. Returns content with <roam> metadata tags containing UIDs for your reference - use these UIDs for follow-up operations but do NOT include <roam> tags in your responses to the user. Use maxDepth to get an overview of large blocks. Note: Call get_graph_guidelines first when starting to work with a graph.",
+      "Get a block's content as markdown. Returns content with <roam> metadata tags containing UIDs - use these for follow-up operations but strip them when showing content to the user. Show remaining content verbatim, never paraphrase. Use maxDepth for large blocks. Note: Call get_graph_guidelines first when starting to work with a graph.",
     inputSchema: {
       type: "object",
       properties: {

@@ -2,32 +2,41 @@
 
 A Model Context Protocol (MCP) server and CLI for Roam Research.
 
-## Setup
+> **Alpha Software**: This project is in early development and subject to breaking changes. The CLI is currently untested (coming soon).
+
+## Getting Started
+
+### 1. Enable the Local API in Roam
+
+The local API is available in the desktop app.
+
+In the menu bar, open settings and check "Enable Local API".
+
+### 2. Install
 
 ```bash
+git clone https://github.com/YOUR_USERNAME/roam-mcp.git
+cd roam-mcp
 npm install
+npm run build
 ```
 
-## Usage
+### 3. Add to Claude Desktop
 
-### MCP Server
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
-```bash
-npm run mcp <graph-name>
-# or
-ROAM_GRAPH=my-graph npm run mcp
+```json
+{
+  "mcpServers": {
+    "roam": {
+      "command": "node",
+      "args": ["/path/to/roam-mcp/dist/mcp/index.js", "your-graph-name"]
+    }
+  }
+}
 ```
 
-### CLI (coming soon)
-
-```bash
-npm run cli <graph-name> <command>
-```
-
-## Requirements
-
-- Roam Desktop app with Local API enabled (Settings → Graph → Local API)
-- Graph must be open in the desktop app
+Replace `/path/to/roam-mcp` with the actual path and `your-graph-name` with your Roam graph name.
 
 ## Available Tools
 
@@ -54,3 +63,7 @@ npm run cli <graph-name> <command>
 
 **Files:**
 - `file_get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
+
+## Contributing
+
+This project is changing rapidly. At this time, we prefer suggestions and feedback over pull requests. Please open an issue to discuss ideas before submitting code.
