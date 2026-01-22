@@ -1,11 +1,8 @@
 import { readFile } from "fs/promises";
-import { exec } from "child_process";
-import { promisify } from "util";
 import { homedir } from "os";
 import { join } from "path";
+import open from "open";
 import type { RoamResponse, RoamClientConfig } from "./types.js";
-
-const execAsync = promisify(exec);
 
 export class RoamClient {
   private graphName: string;
@@ -38,7 +35,7 @@ export class RoamClient {
 
   private async openRoamDeepLink(): Promise<void> {
     const deepLink = `roam://#/app/${this.graphName}`;
-    await execAsync(`open "${deepLink}"`);
+    await open(deepLink);
   }
 
   private async sleep(ms: number): Promise<void> {
@@ -61,7 +58,7 @@ export class RoamClient {
   async call<T = unknown>(action: string, args: unknown[] = []): Promise<RoamResponse<T>> {
     const doRequest = async (): Promise<RoamResponse<T>> => {
       const port = await this.getPort();
-      const url = `http://localhost:${port}/api/${this.graphName}`;
+      const url = `http://127.0.0.1:${port}/api/${this.graphName}`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
