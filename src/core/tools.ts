@@ -34,11 +34,11 @@ function withGraph<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
 }
 
 // Tool definition with Zod schema
-export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
+export interface ToolDefinition {
   name: string;
   description: string;
-  schema: z.ZodObject<T>;
-  action: (client: RoamClient, args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>;
+  schema: z.ZodObject<z.ZodRawShape>;
+  action: (client: RoamClient, args: unknown) => Promise<CallToolResult>;
 }
 
 // Helper to create tool with graph parameter
@@ -52,7 +52,7 @@ function defineTool<T extends z.ZodRawShape>(
     name,
     description,
     schema: withGraph(schema),
-    action: action as (client: RoamClient, args: unknown) => Promise<CallToolResult>,
+    action: (client, args) => action(client, args as z.infer<z.ZodObject<T>>),
   };
 }
 

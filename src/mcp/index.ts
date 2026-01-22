@@ -10,7 +10,7 @@ for (const tool of tools) {
     tool.name,
     {
       description: tool.description,
-      inputSchema: tool.schema.shape,
+      inputSchema: tool.schema,
     },
     async (args) => {
       try {
