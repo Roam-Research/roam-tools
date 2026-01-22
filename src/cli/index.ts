@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { tools, routeToolCall, type JsonSchemaProperty } from "../core/tools.js";
+import { z } from "zod";
+import { tools, routeToolCall } from "../core/tools.js";
 
 const program = new Command();
 
@@ -10,43 +11,66 @@ program
   .description("Roam Research CLI")
   .version("0.1.0");
 
+// Helper to check if a Zod schema field is optional
+function isOptional(schema: z.ZodTypeAny): boolean {
+  return schema.isOptional() || schema instanceof z.ZodOptional;
+}
+
+// Helper to get the base type of a Zod schema (unwrapping optional/nullable)
+function getBaseType(schema: z.ZodTypeAny): z.ZodTypeAny {
+  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+    return getBaseType(schema._def.innerType);
+  }
+  return schema;
+}
+
+// Helper to check if schema contains a number type
+function hasNumberType(schema: z.ZodTypeAny): boolean {
+  const base = getBaseType(schema);
+  if (base instanceof z.ZodNumber) return true;
+  if (base instanceof z.ZodUnion) {
+    return base._def.options.some((opt: z.ZodTypeAny) => getBaseType(opt) instanceof z.ZodNumber);
+  }
+  return false;
+}
+
+// Helper to check if schema is a boolean type
+function hasBooleanType(schema: z.ZodTypeAny): boolean {
+  return getBaseType(schema) instanceof z.ZodBoolean;
+}
+
 // Build commands dynamically from shared tool definitions
 tools.forEach((tool) => {
   const cmd = program
-    .command(tool.name.replace(/_/g, "-")) // create_page -> create-page
+    .command(tool.name.replace(/_/g, "-"))
     .description(tool.description);
 
-  // Add options from inputSchema
-  const { properties, required = [] } = tool.inputSchema;
-  for (const [param, schema] of Object.entries(properties)) {
-    const propSchema = schema as JsonSchemaProperty;
-    const isRequired = required.includes(param);
+  // Add options from Zod schema shape
+  const shape = tool.schema.shape as Record<string, z.ZodTypeAny>;
+  for (const [param, fieldSchema] of Object.entries(shape)) {
+    const isRequired = !isOptional(fieldSchema);
+    const description = fieldSchema.description || "";
 
     // Build flag string
-    const flagName = param.replace(/([A-Z])/g, "-$1").toLowerCase(); // parentUid -> parent-uid
+    const flagName = param.replace(/([A-Z])/g, "-$1").toLowerCase();
     const flag = isRequired ? `--${flagName} <value>` : `--${flagName} [value]`;
 
-    cmd.option(flag, propSchema.description);
+    cmd.option(flag, description);
   }
 
   // Handler
   cmd.action(async (options) => {
-    // Convert CLI options back to tool args
-    // parent-uid -> parentUid
     const args: Record<string, unknown> = {};
+    const shape = tool.schema.shape as Record<string, z.ZodTypeAny>;
+
     for (const [key, value] of Object.entries(options)) {
       if (value !== undefined) {
         const camelKey = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-        const propSchema = tool.inputSchema.properties[camelKey];
-        // Check for number type (direct or via oneOf)
-        const hasNumberType =
-          propSchema?.type === "number" ||
-          propSchema?.oneOf?.some((o) => o.type === "number");
-        const hasBooleanType = propSchema?.type === "boolean";
+        const fieldSchema = shape[camelKey];
 
-        if (hasNumberType && !isNaN(Number(value))) {
+        if (fieldSchema && hasNumberType(fieldSchema) && !isNaN(Number(value))) {
           args[camelKey] = Number(value);
-        } else if (hasBooleanType) {
+        } else if (fieldSchema && hasBooleanType(fieldSchema)) {
           args[camelKey] = value === "true" || value === true;
         } else {
           args[camelKey] = value;

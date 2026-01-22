@@ -1,9 +1,15 @@
+import { z } from "zod";
 import type { RoamClient } from "../client.js";
 
-export interface FileGetParams {
-  url: string;
-}
+// Schemas
+export const FileGetSchema = z.object({
+  url: z.string().describe("Firebase storage URL of the file"),
+});
 
+// Types derived from schemas
+export type FileGetParams = z.infer<typeof FileGetSchema>;
+
+// Response type (not an input schema)
 export interface FileGetResult {
   base64: string;
   mimetype?: string;

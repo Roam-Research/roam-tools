@@ -1,15 +1,27 @@
+import { z } from "zod";
 import type { RoamClient } from "../client.js";
 import type { FocusedBlock, MainWindowView, SidebarWindowInfo } from "../types.js";
 
-export interface OpenMainWindowParams {
-  uid?: string;
-  title?: string;
-}
+// Schemas
+export const GetFocusedBlockSchema = z.object({});
 
-export interface OpenSidebarParams {
-  uid: string;
-  type?: "block" | "outline" | "mentions";
-}
+export const GetMainWindowSchema = z.object({});
+
+export const GetSidebarWindowsSchema = z.object({});
+
+export const OpenMainWindowSchema = z.object({
+  uid: z.string().optional().describe("UID of page or block"),
+  title: z.string().optional().describe("Page title (alternative to uid)"),
+});
+
+export const OpenSidebarSchema = z.object({
+  uid: z.string().describe("UID of page or block"),
+  type: z.enum(["block", "outline", "mentions"]).optional().describe("View type (default: outline)"),
+});
+
+// Types derived from schemas
+export type OpenMainWindowParams = z.infer<typeof OpenMainWindowSchema>;
+export type OpenSidebarParams = z.infer<typeof OpenSidebarSchema>;
 
 export async function getFocusedBlock(client: RoamClient): Promise<FocusedBlock | null> {
   const result = await client.call<FocusedBlock>("ui.getFocusedBlock", []);

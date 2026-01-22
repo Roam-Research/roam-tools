@@ -1,9 +1,5 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
 import { tools, routeToolCall } from "../core/tools.js";
 
 // Detect MIME type from base64 image data by checking magic bytes (fallback)
@@ -16,59 +12,51 @@ function detectImageMimeType(base64: string): string | null {
   return null;
 }
 
-const server = new Server(
-  { name: "roam-mcp", version: "0.1.0" },
-  { capabilities: { tools: {} } }
-);
+const server = new McpServer({ name: "roam-mcp", version: "0.1.0" });
 
-// List tools - map to MCP format (exclude operation/method fields)
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: tools.map(({ name, description, inputSchema }) => ({
-    name,
-    description,
-    inputSchema,
-  })),
-}));
+// Register each tool with its Zod schema
+for (const tool of tools) {
+  server.tool(
+    tool.name,
+    tool.description,
+    tool.schema.shape,
+    async (args) => {
+      try {
+        const result = await routeToolCall(tool.name, args as Record<string, unknown>);
 
-// Handle tool calls via router
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+        // Handle file_get specially - return image content if it's an image
+        if (
+          tool.name === "file_get" &&
+          result &&
+          typeof result === "object" &&
+          "base64" in result
+        ) {
+          const { base64, mimetype } = result as { base64: string; mimetype?: string };
+          const mimeType = mimetype || detectImageMimeType(base64);
 
-  try {
-    const result = await routeToolCall(name, args as Record<string, unknown>);
+          if (mimeType?.startsWith("image/")) {
+            return {
+              content: [{ type: "image", data: base64, mimeType }],
+            };
+          }
+          return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          };
+        }
 
-    // Handle file_get specially - return image content if it's an image
-    if (
-      name === "file_get" &&
-      result &&
-      typeof result === "object" &&
-      "base64" in result
-    ) {
-      const { base64, mimetype } = result as { base64: string; mimetype?: string };
-      const mimeType = mimetype || detectImageMimeType(base64);
-
-      if (mimeType?.startsWith("image/")) {
         return {
-          content: [{ type: "image", data: base64, mimeType }],
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text", text: `Error: ${message}` }],
+          isError: true,
         };
       }
-      // Non-image file - return as text with base64
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      };
     }
-
-    return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      content: [{ type: "text", text: `Error: ${message}` }],
-      isError: true,
-    };
-  }
-});
+  );
+}
 
 async function main() {
   const transport = new StdioServerTransport();

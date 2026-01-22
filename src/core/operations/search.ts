@@ -1,17 +1,23 @@
+import { z } from "zod";
 import type { RoamClient } from "../client.js";
 import type { SearchResponse, Template } from "../types.js";
 
-export interface SearchParams {
-  query: string;
-  offset?: number;
-  limit?: number;
-  includePath?: boolean;
-  maxDepth?: number;
-}
+// Schemas
+export const SearchSchema = z.object({
+  query: z.string().describe("Search query"),
+  offset: z.number().optional().describe("Skip first N results (default: 0)"),
+  limit: z.number().optional().describe("Max results (default: 100)"),
+  includePath: z.boolean().optional().describe("Include breadcrumb path to each result (default: true)"),
+  maxDepth: z.number().optional().describe("Max depth of children to include in markdown (default: 2)"),
+});
 
-export interface SearchTemplatesParams {
-  query?: string;
-}
+export const SearchTemplatesSchema = z.object({
+  query: z.string().optional().describe("Keywords to filter templates by name (case-insensitive). Try relevant keywords first before listing all."),
+});
+
+// Types derived from schemas
+export type SearchParams = z.infer<typeof SearchSchema>;
+export type SearchTemplatesParams = z.infer<typeof SearchTemplatesSchema>;
 
 export async function search(client: RoamClient, params: SearchParams): Promise<SearchResponse> {
   const apiParams: Record<string, unknown> = {
