@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { CallToolResult } from "./types.js";
 import { RoamClient } from "./client.js";
 import { resolveGraph } from "./graph-resolver.js";
 import {
@@ -37,7 +38,7 @@ export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
   name: string;
   description: string;
   schema: z.ZodObject<T>;
-  action: (client: RoamClient, args: z.infer<z.ZodObject<T>>) => Promise<unknown>;
+  action: (client: RoamClient, args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>;
 }
 
 // Helper to create tool with graph parameter
@@ -45,13 +46,13 @@ function defineTool<T extends z.ZodRawShape>(
   name: string,
   description: string,
   schema: z.ZodObject<T>,
-  action: (client: RoamClient, args: z.infer<z.ZodObject<T>>) => Promise<unknown>
+  action: (client: RoamClient, args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>
 ): ToolDefinition {
   return {
     name,
     description,
     schema: withGraph(schema),
-    action: action as (client: RoamClient, args: unknown) => Promise<unknown>,
+    action: action as (client: RoamClient, args: unknown) => Promise<CallToolResult>,
   };
 }
 
@@ -168,7 +169,7 @@ export function findTool(name: string): ToolDefinition | undefined {
 export async function routeToolCall(
   toolName: string,
   args: Record<string, unknown>
-): Promise<unknown> {
+): Promise<CallToolResult> {
   const tool = findTool(toolName);
   if (!tool) {
     throw new Error(`Unknown tool: ${toolName}`);

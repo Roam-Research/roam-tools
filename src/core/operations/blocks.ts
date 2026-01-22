@@ -1,5 +1,7 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
+import type { CallToolResult } from "../types.js";
+import { textResult } from "../types.js";
 
 // Schemas
 export const CreateBlockSchema = z.object({
@@ -56,7 +58,7 @@ export interface GetBacklinksResponse {
   results: BacklinkResult[];
 }
 
-export async function createBlock(client: RoamClient, params: CreateBlockParams): Promise<string> {
+export async function createBlock(client: RoamClient, params: CreateBlockParams): Promise<CallToolResult> {
   // Uses fromMarkdown for easier AI-generated content
   const response = await client.call("data.block.fromMarkdown", [
     {
@@ -71,10 +73,10 @@ export async function createBlock(client: RoamClient, params: CreateBlockParams)
     throw new Error(response.error || "Failed to create block");
   }
   // TODO: return created block uid
-  return "";
+  return textResult("");
 }
 
-export async function getBlock(client: RoamClient, params: GetBlockParams): Promise<string | null> {
+export async function getBlock(client: RoamClient, params: GetBlockParams): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = { uid: params.uid };
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
@@ -84,10 +86,10 @@ export async function getBlock(client: RoamClient, params: GetBlockParams): Prom
     throw new Error(response.error || "Failed to get block");
   }
 
-  return response.result || null;
+  return textResult(response.result || null);
 }
 
-export async function updateBlock(client: RoamClient, params: UpdateBlockParams): Promise<{ success: true }> {
+export async function updateBlock(client: RoamClient, params: UpdateBlockParams): Promise<CallToolResult> {
   const block: Record<string, unknown> = { uid: params.uid };
   if (params.string !== undefined) block.string = params.string;
   if (params.open !== undefined) block.open = params.open;
@@ -97,21 +99,21 @@ export async function updateBlock(client: RoamClient, params: UpdateBlockParams)
   if (!response.success) {
     throw new Error(response.error || "Failed to update block");
   }
-  return { success: true };
+  return textResult({ success: true });
 }
 
-export async function deleteBlock(client: RoamClient, params: DeleteBlockParams): Promise<{ success: true }> {
+export async function deleteBlock(client: RoamClient, params: DeleteBlockParams): Promise<CallToolResult> {
   const response = await client.call("data.block.delete", [{ block: { uid: params.uid } }]);
   if (!response.success) {
     throw new Error(response.error || "Failed to delete block");
   }
-  return { success: true };
+  return textResult({ success: true });
 }
 
 export async function getBacklinks(
   client: RoamClient,
   params: GetBacklinksParams
-): Promise<GetBacklinksResponse> {
+): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = {};
 
   if (params.uid !== undefined) apiParams.uid = params.uid;
@@ -130,5 +132,5 @@ export async function getBacklinks(
     throw new Error(response.error || "Failed to get backlinks");
   }
 
-  return response.result || { total: 0, results: [] };
+  return textResult(response.result || { total: 0, results: [] });
 }

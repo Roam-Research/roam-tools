@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 import { z } from "zod";
+import type { CallToolResult } from "../core/types.js";
 import { tools, routeToolCall } from "../core/tools.js";
 
 const program = new Command();
@@ -79,8 +80,20 @@ tools.forEach((tool) => {
     }
 
     try {
-      const result = await routeToolCall(tool.name, args);
-      console.log(JSON.stringify(result, null, 2));
+      const result: CallToolResult = await routeToolCall(tool.name, args);
+
+      // Output each content item
+      for (const item of result.content) {
+        if (item.type === "text") {
+          console.log(item.text);
+        } else if (item.type === "image") {
+          console.log(`[Image: ${item.mimeType}, ${item.data.length} bytes base64]`);
+        }
+      }
+
+      if (result.isError) {
+        process.exit(1);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`Error: ${message}`);

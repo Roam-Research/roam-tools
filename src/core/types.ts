@@ -1,3 +1,23 @@
+// Re-export MCP types for tool results
+export type { CallToolResult, TextContent, ImageContent } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+
+// Helper to create a text result
+export function textResult(value: unknown): CallToolResult {
+  const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  return { content: [{ type: "text", text }] };
+}
+
+// Helper to create an image result
+export function imageResult(data: string, mimeType: string): CallToolResult {
+  return { content: [{ type: "image", data, mimeType }] };
+}
+
+// Helper to create an error result
+export function errorResult(message: string): CallToolResult {
+  return { content: [{ type: "text", text: message }], isError: true };
+}
+
 // Roam API response types
 export interface RoamResponse<T = unknown> {
   success: boolean;

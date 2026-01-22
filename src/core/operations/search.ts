@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
-import type { SearchResponse, Template } from "../types.js";
+import type { SearchResponse, Template, CallToolResult } from "../types.js";
+import { textResult } from "../types.js";
 
 // Schemas
 export const SearchSchema = z.object({
@@ -19,7 +20,7 @@ export const SearchTemplatesSchema = z.object({
 export type SearchParams = z.infer<typeof SearchSchema>;
 export type SearchTemplatesParams = z.infer<typeof SearchTemplatesSchema>;
 
-export async function search(client: RoamClient, params: SearchParams): Promise<SearchResponse> {
+export async function search(client: RoamClient, params: SearchParams): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = {
     query: params.query,
     offset: params.offset ?? 0,
@@ -34,13 +35,13 @@ export async function search(client: RoamClient, params: SearchParams): Promise<
     throw new Error(response.error || "Search failed");
   }
 
-  return response.result || { total: 0, results: [] };
+  return textResult(response.result || { total: 0, results: [] });
 }
 
 export async function searchTemplates(
   client: RoamClient,
   params: SearchTemplatesParams
-): Promise<Template[]> {
+): Promise<CallToolResult> {
   const response = await client.call<Template[]>("data.ai.searchTemplates", [
     { query: params.query },
   ]);
@@ -49,5 +50,5 @@ export async function searchTemplates(
     throw new Error(response.error || "Template search failed");
   }
 
-  return response.result || [];
+  return textResult(response.result || []);
 }
