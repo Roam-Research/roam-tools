@@ -145,7 +145,7 @@ tools.forEach((tool) => {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`Error: ${message}`);
+      console.error(message);
       process.exit(1);
     }
   });

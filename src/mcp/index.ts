@@ -18,7 +18,7 @@ for (const tool of tools) {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return {
-          content: [{ type: "text", text: `Error: ${message}` }],
+          content: [{ type: "text", text: message }],
           isError: true,
         };
       }
