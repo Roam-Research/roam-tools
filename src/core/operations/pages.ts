@@ -1,20 +1,29 @@
+import { z } from "zod";
 import type { RoamClient } from "../client.js";
 
-export interface CreatePageParams {
-  title: string;
-  markdown?: string;
-  uid?: string;
-}
+// Schemas
+export const CreatePageSchema = z.object({
+  title: z.string().describe("Page title"),
+  markdown: z.string().optional().describe("Markdown content for the page"),
+  uid: z.string().optional(),
+});
 
-export interface GetPageParams {
-  title?: string;
-  uid?: string;
-  maxDepth?: number;
-}
+export const GetPageSchema = z.object({
+  title: z.string().optional().describe("Page title (alternative to uid)"),
+  uid: z.string().optional().describe("Page UID"),
+  maxDepth: z.number().optional().describe("Max depth of children to include in markdown (omit for full tree)"),
+});
 
-export interface DeletePageParams {
-  uid: string;
-}
+export const DeletePageSchema = z.object({
+  uid: z.string().describe("Page UID to delete"),
+});
+
+export const GetGuidelinesSchema = z.object({});
+
+// Types derived from schemas
+export type CreatePageParams = z.infer<typeof CreatePageSchema>;
+export type GetPageParams = z.infer<typeof GetPageSchema>;
+export type DeletePageParams = z.infer<typeof DeletePageSchema>;
 
 export async function createPage(client: RoamClient, params: CreatePageParams): Promise<string> {
   let response;
