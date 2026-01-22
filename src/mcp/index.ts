@@ -16,10 +16,12 @@ const server = new McpServer({ name: "roam-mcp", version: "0.1.0" });
 
 // Register each tool with its Zod schema
 for (const tool of tools) {
-  server.tool(
+  server.registerTool(
     tool.name,
-    tool.description,
-    tool.schema.shape,
+    {
+      description: tool.description,
+      inputSchema: tool.schema.shape,
+    },
     async (args) => {
       try {
         const result = await routeToolCall(tool.name, args as Record<string, unknown>);
