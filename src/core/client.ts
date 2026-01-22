@@ -75,8 +75,20 @@ export class RoamClient {
         // Reset cached port so we re-read from config after Roam starts
         this.port = null;
         await this.openRoamDeepLink();
-        await this.sleep(3000); // Wait 3 seconds for Roam to start
-        return await doRequest();
+
+        let delay = 500;
+        const maxDelay = 15000;
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          await this.sleep(delay);
+          try {
+            return await doRequest();
+          } catch (retryError) {
+            if (!this.isConnectionError(retryError)) {
+              throw retryError;
+            }
+          }
+          delay = Math.min(delay * 2, maxDelay);
+        }
       }
       throw error;
     }
