@@ -10,21 +10,17 @@ export interface FileGetResult {
   filename?: string;
 }
 
-export class FileOperations {
-  constructor(private client: RoamClient) {}
+export async function getFile(client: RoamClient, params: FileGetParams): Promise<FileGetResult> {
+  const response = await client.call<FileGetResult>("file.get", [
+    { url: params.url, format: "base64" },
+  ]);
 
-  async get(params: FileGetParams): Promise<FileGetResult> {
-    const response = await this.client.call<FileGetResult>("file.get", [
-      { url: params.url, format: "base64" },
-    ]);
-
-    if (!response.success) {
-      throw new Error(response.error || "Failed to get file");
-    }
-    if (!response.result) {
-      throw new Error("No file data returned");
-    }
-
-    return response.result;
+  if (!response.success) {
+    throw new Error(response.error || "Failed to get file");
   }
+  if (!response.result) {
+    throw new Error("No file data returned");
+  }
+
+  return response.result;
 }

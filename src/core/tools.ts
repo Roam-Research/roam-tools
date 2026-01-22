@@ -1,18 +1,11 @@
 // src/core/tools.ts
-import type { PageOperations } from "./operations/pages.js";
-import type { BlockOperations } from "./operations/blocks.js";
-import type { SearchOperations } from "./operations/search.js";
-import type { NavigationOperations } from "./operations/navigation.js";
-import type { FileOperations } from "./operations/files.js";
 import { RoamClient } from "./client.js";
-import {
-  PageOperations as PageOpsClass,
-  BlockOperations as BlockOpsClass,
-  SearchOperations as SearchOpsClass,
-  NavigationOperations as NavOpsClass,
-  FileOperations as FileOpsClass,
-} from "./operations/index.js";
 import { resolveGraph } from "./graph-resolver.js";
+import { createPage, getPage, deletePage, getGuidelines } from "./operations/pages.js";
+import { createBlock, getBlock, updateBlock, deleteBlock, getBacklinks } from "./operations/blocks.js";
+import { search, searchTemplates } from "./operations/search.js";
+import { getFocusedBlock, getMainWindow, getSidebarWindows, openMainWindow, openSidebar } from "./operations/navigation.js";
+import { getFile } from "./operations/files.js";
 
 // JSON Schema property type
 export interface JsonSchemaProperty {
@@ -37,9 +30,7 @@ export interface ToolDefinition {
     properties: Record<string, JsonSchemaProperty>;
     required?: string[];
   };
-  operation: "pages" | "blocks" | "search" | "navigation" | "files";
-  method: string;
-  returnsSuccess?: boolean; // For void operations that should return { success: true }
+  action: (client: RoamClient, args: any) => Promise<unknown>;
 }
 
 // All tool definitions
@@ -55,8 +46,7 @@ export const tools: ToolDefinition[] = [
         graph: graphProperty,
       },
     },
-    operation: "pages",
-    method: "getGuidelines",
+    action: getGuidelines,
   },
   // Content operations
   {
@@ -72,8 +62,7 @@ export const tools: ToolDefinition[] = [
       },
       required: ["title"],
     },
-    operation: "pages",
-    method: "create",
+    action: createPage,
   },
   {
     name: "create_block",
@@ -92,8 +81,7 @@ export const tools: ToolDefinition[] = [
       },
       required: ["parentUid", "markdown"],
     },
-    operation: "blocks",
-    method: "create",
+    action: createBlock,
   },
   {
     name: "update_block",
@@ -110,9 +98,7 @@ export const tools: ToolDefinition[] = [
       },
       required: ["uid"],
     },
-    operation: "blocks",
-    method: "update",
-    returnsSuccess: true,
+    action: updateBlock,
   },
   {
     name: "delete_block",
@@ -126,9 +112,7 @@ export const tools: ToolDefinition[] = [
       },
       required: ["uid"],
     },
-    operation: "blocks",
-    method: "delete",
-    returnsSuccess: true,
+    action: deleteBlock,
   },
   {
     name: "delete_page",
@@ -142,9 +126,7 @@ export const tools: ToolDefinition[] = [
       },
       required: ["uid"],
     },
-    operation: "pages",
-    method: "delete",
-    returnsSuccess: true,
+    action: deletePage,
   },
   // Read operations
   {
@@ -169,8 +151,7 @@ export const tools: ToolDefinition[] = [
       },
       required: ["query"],
     },
-    operation: "search",
-    method: "search",
+    action: search,
   },
   {
     name: "search_templates",
@@ -180,11 +161,14 @@ export const tools: ToolDefinition[] = [
       type: "object",
       properties: {
         graph: graphProperty,
-        query: { type: "string", description: "Keywords to filter templates by name (case-insensitive). Try relevant keywords first before listing all." },
+        query: {
+          type: "string",
+          description:
+            "Keywords to filter templates by name (case-insensitive). Try relevant keywords first before listing all.",
+        },
       },
     },
-    operation: "search",
-    method: "searchTemplates",
+    action: searchTemplates,
   },
   {
     name: "get_page",
@@ -202,8 +186,7 @@ export const tools: ToolDefinition[] = [
         },
       },
     },
-    operation: "pages",
-    method: "get",
+    action: getPage,
   },
   {
     name: "get_block",
@@ -221,8 +204,7 @@ export const tools: ToolDefinition[] = [
       },
       required: ["uid"],
     },
-    operation: "blocks",
-    method: "get",
+    action: getBlock,
   },
   {
     name: "get_backlinks",
@@ -260,8 +242,7 @@ export const tools: ToolDefinition[] = [
         },
       },
     },
-    operation: "blocks",
-    method: "getBacklinks",
+    action: getBacklinks,
   },
   // Navigation operations
   {
@@ -274,8 +255,7 @@ export const tools: ToolDefinition[] = [
         graph: graphProperty,
       },
     },
-    operation: "navigation",
-    method: "getFocusedBlock",
+    action: getFocusedBlock,
   },
   {
     name: "get_main_window",
@@ -287,8 +267,7 @@ export const tools: ToolDefinition[] = [
         graph: graphProperty,
       },
     },
-    operation: "navigation",
-    method: "getMainWindow",
+    action: getMainWindow,
   },
   {
     name: "get_sidebar_windows",
@@ -300,8 +279,7 @@ export const tools: ToolDefinition[] = [
         graph: graphProperty,
       },
     },
-    operation: "navigation",
-    method: "getSidebarWindows",
+    action: getSidebarWindows,
   },
   {
     name: "open_main_window",
@@ -315,9 +293,7 @@ export const tools: ToolDefinition[] = [
         title: { type: "string", description: "Page title (alternative to uid)" },
       },
     },
-    operation: "navigation",
-    method: "open",
-    returnsSuccess: true,
+    action: openMainWindow,
   },
   {
     name: "open_sidebar",
@@ -336,9 +312,7 @@ export const tools: ToolDefinition[] = [
       },
       required: ["uid"],
     },
-    operation: "navigation",
-    method: "openSidebar",
-    returnsSuccess: true,
+    action: openSidebar,
   },
   // File operations
   {
@@ -353,19 +327,9 @@ export const tools: ToolDefinition[] = [
       },
       required: ["url"],
     },
-    operation: "files",
-    method: "get",
+    action: getFile,
   },
 ];
-
-// Operations interface for the router
-export interface Operations {
-  pages: PageOperations;
-  blocks: BlockOperations;
-  search: SearchOperations;
-  navigation: NavigationOperations;
-  files: FileOperations;
-}
 
 // Find a tool by name
 export function findTool(name: string): ToolDefinition | undefined {
@@ -386,32 +350,13 @@ export async function routeToolCall(
   const { graph, ...restArgs } = args;
   const resolvedGraph = await resolveGraph(graph as string | undefined);
 
-  // Create client and operations for this call
+  // Create client for this call
   const client = new RoamClient({ graphName: resolvedGraph });
-  const operations: Operations = {
-    pages: new PageOpsClass(client),
-    blocks: new BlockOpsClass(client),
-    search: new SearchOpsClass(client),
-    navigation: new NavOpsClass(client),
-    files: new FileOpsClass(client),
-  };
 
-  const op = operations[tool.operation];
-  const method = (op as unknown as Record<string, unknown>)[tool.method] as (
-    args: Record<string, unknown>
-  ) => Promise<unknown>;
-
-  const result = await method.call(op, restArgs);
-
-  // For void operations, return { success: true }
-  if (tool.returnsSuccess) {
-    return { success: true };
-  }
-
-  return result;
+  return tool.action(client, restArgs);
 }
 
 // Backwards compatibility: createRouter still works but uses routeToolCall internally
-export function createRouter(_operations?: Operations) {
+export function createRouter() {
   return routeToolCall;
 }
