@@ -2,8 +2,56 @@
 
 import { Command } from "commander";
 import { z } from "zod";
+import { randomUUID } from "crypto";
+import { mkdirSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import type { CallToolResult } from "../core/types.js";
 import { tools, routeToolCall } from "../core/tools.js";
+
+// Get file extension from MIME type
+function getExtensionFromMimeType(mimeType: string): string {
+  const mimeToExt: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+    "image/svg+xml": "svg",
+    "image/bmp": "bmp",
+    "image/tiff": "tiff",
+    "application/pdf": "pdf",
+  };
+  return mimeToExt[mimeType] || "bin";
+}
+
+// Write image to temp directory and return metadata
+function writeImageToTemp(data: string, mimeType: string): { type: "image"; path: string; mimeType: string; size: number } | { type: "image"; data: string; mimeType: string } {
+  try {
+    const tempDir = join(tmpdir(), "roam");
+    mkdirSync(tempDir, { recursive: true });
+
+    const ext = getExtensionFromMimeType(mimeType);
+    const filename = `${randomUUID()}.${ext}`;
+    const filePath = join(tempDir, filename);
+
+    const buffer = Buffer.from(data, "base64");
+    writeFileSync(filePath, buffer);
+
+    return {
+      type: "image",
+      path: filePath,
+      mimeType,
+      size: buffer.length,
+    };
+  } catch {
+    // Fall back to base64 output if file write fails
+    return {
+      type: "image",
+      data,
+      mimeType,
+    };
+  }
+}
 
 const program = new Command();
 
@@ -87,7 +135,8 @@ tools.forEach((tool) => {
         if (item.type === "text") {
           console.log(item.text);
         } else if (item.type === "image") {
-          console.log(`[Image: ${item.mimeType}, ${item.data.length} bytes base64]`);
+          const imageInfo = writeImageToTemp(item.data, item.mimeType);
+          console.log(JSON.stringify(imageInfo, null, 2));
         }
       }
 
