@@ -67,7 +67,7 @@ export interface GetBacklinksResponse {
 
 export async function createBlock(client: RoamClient, params: CreateBlockParams): Promise<CallToolResult> {
   // Uses fromMarkdown for easier AI-generated content
-  const response = await client.call("data.block.fromMarkdown", [
+  await client.call("data.block.fromMarkdown", [
     {
       location: {
         "parent-uid": params.parentUid,
@@ -76,9 +76,6 @@ export async function createBlock(client: RoamClient, params: CreateBlockParams)
       "markdown-string": params.markdown,
     },
   ]);
-  if (!response.success) {
-    throw new Error(response.error || "Failed to create block");
-  }
   // TODO: return created block uid
   return textResult("");
 }
@@ -88,12 +85,7 @@ export async function getBlock(client: RoamClient, params: GetBlockParams): Prom
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
   const response = await client.call<string>("data.ai.getBlock", [apiParams]);
-
-  if (!response.success) {
-    throw new Error(response.error || "Failed to get block");
-  }
-
-  return textResult(response.result || null);
+  return textResult(response.result ?? null);
 }
 
 export async function updateBlock(client: RoamClient, params: UpdateBlockParams): Promise<CallToolResult> {
@@ -102,23 +94,17 @@ export async function updateBlock(client: RoamClient, params: UpdateBlockParams)
   if (params.open !== undefined) block.open = params.open;
   if (params.heading !== undefined) block.heading = params.heading;
 
-  const response = await client.call("data.block.update", [{ block }]);
-  if (!response.success) {
-    throw new Error(response.error || "Failed to update block");
-  }
+  await client.call("data.block.update", [{ block }]);
   return textResult({ success: true });
 }
 
 export async function deleteBlock(client: RoamClient, params: DeleteBlockParams): Promise<CallToolResult> {
-  const response = await client.call("data.block.delete", [{ block: { uid: params.uid } }]);
-  if (!response.success) {
-    throw new Error(response.error || "Failed to delete block");
-  }
+  await client.call("data.block.delete", [{ block: { uid: params.uid } }]);
   return textResult({ success: true });
 }
 
 export async function moveBlock(client: RoamClient, params: MoveBlockParams): Promise<CallToolResult> {
-  const response = await client.call("data.block.move", [
+  await client.call("data.block.move", [
     {
       location: {
         "parent-uid": params.parentUid,
@@ -129,9 +115,6 @@ export async function moveBlock(client: RoamClient, params: MoveBlockParams): Pr
       },
     },
   ]);
-  if (!response.success) {
-    throw new Error(response.error || "Failed to move block");
-  }
   return textResult({ success: true });
 }
 
@@ -152,10 +135,5 @@ export async function getBacklinks(
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
   const response = await client.call<GetBacklinksResponse>("data.ai.getBacklinks", [apiParams]);
-
-  if (!response.success) {
-    throw new Error(response.error || "Failed to get backlinks");
-  }
-
-  return textResult(response.result || { total: 0, results: [] });
+  return textResult(response.result ?? { total: 0, results: [] });
 }

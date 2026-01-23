@@ -2,7 +2,8 @@ import { readFile } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
 import open from "open";
-import type { RoamResponse, RoamClientConfig } from "./types.js";
+import type { RoamResponse, RoamClientConfig, RoamApiError } from "./types.js";
+import { EXPECTED_API_VERSION, getErrorMessage } from "./types.js";
 
 export class RoamClient {
   private graphName: string;
@@ -55,6 +56,48 @@ export class RoamClient {
     return false;
   }
 
+  private isVersionMismatch(response: RoamResponse<unknown>): boolean {
+    if (response.success) return false;
+    const error = response.error;
+    if (typeof error === "object" && error !== null) {
+      return (error as RoamApiError).code === "VERSION_MISMATCH";
+    }
+    return false;
+  }
+
+  private handleVersionMismatch(response: RoamResponse<unknown>): never {
+    const serverVersion = response.apiVersion ?? "unknown";
+    let advice = "Please update Roam or the MCP server so versions match.";
+
+    if (serverVersion !== "unknown") {
+      const [serverMajor, serverMinor] = serverVersion.split(".").map(Number);
+      const [expectedMajor, expectedMinor] = EXPECTED_API_VERSION.split(".").map(Number);
+
+      if (serverMajor > expectedMajor || (serverMajor === expectedMajor && serverMinor > expectedMinor)) {
+        advice = "Please update the MCP server.";
+      } else {
+        advice = "Please update Roam.";
+      }
+    }
+
+    console.error(
+      `\n[FATAL] Roam API version mismatch!\n` +
+      `  Roam API version: ${serverVersion}\n` +
+      `  MCP expected version: ${EXPECTED_API_VERSION}\n` +
+      `  ${advice}\n`
+    );
+    process.exit(1);
+  }
+
+  private checkResponse<T>(response: RoamResponse<T>): void {
+    if (this.isVersionMismatch(response)) {
+      this.handleVersionMismatch(response);
+    }
+    if (!response.success) {
+      throw new Error(getErrorMessage(response.error));
+    }
+  }
+
   async call<T = unknown>(action: string, args: unknown[] = []): Promise<RoamResponse<T>> {
     const doRequest = async (): Promise<RoamResponse<T>> => {
       const port = await this.getPort();
@@ -62,13 +105,15 @@ export class RoamClient {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, args }),
+        body: JSON.stringify({ action, args, expectedApiVersion: EXPECTED_API_VERSION }),
       });
       return response.json() as Promise<RoamResponse<T>>;
     };
 
     try {
-      return await doRequest();
+      const response = await doRequest();
+      this.checkResponse(response);
+      return response;
     } catch (error) {
       // If connection failed, try opening Roam and retry once
       if (this.isConnectionError(error)) {
@@ -81,7 +126,9 @@ export class RoamClient {
         for (let attempt = 0; attempt < 8; attempt += 1) {
           await this.sleep(delay);
           try {
-            return await doRequest();
+            const response = await doRequest();
+            this.checkResponse(response);
+            return response;
           } catch (retryError) {
             if (!this.isConnectionError(retryError)) {
               throw retryError;

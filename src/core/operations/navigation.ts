@@ -25,47 +25,32 @@ export type OpenMainWindowParams = z.infer<typeof OpenMainWindowSchema>;
 export type OpenSidebarParams = z.infer<typeof OpenSidebarSchema>;
 
 export async function getFocusedBlock(client: RoamClient): Promise<CallToolResult> {
-  const result = await client.call<FocusedBlock>("ui.getFocusedBlock", []);
-  if (!result.success) {
-    throw new Error(result.error || "Failed to get focused block");
-  }
-  return textResult(result.result || null);
+  const response = await client.call<FocusedBlock>("ui.getFocusedBlock", []);
+  return textResult(response.result ?? null);
 }
 
 export async function getMainWindow(client: RoamClient): Promise<CallToolResult> {
-  const result = await client.call<MainWindowView>("ui.mainWindow.getOpenView", []);
-  if (!result.success) {
-    throw new Error(result.error || "Failed to get main window");
-  }
-  return textResult(result.result || null);
+  const response = await client.call<MainWindowView>("ui.mainWindow.getOpenView", []);
+  return textResult(response.result ?? null);
 }
 
 export async function getSidebarWindows(client: RoamClient): Promise<CallToolResult> {
-  const result = await client.call<SidebarWindowInfo[]>("ui.rightSidebar.getWindows", []);
-  if (!result.success) {
-    throw new Error(result.error || "Failed to get sidebar windows");
-  }
-  return textResult(result.result || []);
+  const response = await client.call<SidebarWindowInfo[]>("ui.rightSidebar.getWindows", []);
+  return textResult(response.result ?? []);
 }
 
 export async function openMainWindow(client: RoamClient, params: OpenMainWindowParams): Promise<CallToolResult> {
-  let response;
   if (params.uid) {
     // Could be a page or block - openBlock handles both
-    response = await client.call("ui.mainWindow.openBlock", [{ block: { uid: params.uid } }]);
+    await client.call("ui.mainWindow.openBlock", [{ block: { uid: params.uid } }]);
   } else if (params.title) {
-    response = await client.call("ui.mainWindow.openPage", [{ page: { title: params.title } }]);
-  } else {
-    return textResult({ success: true });
-  }
-  if (!response.success) {
-    throw new Error(response.error || "Failed to open window");
+    await client.call("ui.mainWindow.openPage", [{ page: { title: params.title } }]);
   }
   return textResult({ success: true });
 }
 
 export async function openSidebar(client: RoamClient, params: OpenSidebarParams): Promise<CallToolResult> {
-  const response = await client.call("ui.rightSidebar.addWindow", [
+  await client.call("ui.rightSidebar.addWindow", [
     {
       window: {
         type: params.type || "outline",
@@ -73,8 +58,5 @@ export async function openSidebar(client: RoamClient, params: OpenSidebarParams)
       },
     },
   ]);
-  if (!response.success) {
-    throw new Error(response.error || "Failed to open sidebar");
-  }
   return textResult({ success: true });
 }

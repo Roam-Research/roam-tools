@@ -32,12 +32,7 @@ export async function search(client: RoamClient, params: SearchParams): Promise<
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
   const response = await client.call<SearchResponse>("data.ai.search", [apiParams]);
-
-  if (!response.success) {
-    throw new Error(response.error || "Search failed");
-  }
-
-  return textResult(response.result || { total: 0, results: [] });
+  return textResult(response.result ?? { total: 0, results: [] });
 }
 
 export async function searchTemplates(
@@ -47,10 +42,5 @@ export async function searchTemplates(
   const response = await client.call<Template[]>("data.ai.searchTemplates", [
     { query: params.query },
   ]);
-
-  if (!response.success) {
-    throw new Error(response.error || "Template search failed");
-  }
-
-  return textResult(response.result || []);
+  return textResult(response.result ?? []);
 }

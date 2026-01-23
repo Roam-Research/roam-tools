@@ -33,9 +33,6 @@ export async function getFile(client: RoamClient, params: FileGetParams): Promis
     { url: params.url, format: "base64" },
   ]);
 
-  if (!response.success) {
-    throw new Error(response.error || "Failed to get file");
-  }
   if (!response.result) {
     throw new Error("No file data returned");
   }

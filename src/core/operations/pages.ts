@@ -36,21 +36,17 @@ export type DeletePageParams = z.infer<typeof DeletePageSchema>;
 export type UpdatePageParams = z.infer<typeof UpdatePageSchema>;
 
 export async function createPage(client: RoamClient, params: CreatePageParams): Promise<CallToolResult> {
-  let response;
   if (params.markdown) {
-    response = await client.call("data.page.fromMarkdown", [
+    await client.call("data.page.fromMarkdown", [
       {
         page: { title: params.title, uid: params.uid },
         "markdown-string": params.markdown,
       },
     ]);
   } else {
-    response = await client.call("data.page.create", [
+    await client.call("data.page.create", [
       { page: { title: params.title, uid: params.uid } },
     ]);
-  }
-  if (!response.success) {
-    throw new Error(response.error || "Failed to create page");
   }
   return textResult(params.uid || "");
 }
@@ -60,19 +56,11 @@ export async function getPage(client: RoamClient, params: GetPageParams): Promis
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
   const response = await client.call<string>("data.ai.getPage", [apiParams]);
-
-  if (!response.success) {
-    throw new Error(response.error || "Failed to get page");
-  }
-
-  return textResult(response.result || null);
+  return textResult(response.result ?? null);
 }
 
 export async function deletePage(client: RoamClient, params: DeletePageParams): Promise<CallToolResult> {
-  const response = await client.call("data.page.delete", [{ page: { uid: params.uid } }]);
-  if (!response.success) {
-    throw new Error(response.error || "Failed to delete page");
-  }
+  await client.call("data.page.delete", [{ page: { uid: params.uid } }]);
   return textResult({ success: true });
 }
 
@@ -84,19 +72,11 @@ export async function updatePage(client: RoamClient, params: UpdatePageParams): 
   const apiParams: Record<string, unknown> = { page };
   if (params.mergePages !== undefined) apiParams["merge-pages"] = params.mergePages;
 
-  const response = await client.call("data.page.update", [apiParams]);
-  if (!response.success) {
-    throw new Error(response.error || "Failed to update page");
-  }
+  await client.call("data.page.update", [apiParams]);
   return textResult({ success: true });
 }
 
 export async function getGuidelines(client: RoamClient): Promise<CallToolResult> {
   const response = await client.call<string>("data.ai.getGraphGuidelines", []);
-
-  if (!response.success) {
-    throw new Error(response.error || "Failed to get graph guidelines");
-  }
-
-  return textResult(response.result || null);
+  return textResult(response.result ?? null);
 }

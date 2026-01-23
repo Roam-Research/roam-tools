@@ -18,11 +18,29 @@ export function errorResult(message: string): CallToolResult {
   return { content: [{ type: "text", text: message }], isError: true };
 }
 
+// API version this client expects (major.minor must match)
+export const EXPECTED_API_VERSION = "1.0.0";
+
+// Roam API error structure
+export interface RoamApiError {
+  message: string;
+  code?: string;
+}
+
+// Helper to extract error message from RoamResponse
+export function getErrorMessage(error: string | RoamApiError | undefined): string {
+  if (!error) return "Unknown error";
+  if (typeof error === "string") return error;
+  return error.message;
+}
+
 // Roam API response types
 export interface RoamResponse<T = unknown> {
   success: boolean;
   result?: T;
-  error?: string;
+  error?: string | RoamApiError;
+  apiVersion?: string;
+  expectedApiVersion?: string;
 }
 
 // Block types
