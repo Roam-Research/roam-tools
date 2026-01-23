@@ -6,10 +6,11 @@ import { textResult } from "../types.js";
 // Schemas
 export const SearchSchema = z.object({
   query: z.string().describe("Search query"),
+  scope: z.enum(["pages", "blocks", "all"]).optional().describe("Search scope: 'pages' for page titles only, 'blocks' for block content only, 'all' for both (default: 'all')"),
   offset: z.number().optional().describe("Skip first N results (default: 0)"),
-  limit: z.number().optional().describe("Max results (default: 100)"),
+  limit: z.number().optional().describe("Max results (default: 20)"),
   includePath: z.boolean().optional().describe("Include breadcrumb path to each result (default: true)"),
-  maxDepth: z.number().optional().describe("Max depth of children to include in markdown (default: 2)"),
+  maxDepth: z.number().optional().describe("Max depth of children to include in markdown (default: 0)"),
 });
 
 export const SearchTemplatesSchema = z.object({
@@ -23,6 +24,7 @@ export type SearchTemplatesParams = z.infer<typeof SearchTemplatesSchema>;
 export async function search(client: RoamClient, params: SearchParams): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = {
     query: params.query,
+    scope: params.scope ?? "all",
     offset: params.offset ?? 0,
     limit: params.limit ?? 100,
     includePath: params.includePath ?? true,
