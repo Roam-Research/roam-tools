@@ -4,6 +4,15 @@ A Model Context Protocol (MCP) server and CLI for Roam Research.
 
 > **Alpha Software**: This project is in early development and subject to breaking changes.
 
+> [!CAUTION]
+> **Full Write Access**: This MCP server gives Claude full read and write access to your Roam graph. Claude can create, modify, and delete pages and blocks. **Changes may be difficult or impossible to undo.** Roam does not have a traditional undo history that can reverse bulk operations or deletions made through the API.
+>
+> **Recommendations:**
+> - Back up your graph before use
+> - Start with a test graph to understand Claude's behavior
+> - Review what Claude plans to do before confirming write operations
+> - Be specific in your instructions to avoid unintended changes
+
 ## Prerequisites
 
 - **Node.js** v18 or later
