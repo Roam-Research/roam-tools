@@ -36,19 +36,13 @@ export type DeletePageParams = z.infer<typeof DeletePageSchema>;
 export type UpdatePageParams = z.infer<typeof UpdatePageSchema>;
 
 export async function createPage(client: RoamClient, params: CreatePageParams): Promise<CallToolResult> {
-  if (params.markdown) {
-    await client.call("data.page.fromMarkdown", [
-      {
-        page: { title: params.title, uid: params.uid },
-        "markdown-string": params.markdown,
-      },
-    ]);
-  } else {
-    await client.call("data.page.create", [
-      { page: { title: params.title, uid: params.uid } },
-    ]);
-  }
-  return textResult(params.uid || "");
+  const response = await client.call<{ uid: string }>("data.page.fromMarkdown", [
+    {
+      page: { title: params.title, uid: params.uid },
+      "markdown-string": params.markdown,
+    },
+  ]);
+  return textResult(response.result ?? { uid: "" });
 }
 
 export async function getPage(client: RoamClient, params: GetPageParams): Promise<CallToolResult> {

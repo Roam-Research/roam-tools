@@ -66,8 +66,7 @@ export interface GetBacklinksResponse {
 }
 
 export async function createBlock(client: RoamClient, params: CreateBlockParams): Promise<CallToolResult> {
-  // Uses fromMarkdown for easier AI-generated content
-  await client.call("data.block.fromMarkdown", [
+  const response = await client.call<{ uids: string[] }>("data.block.fromMarkdown", [
     {
       location: {
         "parent-uid": params.parentUid,
@@ -76,8 +75,7 @@ export async function createBlock(client: RoamClient, params: CreateBlockParams)
       "markdown-string": params.markdown,
     },
   ]);
-  // TODO: return created block uid
-  return textResult("");
+  return textResult(response.result ?? { uids: [] });
 }
 
 export async function getBlock(client: RoamClient, params: GetBlockParams): Promise<CallToolResult> {
