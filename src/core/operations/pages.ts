@@ -20,12 +20,20 @@ export const DeletePageSchema = z.object({
   uid: z.string().describe("Page UID to delete"),
 });
 
+export const UpdatePageSchema = z.object({
+  uid: z.string().describe("Page UID"),
+  title: z.string().optional().describe("New page title"),
+  childrenViewType: z.enum(["document", "bullet", "numbered"]).optional().describe("How children are displayed (document, bullet, or numbered)"),
+  mergePages: z.boolean().optional().describe("If true, merge with existing page when renaming to a title that already exists (default: false)"),
+});
+
 export const GetGuidelinesSchema = z.object({});
 
 // Types derived from schemas
 export type CreatePageParams = z.infer<typeof CreatePageSchema>;
 export type GetPageParams = z.infer<typeof GetPageSchema>;
 export type DeletePageParams = z.infer<typeof DeletePageSchema>;
+export type UpdatePageParams = z.infer<typeof UpdatePageSchema>;
 
 export async function createPage(client: RoamClient, params: CreatePageParams): Promise<CallToolResult> {
   let response;
@@ -64,6 +72,21 @@ export async function deletePage(client: RoamClient, params: DeletePageParams): 
   const response = await client.call("data.page.delete", [{ page: { uid: params.uid } }]);
   if (!response.success) {
     throw new Error(response.error || "Failed to delete page");
+  }
+  return textResult({ success: true });
+}
+
+export async function updatePage(client: RoamClient, params: UpdatePageParams): Promise<CallToolResult> {
+  const page: Record<string, unknown> = { uid: params.uid };
+  if (params.title !== undefined) page.title = params.title;
+  if (params.childrenViewType !== undefined) page["children-view-type"] = params.childrenViewType;
+
+  const apiParams: Record<string, unknown> = { page };
+  if (params.mergePages !== undefined) apiParams["merge-pages"] = params.mergePages;
+
+  const response = await client.call("data.page.update", [apiParams]);
+  if (!response.success) {
+    throw new Error(response.error || "Failed to update page");
   }
   return textResult({ success: true });
 }

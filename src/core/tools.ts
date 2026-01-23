@@ -3,12 +3,12 @@ import type { CallToolResult } from "./types.js";
 import { RoamClient } from "./client.js";
 import { resolveGraph } from "./graph-resolver.js";
 import {
-  CreatePageSchema, GetPageSchema, DeletePageSchema, GetGuidelinesSchema,
-  createPage, getPage, deletePage, getGuidelines,
+  CreatePageSchema, GetPageSchema, DeletePageSchema, UpdatePageSchema, GetGuidelinesSchema,
+  createPage, getPage, deletePage, updatePage, getGuidelines,
 } from "./operations/pages.js";
 import {
-  CreateBlockSchema, GetBlockSchema, UpdateBlockSchema, DeleteBlockSchema, GetBacklinksSchema,
-  createBlock, getBlock, updateBlock, deleteBlock, getBacklinks,
+  CreateBlockSchema, GetBlockSchema, UpdateBlockSchema, DeleteBlockSchema, MoveBlockSchema, GetBacklinksSchema,
+  createBlock, getBlock, updateBlock, deleteBlock, moveBlock, getBacklinks,
 } from "./operations/blocks.js";
 import {
   SearchSchema, SearchTemplatesSchema,
@@ -88,10 +88,22 @@ export const tools: ToolDefinition[] = [
     deleteBlock
   ),
   defineTool(
+    "move_block",
+    "Move a block to a new location. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    MoveBlockSchema,
+    moveBlock
+  ),
+  defineTool(
     "delete_page",
     "Delete a page and all its contents. Note: Call get_graph_guidelines first when starting to work with a graph.",
     DeletePageSchema,
     deletePage
+  ),
+  defineTool(
+    "update_page",
+    "Update a page's title or children view type. Set mergePages to true if renaming to a title that already exists. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    UpdatePageSchema,
+    updatePage
   ),
   defineTool(
     "search",

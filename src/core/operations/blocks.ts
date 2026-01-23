@@ -26,6 +26,12 @@ export const DeleteBlockSchema = z.object({
   uid: z.string().describe("Block UID to delete"),
 });
 
+export const MoveBlockSchema = z.object({
+  uid: z.string().describe("Block UID to move"),
+  parentUid: z.string().describe("UID of the new parent block or page"),
+  order: z.union([z.number(), z.enum(["first", "last"])]).describe("Position in the new parent (number, 'first', or 'last')"),
+});
+
 export const GetBacklinksSchema = z.object({
   uid: z.string().optional().describe("UID of page or block (required if no title)"),
   title: z.string().optional().describe("Page title (required if no uid)"),
@@ -43,6 +49,7 @@ export type CreateBlockParams = z.infer<typeof CreateBlockSchema>;
 export type GetBlockParams = z.infer<typeof GetBlockSchema>;
 export type UpdateBlockParams = z.infer<typeof UpdateBlockSchema>;
 export type DeleteBlockParams = z.infer<typeof DeleteBlockSchema>;
+export type MoveBlockParams = z.infer<typeof MoveBlockSchema>;
 export type GetBacklinksParams = z.infer<typeof GetBacklinksSchema>;
 
 // Keep response types as interfaces (not input schemas)
@@ -106,6 +113,24 @@ export async function deleteBlock(client: RoamClient, params: DeleteBlockParams)
   const response = await client.call("data.block.delete", [{ block: { uid: params.uid } }]);
   if (!response.success) {
     throw new Error(response.error || "Failed to delete block");
+  }
+  return textResult({ success: true });
+}
+
+export async function moveBlock(client: RoamClient, params: MoveBlockParams): Promise<CallToolResult> {
+  const response = await client.call("data.block.move", [
+    {
+      location: {
+        "parent-uid": params.parentUid,
+        order: params.order,
+      },
+      block: {
+        uid: params.uid,
+      },
+    },
+  ]);
+  if (!response.success) {
+    throw new Error(response.error || "Failed to move block");
   }
   return textResult({ success: true });
 }

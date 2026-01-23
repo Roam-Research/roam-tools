@@ -42,10 +42,12 @@ Replace `/path/to/roam-mcp` with the actual path and `your-graph-name` with your
 
 **Content:**
 - `create_page` - Create page with markdown content
+- `update_page` - Update page title or children view type
+- `delete_page` - Delete a page
 - `create_block` - Add markdown content under a parent
 - `update_block` - Update block content/properties
+- `move_block` - Move a block to a new location
 - `delete_block` - Delete a block
-- `delete_page` - Delete a page
 
 **Read:**
 - `search` - Search pages/blocks
