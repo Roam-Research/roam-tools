@@ -2,7 +2,16 @@
 
 A Model Context Protocol (MCP) server and CLI for Roam Research.
 
-> **Alpha Software**: This project is in early development and subject to breaking changes. The CLI is currently untested (coming soon).
+> **Alpha Software**: This project is in early development and subject to breaking changes.
+
+## Prerequisites
+
+- **Node.js** v18 or later
+- **Roam Research desktop app** (the local API is not available in the web version)
+
+## How It Works
+
+This MCP server connects to Roam's local HTTP API, which runs on your machine when the desktop app is open. If Roam isn't running when a tool is called, the server will automatically launch it via deep link and retry the connection.
 
 ## Getting Started
 
@@ -15,30 +24,58 @@ In the menu bar, open settings and check "Enable Local API".
 ### 2. Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/roam-mcp.git
+git clone https://github.com/Roam-Research/roam-mcp.git
 cd roam-mcp
 npm install
 npm run build
 ```
 
-### 3. Add to Claude Desktop
+### 3. Connect to an MCP Client
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+**Option A: Configure your MCP client**
+
+Point your MCP client to the server:
+
+```
+node /path/to/roam-mcp/dist/mcp/index.js
+```
+
+For Claude Desktop, add to your config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
 ```json
 {
   "mcpServers": {
     "roam": {
       "command": "node",
-      "args": ["/path/to/roam-mcp/dist/mcp/index.js", "your-graph-name"]
+      "args": ["/path/to/roam-mcp/dist/mcp/index.js"]
     }
   }
 }
 ```
 
-Replace `/path/to/roam-mcp` with the actual path and `your-graph-name` with your Roam graph name.
+Replace `/path/to/roam-mcp` with the actual path.
+
+**Option B: Claude Code**
+
+Run Claude Code from the roam-mcp directory. The MCP server is configured in `.mcp.json` and will be available automatically.
+
+### Graph Selection
+
+The graph is selected automatically at runtime:
+
+- **Single graph open**: Auto-detected, no configuration needed
+- **Multiple graphs open**: Specify which graph on your first tool call using the `graph` parameter
+
+Once a graph is selected (either automatically or explicitly), it's remembered for the rest of the session. You can switch to a different graph at any time by passing the `graph` parameter again.
+
+> **Note**: Graph selection will change in the future once per-graph authentication is implemented.
 
 ## Available Tools
+
+**Graph Guidelines:**
+- `get_graph_guidelines` - Returns user-defined instructions for AI agents working with this graph
+
+Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph. The AI is instructed to call this tool first when starting work on a graph.
 
 **Content:**
 - `create_page` - Create page with markdown content
@@ -66,6 +103,21 @@ Replace `/path/to/roam-mcp` with the actual path and `your-graph-name` with your
 **Files:**
 - `file_get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
 
+## CLI
+
+A command-line interface is also available with the same tools as the MCP server:
+
+```bash
+npm run cli -- <tool-name> [options]
+
+# Examples
+npm run cli -- search --query "my notes"
+npm run cli -- get-page --title "My Page"
+npm run cli -- create-block --parentUid "abc123" --markdown "Hello world"
+```
+
+Run `npm run cli -- --help` to see all available commands.
+
 ## Contributing
 
-This project is changing rapidly. At this time, we prefer suggestions and feedback over pull requests. Please open an issue to discuss ideas before submitting code.
+This project is changing rapidly. At this time, we prefer suggestions and feedback over pull requests. Please open an issue or join the #ai-in-roam channel on slack to discuss ideas before submitting code. 
