@@ -84,7 +84,7 @@ Once a graph is selected (either automatically or explicitly), it's remembered f
 **Graph Guidelines:**
 - `get_graph_guidelines` - Returns user-defined instructions for AI agents working with this graph
 
-Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph. The AI is instructed to call this tool first when starting work on a graph.
+Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[roam/agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph. The AI is instructed to call this tool first when starting work on a graph.
 
 **Content:**
 - `create_page` - Create page with markdown content
