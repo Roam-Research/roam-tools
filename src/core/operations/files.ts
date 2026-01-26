@@ -18,9 +18,14 @@ export const FileUploadSchema = z.object({
   filename: z.string().optional().describe("Original filename for reference - derived from path/url if not provided"),
 });
 
+export const FileDeleteSchema = z.object({
+  url: z.string().describe("Firebase storage URL of the file to delete"),
+});
+
 // Types derived from schemas
 export type FileGetParams = z.infer<typeof FileGetSchema>;
 export type FileUploadParams = z.infer<typeof FileUploadSchema>;
+export type FileDeleteParams = z.infer<typeof FileDeleteSchema>;
 
 // Response types from Roam API
 interface FileGetResponse {
@@ -195,4 +200,9 @@ export async function uploadFile(client: RoamClient, params: FileUploadParams): 
   }
 
   return textResult({ url });
+}
+
+export async function deleteFile(client: RoamClient, params: FileDeleteParams): Promise<CallToolResult> {
+  await client.call<undefined>("file.delete", [{ url: params.url }]);
+  return textResult({ deleted: true });
 }

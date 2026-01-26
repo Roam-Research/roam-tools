@@ -111,6 +111,8 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 
 **Files:**
 - `file_get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
+- `file_upload` - Upload a file to Roam (from local path, URL, or base64)
+- `file_delete` - Delete a file hosted on Roam
 
 ## CLI
 
