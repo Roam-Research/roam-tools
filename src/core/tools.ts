@@ -19,8 +19,8 @@ import {
   getFocusedBlock, getMainWindow, getSidebarWindows, openMainWindow, openSidebar,
 } from "./operations/navigation.js";
 import {
-  FileGetSchema,
-  getFile,
+  FileGetSchema, FileUploadSchema,
+  getFile, uploadFile,
 } from "./operations/files.js";
 
 // Common schema for graph parameter (used by all tools)
@@ -170,6 +170,12 @@ export const tools: ToolDefinition[] = [
     "Fetch a file hosted on Roam (handles decryption for encrypted graphs). Note: Call get_graph_guidelines first when starting to work with a graph.",
     FileGetSchema,
     getFile
+  ),
+  defineTool(
+    "file_upload",
+    "Upload an image to Roam. Returns the Firebase storage URL. Usually you'll want to create a new block with the image as markdown: `![](url)`. Provide ONE of: filePath (preferred - local file, server reads directly), url (remote URL, server fetches), or base64 (raw data, fallback for sandboxed clients). Note: Call get_graph_guidelines first when starting to work with a graph.",
+    FileUploadSchema,
+    uploadFile
   ),
 ];
 
