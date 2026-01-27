@@ -142,6 +142,20 @@ export interface Template {
   content: string;
 }
 
+// Query result (from roamQuery)
+export interface QueryResult {
+  uid: string;
+  markdown: string;
+  path?: string;  // Breadcrumb path as string (e.g., "Page > Parent > ...")
+  type?: "page";  // Only present for page results
+}
+
+// Query response with pagination
+export interface QueryResponse {
+  total: number;
+  results: QueryResult[];
+}
+
 // Client config
 export interface RoamClientConfig {
   graphName?: string;

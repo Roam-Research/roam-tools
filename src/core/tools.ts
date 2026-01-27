@@ -15,6 +15,10 @@ import {
   search, searchTemplates,
 } from "./operations/search.js";
 import {
+  QuerySchema,
+  query,
+} from "./operations/query.js";
+import {
   GetFocusedBlockSchema, GetMainWindowSchema, GetSidebarWindowsSchema, OpenMainWindowSchema, OpenSidebarSchema,
   getFocusedBlock, getMainWindow, getSidebarWindows, openMainWindow, openSidebar,
 } from "./operations/navigation.js";
@@ -116,6 +120,12 @@ export const tools: ToolDefinition[] = [
     "Search Roam templates by name. When the user mentions 'my X template' or 'the X template', use this tool to find it. Templates are user-created reusable content blocks tagged with [[roam/templates]]. Returns template name, uid, and content as markdown. Note: Call get_graph_guidelines first when starting to work with a graph.",
     SearchTemplatesSchema,
     searchTemplates
+  ),
+  defineTool(
+    "roam_query",
+    "Execute a Roam query ({{query: }} or {{[[query]]: }} blocks, NOT Datalog). Two modes: (1) UID mode - pass a block UID containing a query component to run it with saved settings/filters; (2) Query mode - pass a raw query string like \"{and: [[TODO]] {not: [[DONE]]}}\". Returns paginated results with markdown content. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    QuerySchema,
+    query
   ),
   defineTool(
     "get_page",
