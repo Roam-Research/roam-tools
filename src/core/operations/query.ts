@@ -11,9 +11,9 @@ export const QuerySchema = z.object({
   sort: z.enum(["created-date", "edited-date", "daily-note-date"]).optional().describe("Sort order (only for query mode, default: created-date)"),
   sortOrder: z.enum(["asc", "desc"]).optional().describe("Sort direction (only for query mode, default: desc)"),
   includePath: z.boolean().optional().describe("Include breadcrumb path in results (only for query mode, default: true)"),
-  offset: z.number().optional().describe("Skip first N results (default: 0)"),
-  limit: z.number().optional().describe("Max results to return (default: 20)"),
-  maxDepth: z.number().optional().describe("Max depth of children to include in markdown (default: 1)"),
+  offset: z.coerce.number().optional().describe("Skip first N results (default: 0)"),
+  limit: z.coerce.number().optional().describe("Max results to return (default: 20)"),
+  maxDepth: z.coerce.number().optional().describe("Max depth of children to include in markdown (default: 1)"),
 });
 
 export type QueryParams = z.infer<typeof QuerySchema>;
