@@ -103,9 +103,8 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `get_backlinks` - Get references to a page/block
 
 **Navigation:**
-- `get_focused_block` - Current focused block
-- `get_main_window` - Current main window view (outline, log, graph, diagram, pdf, search, or custom)
-- `get_sidebar_windows` - All open windows in the right sidebar
+- `get_open_windows` - Main window view and all sidebar windows
+- `get_selection` - Currently focused block and multi-selected blocks
 - `open_main_window` - Navigate to page/block
 - `open_sidebar` - Open in right sidebar
 

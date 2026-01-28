@@ -19,8 +19,8 @@ import {
   query,
 } from "./operations/query.js";
 import {
-  GetFocusedBlockSchema, GetMainWindowSchema, GetSidebarWindowsSchema, OpenMainWindowSchema, OpenSidebarSchema,
-  getFocusedBlock, getMainWindow, getSidebarWindows, openMainWindow, openSidebar,
+  GetOpenWindowsSchema, GetSelectionSchema, OpenMainWindowSchema, OpenSidebarSchema,
+  getOpenWindows, getSelection, openMainWindow, openSidebar,
 } from "./operations/navigation.js";
 import {
   FileGetSchema, FileUploadSchema, FileDeleteSchema,
@@ -146,22 +146,16 @@ export const tools: ToolDefinition[] = [
     getBacklinks
   ),
   defineTool(
-    "get_focused_block",
-    "Get the currently focused block in Roam. Note: Call get_graph_guidelines first when starting to work with a graph.",
-    GetFocusedBlockSchema,
-    getFocusedBlock
+    "get_open_windows",
+    "Get the current view in the main window and all open sidebar windows. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    GetOpenWindowsSchema,
+    getOpenWindows
   ),
   defineTool(
-    "get_main_window",
-    "Get the current view in the main window (outline, log, graph, diagram, pdf, search, or custom). Note: Call get_graph_guidelines first when starting to work with a graph.",
-    GetMainWindowSchema,
-    getMainWindow
-  ),
-  defineTool(
-    "get_sidebar_windows",
-    "Get all open windows in the right sidebar. Note: Call get_graph_guidelines first when starting to work with a graph.",
-    GetSidebarWindowsSchema,
-    getSidebarWindows
+    "get_selection",
+    "Get the currently focused block and any multi-selected blocks. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    GetSelectionSchema,
+    getSelection
   ),
   defineTool(
     "open_main_window",

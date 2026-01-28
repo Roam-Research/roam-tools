@@ -96,6 +96,11 @@ export interface FocusedBlock {
   "window-id": string;
 }
 
+// Selected block info (from multi-select)
+export interface SelectedBlock {
+  "block-uid": string;
+}
+
 // Main window view types
 export type MainWindowViewType =
   | "outline"

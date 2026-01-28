@@ -1,14 +1,12 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
-import type { FocusedBlock, MainWindowView, SidebarWindowInfo, CallToolResult } from "../types.js";
+import type { FocusedBlock, SelectedBlock, MainWindowView, SidebarWindowInfo, CallToolResult } from "../types.js";
 import { textResult } from "../types.js";
 
 // Schemas
-export const GetFocusedBlockSchema = z.object({});
+export const GetOpenWindowsSchema = z.object({});
 
-export const GetMainWindowSchema = z.object({});
-
-export const GetSidebarWindowsSchema = z.object({});
+export const GetSelectionSchema = z.object({});
 
 export const OpenMainWindowSchema = z.object({
   uid: z.string().optional().describe("UID of page or block"),
@@ -24,19 +22,26 @@ export const OpenSidebarSchema = z.object({
 export type OpenMainWindowParams = z.infer<typeof OpenMainWindowSchema>;
 export type OpenSidebarParams = z.infer<typeof OpenSidebarSchema>;
 
-export async function getFocusedBlock(client: RoamClient): Promise<CallToolResult> {
-  const response = await client.call<FocusedBlock>("ui.getFocusedBlock", []);
-  return textResult(response.result ?? null);
+export async function getOpenWindows(client: RoamClient): Promise<CallToolResult> {
+  const [mainResponse, sidebarResponse] = await Promise.all([
+    client.call<MainWindowView>("ui.mainWindow.getOpenView", []),
+    client.call<SidebarWindowInfo[]>("ui.rightSidebar.getWindows", []),
+  ]);
+  return textResult({
+    main: mainResponse.result ?? null,
+    sidebar: sidebarResponse.result ?? [],
+  });
 }
 
-export async function getMainWindow(client: RoamClient): Promise<CallToolResult> {
-  const response = await client.call<MainWindowView>("ui.mainWindow.getOpenView", []);
-  return textResult(response.result ?? null);
-}
-
-export async function getSidebarWindows(client: RoamClient): Promise<CallToolResult> {
-  const response = await client.call<SidebarWindowInfo[]>("ui.rightSidebar.getWindows", []);
-  return textResult(response.result ?? []);
+export async function getSelection(client: RoamClient): Promise<CallToolResult> {
+  const [focusedResponse, multiSelectedResponse] = await Promise.all([
+    client.call<FocusedBlock>("ui.getFocusedBlock", []),
+    client.call<SelectedBlock[]>("ui.multiselect.getSelected", []),
+  ]);
+  return textResult({
+    focused: focusedResponse.result ?? null,
+    multiSelected: multiSelectedResponse.result ?? [],
+  });
 }
 
 export async function openMainWindow(client: RoamClient, params: OpenMainWindowParams): Promise<CallToolResult> {
