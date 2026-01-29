@@ -84,7 +84,7 @@ Once a graph is selected (either automatically or explicitly), it's remembered f
 **Graph Guidelines:**
 - `get_graph_guidelines` - Returns user-defined instructions for AI agents working with this graph
 
-Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph. The AI is instructed to call this tool first when starting work on a graph.
+Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[roam/agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph. The AI is instructed to call this tool first when starting work on a graph.
 
 **Content:**
 - `create_page` - Create page with markdown content
@@ -98,19 +98,21 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 **Read:**
 - `search` - Search pages/blocks
 - `search_templates` - Search Roam templates by name
+- `roam_query` - Execute a Roam query (`{{query:}}` blocks, not Datalog)
 - `get_page` - Get page content as markdown
 - `get_block` - Get block content as markdown
 - `get_backlinks` - Get references to a page/block
 
 **Navigation:**
-- `get_focused_block` - Current focused block
-- `get_main_window` - Current main window view (outline, log, graph, diagram, pdf, search, or custom)
-- `get_sidebar_windows` - All open windows in the right sidebar
+- `get_open_windows` - Main window view and all sidebar windows
+- `get_selection` - Currently focused block and multi-selected blocks
 - `open_main_window` - Navigate to page/block
 - `open_sidebar` - Open in right sidebar
 
 **Files:**
 - `file_get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
+- `file_upload` - Upload a file to Roam (from local path, URL, or base64)
+- `file_delete` - Delete a file hosted on Roam
 
 ## CLI
 

@@ -15,12 +15,16 @@ import {
   search, searchTemplates,
 } from "./operations/search.js";
 import {
-  GetFocusedBlockSchema, GetMainWindowSchema, GetSidebarWindowsSchema, OpenMainWindowSchema, OpenSidebarSchema,
-  getFocusedBlock, getMainWindow, getSidebarWindows, openMainWindow, openSidebar,
+  QuerySchema,
+  query,
+} from "./operations/query.js";
+import {
+  GetOpenWindowsSchema, GetSelectionSchema, OpenMainWindowSchema, OpenSidebarSchema,
+  getOpenWindows, getSelection, openMainWindow, openSidebar,
 } from "./operations/navigation.js";
 import {
-  FileGetSchema,
-  getFile,
+  FileGetSchema, FileUploadSchema, FileDeleteSchema,
+  getFile, uploadFile, deleteFile,
 } from "./operations/files.js";
 
 // Common schema for graph parameter (used by all tools)
@@ -118,6 +122,12 @@ export const tools: ToolDefinition[] = [
     searchTemplates
   ),
   defineTool(
+    "roam_query",
+    "Execute a Roam query ({{query: }} or {{[[query]]: }} blocks, NOT Datalog). Two modes: (1) UID mode - pass a block UID containing a query component to run it with saved settings/filters; (2) Query mode - pass a raw query string like \"{and: [[TODO]] {not: [[DONE]]}}\". Returns paginated results with markdown content. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    QuerySchema,
+    query
+  ),
+  defineTool(
     "get_page",
     "Get a page's content as markdown. Returns content with <roam> metadata tags containing UIDs - use these for follow-up operations but strip them when showing content to the user. Show remaining content verbatim, never paraphrase. Use maxDepth for large pages. Note: Call get_graph_guidelines first when starting to work with a graph.",
     GetPageSchema,
@@ -136,22 +146,16 @@ export const tools: ToolDefinition[] = [
     getBacklinks
   ),
   defineTool(
-    "get_focused_block",
-    "Get the currently focused block in Roam. Note: Call get_graph_guidelines first when starting to work with a graph.",
-    GetFocusedBlockSchema,
-    getFocusedBlock
+    "get_open_windows",
+    "Get the current view in the main window and all open sidebar windows. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    GetOpenWindowsSchema,
+    getOpenWindows
   ),
   defineTool(
-    "get_main_window",
-    "Get the current view in the main window (outline, log, graph, diagram, pdf, search, or custom). Note: Call get_graph_guidelines first when starting to work with a graph.",
-    GetMainWindowSchema,
-    getMainWindow
-  ),
-  defineTool(
-    "get_sidebar_windows",
-    "Get all open windows in the right sidebar. Note: Call get_graph_guidelines first when starting to work with a graph.",
-    GetSidebarWindowsSchema,
-    getSidebarWindows
+    "get_selection",
+    "Get the currently focused block and any multi-selected blocks. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    GetSelectionSchema,
+    getSelection
   ),
   defineTool(
     "open_main_window",
@@ -170,6 +174,18 @@ export const tools: ToolDefinition[] = [
     "Fetch a file hosted on Roam (handles decryption for encrypted graphs). Note: Call get_graph_guidelines first when starting to work with a graph.",
     FileGetSchema,
     getFile
+  ),
+  defineTool(
+    "file_upload",
+    "Upload an image to Roam. Returns the Firebase storage URL. Usually you'll want to create a new block with the image as markdown: `![](url)`. Provide ONE of: filePath (preferred - local file, server reads directly), url (remote URL, server fetches), or base64 (raw data, fallback for sandboxed clients). Note: Call get_graph_guidelines first when starting to work with a graph.",
+    FileUploadSchema,
+    uploadFile
+  ),
+  defineTool(
+    "file_delete",
+    "Delete a file hosted on Roam. Note: Call get_graph_guidelines first when starting to work with a graph.",
+    FileDeleteSchema,
+    deleteFile
   ),
 ];
 

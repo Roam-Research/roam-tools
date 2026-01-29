@@ -7,19 +7,19 @@ import { textResult } from "../types.js";
 export const CreateBlockSchema = z.object({
   parentUid: z.string().describe("UID of parent block or page"),
   markdown: z.string().describe("Markdown content for the block"),
-  order: z.union([z.number(), z.enum(["first", "last"])]).optional().describe("Position (number, 'first', or 'last'). Defaults to 'last'"),
+  order: z.union([z.coerce.number(), z.enum(["first", "last"])]).optional().describe("Position (number, 'first', or 'last'). Defaults to 'last'"),
 });
 
 export const GetBlockSchema = z.object({
   uid: z.string().describe("Block UID"),
-  maxDepth: z.number().optional().describe("Max depth of children to include in markdown (omit for full tree)"),
+  maxDepth: z.coerce.number().optional().describe("Max depth of children to include in markdown (omit for full tree)"),
 });
 
 export const UpdateBlockSchema = z.object({
   uid: z.string().describe("Block UID"),
   string: z.string().optional().describe("New text content"),
   open: z.boolean().optional().describe("Collapse state"),
-  heading: z.number().optional().describe("Heading level (0-3)"),
+  heading: z.coerce.number().optional().describe("Heading level (0-3)"),
 });
 
 export const DeleteBlockSchema = z.object({
@@ -29,19 +29,19 @@ export const DeleteBlockSchema = z.object({
 export const MoveBlockSchema = z.object({
   uid: z.string().describe("Block UID to move"),
   parentUid: z.string().describe("UID of the new parent block or page"),
-  order: z.union([z.number(), z.enum(["first", "last"])]).describe("Position in the new parent (number, 'first', or 'last')"),
+  order: z.union([z.coerce.number(), z.enum(["first", "last"])]).describe("Position in the new parent (number, 'first', or 'last')"),
 });
 
 export const GetBacklinksSchema = z.object({
   uid: z.string().optional().describe("UID of page or block (required if no title)"),
   title: z.string().optional().describe("Page title (required if no uid)"),
-  offset: z.number().optional().describe("Skip first N results (default: 0)"),
-  limit: z.number().optional().describe("Max results to return (default: 20)"),
+  offset: z.coerce.number().optional().describe("Skip first N results (default: 0)"),
+  limit: z.coerce.number().optional().describe("Max results to return (default: 20)"),
   sort: z.enum(["created-date", "edited-date", "daily-note-date"]).optional().describe("Sort order (default: created-date)"),
   sortOrder: z.enum(["asc", "desc"]).optional().describe("Sort direction (default: desc)"),
   search: z.string().optional().describe("Filter results by text match (searches block, parents, children, page title)"),
   includePath: z.boolean().optional().describe("Include breadcrumb path to each result (default: true)"),
-  maxDepth: z.number().optional().describe("Max depth of children to include in markdown (default: 2)"),
+  maxDepth: z.coerce.number().optional().describe("Max depth of children to include in markdown (default: 2)"),
 });
 
 // Types derived from schemas

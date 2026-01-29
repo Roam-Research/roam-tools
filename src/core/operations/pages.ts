@@ -13,7 +13,7 @@ export const CreatePageSchema = z.object({
 export const GetPageSchema = z.object({
   title: z.string().optional().describe("Page title (alternative to uid)"),
   uid: z.string().optional().describe("Page UID"),
-  maxDepth: z.number().optional().describe("Max depth of children to include in markdown (omit for full tree)"),
+  maxDepth: z.coerce.number().optional().describe("Max depth of children to include in markdown (omit for full tree)"),
 });
 
 export const DeletePageSchema = z.object({
