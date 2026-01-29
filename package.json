@@ -1,6 +1,6 @@
 {
   "name": "roam-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Roam Research MCP server and CLI",
   "type": "module",
   "main": "dist/mcp/index.js",
