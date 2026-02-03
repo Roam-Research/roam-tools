@@ -1,6 +1,7 @@
 // Re-export MCP types for tool results
 export type { CallToolResult, TextContent, ImageContent } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
 
 // Helper to create a text result
 export function textResult(value: unknown): CallToolResult {
@@ -18,8 +19,97 @@ export function errorResult(message: string): CallToolResult {
   return { content: [{ type: "text", text: message }], isError: true };
 }
 
+// ============================================================================
+// v2.0.0 Configuration Types
+// ============================================================================
+
+// Graph type: hosted (cloud) or offline (local)
+export type GraphType = "hosted" | "offline";
+
+// Access level type
+export type AccessLevel = "read-only" | "read-append" | "full";
+
+// Config file schema for ~/.roam-mcp.json
+export const GraphConfigSchema = z.object({
+  name: z.string().describe("Actual graph name in Roam"),
+  type: z.enum(["hosted", "offline"]).default("hosted").describe("Graph type"),
+  token: z.string().startsWith("roam-graph-local-token-").describe("Local API token"),
+  nickname: z.string().describe("Human-friendly name for the graph"),
+  accessLevel: z.enum(["read-only", "read-append", "full"]).optional().describe("Token access level"),
+});
+export type GraphConfig = z.infer<typeof GraphConfigSchema>;
+
+export const RoamMcpConfigSchema = z.object({
+  graphs: z.array(GraphConfigSchema).min(1, "At least one graph must be configured"),
+});
+export type RoamMcpConfig = z.infer<typeof RoamMcpConfigSchema>;
+
+// Resolved graph info (returned by resolveGraph)
+export interface ResolvedGraph {
+  name: string;
+  type: GraphType;
+  token: string;
+  nickname: string;
+  accessLevel?: AccessLevel;
+}
+
+// ============================================================================
+// Error Codes and Custom Errors
+// ============================================================================
+
+// Error codes from Local API and MCP-specific errors
+export const ErrorCodes = {
+  // 400 errors
+  VERSION_MISMATCH: "VERSION_MISMATCH",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+
+  // 401 errors
+  MISSING_TOKEN: "MISSING_TOKEN",
+  INVALID_TOKEN_FORMAT: "INVALID_TOKEN_FORMAT",
+  WRONG_GRAPH_TYPE: "WRONG_GRAPH_TYPE",
+  TOKEN_NOT_FOUND: "TOKEN_NOT_FOUND",
+
+  // 403 errors
+  INSUFFICIENT_SCOPE: "INSUFFICIENT_SCOPE",
+  SCOPE_EXCEEDS_PERMISSION: "SCOPE_EXCEEDS_PERMISSION",
+  LOCAL_API_DISABLED: "LOCAL_API_DISABLED",
+  USER_REJECTED: "USER_REJECTED",
+  GRAPH_BLOCKED: "GRAPH_BLOCKED",
+
+  // 404 errors
+  UNKNOWN_ACTION: "UNKNOWN_ACTION",
+
+  // 500 errors
+  TOKEN_FILE_CORRUPTED: "TOKEN_FILE_CORRUPTED",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+
+  // MCP-specific errors (not from Local API)
+  CONFIG_NOT_FOUND: "CONFIG_NOT_FOUND",
+  GRAPH_NOT_CONFIGURED: "GRAPH_NOT_CONFIGURED",
+  GRAPH_NOT_SELECTED: "GRAPH_NOT_SELECTED",
+  CONNECTION_FAILED: "CONNECTION_FAILED",
+} as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+
+// Custom error class with error code and optional context
+export class RoamError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: ErrorCode,
+    public readonly context?: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = "RoamError";
+  }
+}
+
+// ============================================================================
+// API Types
+// ============================================================================
+
 // API version this client expects (major.minor must match)
-export const EXPECTED_API_VERSION = "1.0.0";
+export const EXPECTED_API_VERSION = "1.2.0";
 
 // Roam API error structure
 export interface RoamApiError {
@@ -161,8 +251,10 @@ export interface QueryResponse {
   results: QueryResult[];
 }
 
-// Client config
+// Client config (v2.0.0 - requires token and type)
 export interface RoamClientConfig {
-  graphName?: string;
+  graphName: string;
+  graphType: GraphType;
+  token: string;
   port?: number;
 }

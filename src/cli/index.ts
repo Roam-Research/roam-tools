@@ -7,7 +7,9 @@ import { mkdirSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import type { CallToolResult } from "../core/types.js";
+import { RoamError, ErrorCodes } from "../core/types.js";
 import { tools, routeToolCall } from "../core/tools.js";
+import { connect } from "./connect.js";
 
 // Get file extension from MIME type
 function getExtensionFromMimeType(mimeType: string): string {
@@ -58,7 +60,7 @@ const program = new Command();
 program
   .name("roam")
   .description("Roam Research CLI")
-  .version("0.1.0");
+  .version("0.2.0");
 
 // Helper to check if a Zod schema field is optional
 function isOptional(schema: z.ZodTypeAny): boolean {
@@ -144,11 +146,38 @@ tools.forEach((tool) => {
         process.exit(1);
       }
     } catch (error) {
+      // Handle RoamError with structured output
+      if (error instanceof RoamError) {
+        console.error(`Error [${error.code || "UNKNOWN"}]: ${error.message}`);
+
+        // Show available graphs for GRAPH_NOT_SELECTED
+        if (error.code === ErrorCodes.GRAPH_NOT_SELECTED && error.context?.available_graphs) {
+          console.error("\nAvailable graphs:");
+          const graphs = error.context.available_graphs as Array<{ nickname: string; name: string }>;
+          for (const g of graphs) {
+            console.error(`  - ${g.nickname} (${g.name})`);
+          }
+          console.error("\nUse --graph <nickname> to specify which graph to use.");
+        }
+
+        process.exit(1);
+      }
+
+      // Generic errors
       const message = error instanceof Error ? error.message : String(error);
       console.error(message);
       process.exit(1);
     }
   });
 });
+
+// ============================================================================
+// Interactive Setup Command
+// ============================================================================
+
+program
+  .command("connect")
+  .description("Interactively connect to a Roam graph and obtain a token")
+  .action(connect);
 
 program.parse();
