@@ -71,6 +71,18 @@ export async function updatePage(client: RoamClient, params: UpdatePageParams): 
 }
 
 export async function getGuidelines(client: RoamClient): Promise<CallToolResult> {
-  const response = await client.call<string>("data.ai.getGraphGuidelines", []);
-  return textResult(response.result ?? null);
+  const [guidelinesResponse, starredResponse] = await Promise.all([
+    client.call<string>("data.ai.getGraphGuidelines", []),
+    client.call<[string, number][]>("data.q", [
+      "[:find ?title ?order :where [?p :page/sidebar ?order] [?p :node/title ?title]]",
+    ]),
+  ]);
+
+  const guidelines = guidelinesResponse.result ?? null;
+
+  const starredPages = (starredResponse.result ?? [])
+    .sort((a, b) => a[1] - b[1])
+    .map(([title]) => title);
+
+  return textResult({ guidelines, starredPages });
 }
