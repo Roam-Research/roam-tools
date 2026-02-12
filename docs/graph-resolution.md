@@ -4,7 +4,7 @@ How the MCP server determines which Roam graph to use.
 
 ## Configuration File
 
-The MCP server reads graph configuration from `~/.roam-mcp.json`:
+The MCP server reads graph configuration from `~/.roam-tools.json`:
 
 ```json
 {

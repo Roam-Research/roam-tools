@@ -380,13 +380,13 @@ Scopes are enforced in the **renderer process** with two checks:
   "mcpServers": {
     "roam": {
       "command": "npx",
-      "args": ["roam-mcp", "--config", "~/.roam-mcp.json"]
+      "args": ["roam-mcp", "--config", "~/.roam-tools.json"]
     }
   }
 }
 ```
 
-Config file (`~/.roam-mcp.json`):
+Config file (`~/.roam-tools.json`):
 ```json
 {
   "graphs": [

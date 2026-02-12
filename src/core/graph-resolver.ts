@@ -23,7 +23,7 @@ import {
 // or if graph should always be resolved per-call from the explicit parameter + config.
 let selectedGraph: ResolvedGraph | null = null;
 
-// Cached config from ~/.roam-mcp.json
+// Cached config from ~/.roam-tools.json
 let cachedConfig: RoamMcpConfig | null = null;
 
 // ============================================================================
@@ -51,10 +51,10 @@ export async function getPort(): Promise<number> {
 }
 
 // ============================================================================
-// MCP Config Loading (from ~/.roam-mcp.json)
+// MCP Config Loading (from ~/.roam-tools.json)
 // ============================================================================
 
-const CONFIG_PATH = join(homedir(), ".roam-mcp.json");
+const CONFIG_PATH = join(homedir(), ".roam-tools.json");
 
 export async function getMcpConfig(): Promise<RoamMcpConfig> {
   if (cachedConfig) return cachedConfig;
@@ -172,7 +172,7 @@ async function readRawConfig(): Promise<RoamMcpConfig> {
 }
 
 /**
- * Save a graph configuration to ~/.roam-mcp.json
+ * Save a graph configuration to ~/.roam-tools.json
  * If a graph with the same name+type exists, it will be updated.
  * Otherwise, the graph will be added.
  */
@@ -208,7 +208,7 @@ export async function saveGraphToConfig(newGraph: GraphConfig): Promise<void> {
 }
 
 /**
- * Remove a graph from ~/.roam-mcp.json by nickname
+ * Remove a graph from ~/.roam-tools.json by nickname
  */
 export async function removeGraphFromConfig(nickname: string): Promise<boolean> {
   const config = await readRawConfig();

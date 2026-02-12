@@ -131,7 +131,7 @@ export class RoamClient {
       case ErrorCodes.MISSING_TOKEN:
         return (
           baseMsg +
-          "No API token provided. Please ensure your ~/.roam-mcp.json has a valid token."
+          "No API token provided. Please ensure your ~/.roam-tools.json has a valid token."
         );
       case ErrorCodes.INVALID_TOKEN_FORMAT:
         return (
@@ -151,7 +151,7 @@ export class RoamClient {
       default:
         return (
           baseMsg +
-          "Please check your token in ~/.roam-mcp.json. Create a token in Roam Settings > Graph > Local API Tokens."
+          "Please check your token in ~/.roam-tools.json. Create a token in Roam Settings > Graph > Local API Tokens."
         );
     }
   }

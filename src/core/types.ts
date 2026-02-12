@@ -29,7 +29,7 @@ export type GraphType = "hosted" | "offline";
 // Access level type
 export type AccessLevel = "read-only" | "read-append" | "full";
 
-// Config file schema for ~/.roam-mcp.json
+// Config file schema for ~/.roam-tools.json
 // Graph names can only contain alphanumeric characters, hyphens, and underscores
 const GRAPH_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
 

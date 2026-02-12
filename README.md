@@ -52,7 +52,7 @@ This will:
 2. Show your available graphs
 3. Let you select permissions (full, read-append, or read-only)
 4. Open a permission dialog in Roam for you to approve
-5. Save the token to `~/.roam-mcp.json`
+5. Save the token to `~/.roam-tools.json`
 
 Run `connect` again to add more graphs or update permissions.
 
@@ -95,7 +95,7 @@ Run `npm run cli -- connect` multiple times to add additional graphs. Each graph
 
 ### Manual Configuration (Advanced)
 
-Instead of using `connect`, you can manually create `~/.roam-mcp.json`:
+Instead of using `connect`, you can manually create `~/.roam-tools.json`:
 
 ```json
 {

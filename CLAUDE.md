@@ -30,7 +30,7 @@ This is a Model Context Protocol (MCP) server and CLI for Roam Research. Both in
 
 - `src/core/client.ts` - `RoamClient` class for authenticated HTTP calls to Roam's local API. Requires token and graph type.
 
-- `src/core/graph-resolver.ts` - Loads config from `~/.roam-mcp.json`, manages session state, resolves graphs by nickname or name.
+- `src/core/graph-resolver.ts` - Loads config from `~/.roam-tools.json`, manages session state, resolves graphs by nickname or name.
 
 - `src/core/types.ts` - TypeScript types, Zod schemas for config validation, error codes and `RoamError` class.
 
@@ -47,7 +47,7 @@ Operations in `src/core/operations/` are organized by domain:
 
 ### Configuration
 
-**`~/.roam-mcp.json`** - Required config file with graph tokens:
+**`~/.roam-tools.json`** - Required config file with graph tokens:
 ```json
 {
   "graphs": [

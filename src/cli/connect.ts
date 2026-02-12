@@ -452,7 +452,7 @@ export async function connect(): Promise<void> {
 
   await saveGraphToConfig(graphConfig);
 
-  console.log(`\nConnected! Graph "${nickname}" saved to ~/.roam-mcp.json`);
+  console.log(`\nConnected! Graph "${nickname}" saved to ~/.roam-tools.json`);
   console.log(`\nGranted permissions: ${result.grantedAccessLevel}`);
 
   if (result.grantedAccessLevel !== accessLevel) {
