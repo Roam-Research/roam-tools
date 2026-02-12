@@ -1,7 +1,7 @@
 // src/core/graph-resolver.ts
 // v2.0.0 - Config-based graph resolution with token authentication
 
-import { readFile, writeFile } from "fs/promises";
+import { readFile, writeFile, chmod, stat } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
 import {
@@ -56,12 +56,36 @@ export async function getPort(): Promise<number> {
 
 const CONFIG_PATH = join(homedir(), ".roam-tools.json");
 
+/**
+ * Write config file with restricted permissions (owner read/write only).
+ */
+async function writeConfigFile(path: string, data: string): Promise<void> {
+  await writeFile(path, data, { mode: 0o600 });
+  // Also chmod in case the file already existed with wrong permissions
+  await chmod(path, 0o600);
+}
+
 export async function getMcpConfig(): Promise<RoamMcpConfig> {
   if (cachedConfig) return cachedConfig;
 
   let content: string;
   try {
     content = await readFile(CONFIG_PATH, "utf-8");
+
+    // Check file permissions (Unix only — skip on Windows)
+    try {
+      const fileStat = await stat(CONFIG_PATH);
+      const mode = fileStat.mode & 0o777;
+      if (mode & 0o077) {
+        console.error(
+          `[roam-mcp] WARNING: ${CONFIG_PATH} has overly permissive permissions (0${mode.toString(8)}). ` +
+            `This file contains API tokens and should not be accessible by others. ` +
+            `Run: chmod 600 ${CONFIG_PATH}`
+        );
+      }
+    } catch {
+      // Ignore permission check errors (e.g., Windows)
+    }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new RoamError(
@@ -203,7 +227,7 @@ export async function saveGraphToConfig(newGraph: GraphConfig): Promise<void> {
     config.graphs.push(newGraph); // Add new
   }
 
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+  await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
   clearConfigCache();
 }
 
@@ -223,7 +247,7 @@ export async function removeGraphFromConfig(nickname: string): Promise<boolean> 
     return false; // Graph not found
   }
 
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+  await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
   clearConfigCache();
   return true;
 }
