@@ -28,6 +28,9 @@ export class RoamClient {
     if (!config.graphName) {
       throw new Error("graphName is required");
     }
+    if (!/^[A-Za-z0-9_-]+$/.test(config.graphName)) {
+      throw new Error(`Invalid graph name "${config.graphName}". Graph names can only contain letters, numbers, hyphens, and underscores.`);
+    }
     if (!config.token) {
       throw new Error("token is required");
     }
@@ -63,6 +66,9 @@ export class RoamClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  // TODO: This is too broad — `error.cause !== undefined` matches any wrapped error
+  // (e.g. Zod validation, JSON parse errors), not just network failures.
+  // Should narrow to check error.cause for specific codes like ECONNREFUSED/ECONNRESET.
   private isConnectionError(error: unknown): boolean {
     if (error instanceof Error) {
       // Node fetch connection errors
@@ -104,6 +110,8 @@ export class RoamClient {
       }
     }
 
+    // TODO: process.exit() in library code is too aggressive — in MCP context this kills
+    // the entire server. Should throw a RoamError and let the caller decide.
     console.error(
       `\n[FATAL] Roam API version mismatch!\n` +
         `  Roam API version: ${serverVersion}\n` +

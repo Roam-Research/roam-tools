@@ -17,7 +17,10 @@ import {
 // Session State
 // ============================================================================
 
-// Selected graph for current session (per-connection, not persisted)
+// FIXME: This is global/module-level state shared across all connections.
+// If the MCP server is ever reused across sessions, graph selection will bleed.
+// Rethink whether we even want session state / selectedGraph in the MCP server,
+// or if graph should always be resolved per-call from the explicit parameter + config.
 let selectedGraph: ResolvedGraph | null = null;
 
 // Cached config from ~/.roam-mcp.json

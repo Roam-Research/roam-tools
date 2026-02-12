@@ -436,10 +436,16 @@ export async function connect(): Promise<void> {
   });
 
   // 12. Save to config
+  if (!result.token) {
+    // should not happen but just in case
+    console.error("\nError: Server returned success but no token was provided.");
+    process.exit(1);
+  }
+
   const graphConfig: GraphConfig = {
     name: finalSelectedGraph.name,
     type: finalSelectedGraph.type,
-    token: result.token!,
+    token: result.token,
     nickname: nickname.trim(),
     accessLevel: result.grantedAccessLevel as AccessLevel,
   };

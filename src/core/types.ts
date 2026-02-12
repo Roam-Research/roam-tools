@@ -30,8 +30,11 @@ export type GraphType = "hosted" | "offline";
 export type AccessLevel = "read-only" | "read-append" | "full";
 
 // Config file schema for ~/.roam-mcp.json
+// Graph names can only contain alphanumeric characters, hyphens, and underscores
+const GRAPH_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+
 export const GraphConfigSchema = z.object({
-  name: z.string().describe("Actual graph name in Roam"),
+  name: z.string().regex(GRAPH_NAME_PATTERN, "Graph name can only contain letters, numbers, hyphens, and underscores").describe("Actual graph name in Roam"),
   type: z.enum(["hosted", "offline"]).default("hosted").describe("Graph type"),
   token: z.string().startsWith("roam-graph-local-token-").describe("Local API token"),
   nickname: z.string().describe("Human-friendly name for the graph"),
