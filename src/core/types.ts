@@ -112,7 +112,7 @@ export class RoamError extends Error {
 // ============================================================================
 
 // API version this client expects (major.minor must match)
-export const EXPECTED_API_VERSION = "1.2.0";
+export const EXPECTED_API_VERSION = "1.1.0";
 
 // Roam API error structure
 export interface RoamApiError {
