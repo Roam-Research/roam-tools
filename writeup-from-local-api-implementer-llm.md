@@ -1,254 +1,157 @@
-# Roam Local API Reference for roam-mcp
+# Roam Local API: Reference for MCP Server Implementors
 
-## TODO - Remaining Work for This PR
-
-- [ ] **Connect CLI: disable graphs** - Add option to disable/remove graphs from config
-- [ ] **Single graph simplification** - Better support when only one graph configured (simplified or no graph selection tools needed)
-- [ ] **Verify select_graph returns guidelines** - Check if select_graph is actually returning the agent guidelines
-- [ ] **Connect CLI: handle failed exchanges** - May have issues after failing to connect in current session (concept of "existing exchange attempt" blocking retries)
-- [ ] **Graph tickets concept** - Multi-graph safety: ensure guidelines are read, prevent writing to wrong graph. See: https://www.loom.com/share/cb21cc43edfc42a1bf72eb89b5482e3d
+> **Audience:** An LLM (or developer) working on `roam-mcp`, the MCP server that connects AI tools to Roam Research via the Local API.
+>
+> **Purpose:** This is the authoritative reference for the HTTP API contract exposed by the Roam Desktop (Electron) app. Use this to verify that the MCP server's API calls, authentication handling, error handling, configuration, and graph management are correct.
+>
+> **Last Updated:** February 2026
 
 ---
 
-> **Audience:** LLM agent updating roam-mcp to work with the new token-authenticated Local API
-> **Key Change:** The Local API now requires Bearer token authentication. All existing code that makes unauthenticated requests will fail with 401.
+## 1. Architecture Overview
+
+The Roam Desktop app runs an HTTP server on localhost that allows external tools (like roam-mcp) to interact with Roam graphs programmatically.
+
+```
+roam-mcp (MCP Server)
+    │
+    │  HTTP POST to localhost:{port}/api/{graph-name}
+    │  Authorization: Bearer roam-graph-local-token-...
+    │
+    ▼
+Roam Desktop App (Electron)
+    ├── Express Server (main process, 127.0.0.1 only)
+    │   ├── Token validation middleware
+    │   └── Forwards request via IProcess
+        ├── Scope enforcement (2 levels)
+        └── Executes roamAlphaAPI function against DataScript
+```
+
+Key facts:
+- The server binds to `127.0.0.1` only (localhost). It is not accessible from the network.
+- The server is **always running** when the Electron app is running (no enable/disable toggle — the old toggle was removed).
+- **All API calls require a valid Bearer token** (this is a breaking change from the old unauthenticated API).
+- The server port is **not hardcoded**. It defaults to 3333 but auto-increments if that port is in use.
 
 ---
 
-## Critical Changes from Pre-Token API
+## 2. Port Discovery
 
-### What Changed
+On startup, the Roam Desktop app writes:
 
-| Aspect | Before (Old API) | After (New API) |
-|--------|------------------|-----------------|
-| **Authentication** | None required | Bearer token required |
-| **Request header** | Just `Content-Type` | Must include `Authorization: Bearer roam-graph-local-token-...` |
-| **Graph type** | Implicit | Explicit via `?type=offline` query param |
-| **Token acquisition** | N/A | Manual creation OR programmatic via `/api/graphs/tokens/request` |
-| **Scope restrictions** | None | Tokens have scopes (read/append/edit) |
-| **Error responses** | Basic | Detailed with error codes |
+```
+~/.roam-local-api.json
+```
 
-### What Stayed the Same
-
-- Port discovery via `~/.roam-local-api.json`
-- Request body format (`action`, `args`, `expectedApiVersion`)
-- Response format (`success`, `result`, `error`)
-- The actual roamAlphaAPI actions available
-
----
-
-## Port Discovery
-
-**File:** `~/.roam-local-api.json`
-
+Contents:
 ```json
 {
   "port": 3333
 }
 ```
 
-Read this file to get the current port. The port may change if 3333 is in use.
+**The MCP server MUST read this file to discover the port.** Do not hardcode 3333.
 
-**Note:** The `last-graph` field was removed. Do not rely on it.
+**Important change:** The `last-graph` field was removed from this file. It previously contained the name of the last-used graph. The file now only contains `port`. If your code reads `last-graph` from this file, remove that code.
 
 ---
 
-## Authentication
+## 3. Authentication: Token System
 
-### Token Format
+### 3.1 Token Format
 
-All tokens have the prefix: `roam-graph-local-token-`
+Tokens follow this format:
 
-Full format: `roam-graph-local-token-{29-character-secret}`
+**Secret token** (what the user gives you, what you send in the Authorization header):
+```
+roam-graph-local-token-{29-character-nanoid}
+```
+- Total length: **52 characters** (23-char prefix + 29-char secret)
+- Prefix: `roam-graph-local-token-`
+- ~174 bits of entropy
 
-Example: `roam-graph-local-token-R8KP2tPuxcUflAo_7tkc5lOPgo7ki`
+**Important:** The prefix is `roam-graph-local-token-` (with "local" in it). This is different from remote API tokens which use `roam-graph-token-` (no "local"). The Local API only accepts local tokens. If a remote token is sent, the server returns 401 with message "This endpoint requires a local API token".
 
-### Required Header
+### 3.2 Sending the Token
+
+Include the token in the `Authorization` header as a Bearer token:
 
 ```
-Authorization: Bearer roam-graph-local-token-...
+Authorization: Bearer roam-graph-local-token-R8KP2tPuxcUflAo_7tkc5lOPgo7ki
 ```
 
-### Token Scopes
+### 3.3 Token Properties
 
-Tokens have one of these scope combinations:
+Tokens are:
+- **Per-graph**: A token is valid for exactly one graph (identified by graph name + graph type)
+- **Per-computer**: Tokens only work on the computer where they were created
+- **Non-expiring**: Tokens do not expire; they must be manually revoked by the user
+- **Scoped**: Each token has a set of permission scopes (see Section 6)
 
-| Preset Name | Scopes | What It Can Do |
-|-------------|--------|----------------|
-| `read-only` | `{:read true}` | Queries, pulls, properties only |
-| `read-append` | `{:read true :append true}` | Above + create blocks/pages |
-| `full` | `{:read true :append true :edit true}` | Above + update/delete/move |
+### 3.4 Authentication Error Responses
 
-**Scope hierarchy:** `edit` > `append` > `read`
+All error responses have this shape:
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Human-readable error description"
+  }
+}
+```
 
-A token with `edit` scope can do everything.
-
----
-
-## Intended User Flow
-
-### Flow 1: User Creates Token Manually (Recommended for Most Users)
-
-1. User opens Roam Desktop app
-2. User navigates to **Graph Settings → Local API Tokens**
-3. User clicks "New Token", enters description, selects scope
-4. User copies the token (shown only once)
-5. User configures roam-mcp with the token
-
-### Flow 2: Programmatic Token Request (For Better UX)
-
-1. MCP server calls `POST /api/graphs/tokens/request`
-2. Roam opens the graph window and shows permission dialog
-3. User approves/denies in the Roam UI
-4. If approved, MCP receives the token in the response
-5. MCP stores the token for future requests
+| Scenario | HTTP Status | Error Message |
+|----------|-------------|---------------|
+| No Authorization header | 401 | "Authorization header with Bearer token is required" |
+| Token doesn't start with any recognized prefix | 401 | "Invalid token format" |
+| Token has remote prefix (`roam-graph-token-`) not local | 401 | "This endpoint requires a local API token" |
+| Token is valid format but not found for this graph | 401 | "Invalid or expired token" |
+| Token file on disk is corrupted | 500 | "Token file corrupted. Check local-api-tokens.edn" |
 
 ---
 
-## API Routes
+## 4. API Endpoints
 
-### 1. Main API Endpoint
+### 4.1 Main API Endpoint (Authenticated)
 
-**`POST /api/:graph`**
+```
+POST /api/{graph-name}
+```
 
-Execute roamAlphaAPI actions against a graph.
+This is the primary endpoint. All roamAlphaAPI operations go through here.
 
-#### Request
-
-**URL:** `http://localhost:{port}/api/{graph-name}`
+**URL Parameters:**
+- `{graph-name}` — The Roam graph name (e.g., `my-work-notes`)
 
 **Query Parameters:**
-| Param | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `type` | No | `hosted` | Graph type: `hosted` or `offline` |
+- `type` — Graph type. Values: `"hosted"` (default) or `"offline"`. If omitted or any value other than `"offline"`, defaults to `"hosted"`.
 
 **Headers:**
-```
-Content-Type: application/json
-Authorization: Bearer roam-graph-local-token-...
-```
+- `Authorization: Bearer roam-graph-local-token-...` (required)
+- `Content-Type: application/json` (required)
 
-**Body:**
+**Request Body:**
 ```json
 {
   "action": "data.block.create",
   "args": [{"location": {"parent-uid": "abc123", "order": 0}, "block": {"string": "Hello"}}],
-  "expectedApiVersion": "0.0.9"
+  "expectedApiVersion": 1
 }
 ```
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `action` | Yes | Dot-separated path under `window.roamAlphaAPI` |
-| `args` | No | Array of arguments to pass to the function |
-| `expectedApiVersion` | No | If provided, validates API version compatibility |
+- `action` (string, required) — Dot-separated path under `window.roamAlphaAPI` (e.g., `data.q`, `data.pull`, `data.block.create`, `data.ai.getPage`)
+- `args` (array, required) — Arguments to pass to the roamAlphaAPI function
+- `expectedApiVersion` (number, optional) — If provided, the API checks compatibility and returns an error if mismatched
 
-#### Success Response
-
-**Status:** 200
-
+**Successful Response:**
 ```json
 {
   "success": true,
-  "result": { ... },
-  "apiVersion": "0.0.9"
+  "result": "<whatever the roamAlphaAPI function returns>"
 }
 ```
 
-#### Error Responses
-
-**Local API Disabled**
-- **Status:** 403
-- **When:** User hasn't enabled Local API in Settings
-```json
-{
-  "success": false,
-  "error": "Local API is disabled. Enable it in Settings menu."
-}
-```
-
-**Missing Token**
-- **Status:** 401
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Authorization header with Bearer token is required"
-  }
-}
-```
-
-**Invalid Token Format**
-- **Status:** 401
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Invalid token format"
-  }
-}
-```
-
-**Remote Token Used (Wrong Token Type)**
-- **Status:** 401
-```json
-{
-  "success": false,
-  "error": {
-    "message": "This endpoint requires a local API token"
-  }
-}
-```
-
-**Token Not Found - Wrong Graph Type**
-- **Status:** 401
-- **When:** Token exists for the other graph type (hosted vs offline)
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Token is valid for offline graph 'my-graph', not hosted. Add ?type=offline to your request URL."
-  }
-}
-```
-
-**Token Not Found - No Tokens for Graph**
-- **Status:** 401
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Token not recognized for hosted graph 'my-graph'. Check that the graph name is correct and create a token in Settings > Graph > Local API Tokens."
-  }
-}
-```
-
-**Token Not Found - Wrong Graph**
-- **Status:** 401
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Token not valid for this graph. Check that you're using the correct token for this graph."
-  }
-}
-```
-
-**Token File Corrupted**
-- **Status:** 500
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Token file corrupted. Check local-api-tokens.edn"
-  }
-}
-```
-
-**Insufficient Token Scope**
-- **Status:** 403
-- **Code:** `INSUFFICIENT_SCOPE`
-- **When:** Token doesn't have required scope for the action
+**Error Response (scope violation):**
 ```json
 {
   "success": false,
@@ -259,10 +162,6 @@ Authorization: Bearer roam-graph-local-token-...
 }
 ```
 
-**User Permission Exceeded**
-- **Status:** 403
-- **Code:** `SCOPE_EXCEEDS_PERMISSION`
-- **When:** User was demoted and token exceeds their current permission
 ```json
 {
   "success": false,
@@ -273,573 +172,209 @@ Authorization: Bearer roam-graph-local-token-...
 }
 ```
 
-**API Version Mismatch**
-- **Status:** 400
-- **Code:** `VERSION_MISMATCH`
+**Examples:**
+
+Hosted graph (default):
+```bash
+curl -X POST http://localhost:3333/api/my-graph \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer roam-graph-local-token-R8KP2tPuxcUflAo_7tkc5lOPgo7ki" \
+  -d '{"action": "data.ai.getPage", "args": [{"title": "Test"}]}'
+```
+
+Offline graph:
+```bash
+curl -X POST "http://localhost:3333/api/my-graph?type=offline" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer roam-graph-local-token-AbCdEfGh..." \
+  -d '{"action": "data.ai.getPage", "args": [{"title": "Test"}]}'
+```
+
+### 4.2 Discovery Endpoints (Unauthenticated)
+
+These endpoints do **not** require a token. They exist for tool discovery but have security concerns noted (they expose graph names to any local process).
+
+```
+GET /api/graphs/open
+```
+Returns a list of currently open graph windows.
+
+Response includes graph type information:
 ```json
-{
-  "success": false,
-  "error": {
-    "code": "VERSION_MISMATCH",
-    "message": "API version mismatch"
-  },
-  "apiVersion": "0.0.9",
-  "expectedApiVersion": "0.0.8"
-}
+[
+  {"name": "my-work-graph", "type": "hosted"},
+  {"name": "my-local-graph", "type": "offline"}
+]
 ```
 
-**Unknown Action**
-- **Status:** 404
-- **Code:** `UNKNOWN_ACTION`
-```json
-{
-  "success": false,
-  "error": {
-    "code": "UNKNOWN_ACTION",
-    "message": "API action not found: data.nonexistent.action"
-  }
-}
 ```
-
-**Internal Error**
-- **Status:** 500
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Some error message"
-  }
-}
+GET /api/graphs/available
 ```
+Returns all graphs the user can access.
 
----
+**Note for MCP implementors:** The architecture decision is that **the MCP server should NOT rely on these discovery endpoints for normal operation**. The graph name and token should come from user configuration (env vars or config file). These endpoints may be removed or authenticated in the future.
 
-### 2. Token Exchange (Programmatic Token Request)
+### 4.3 Token Exchange Endpoint (Unauthenticated)
 
-**`POST /api/graphs/tokens/request`**
-
-Request a token programmatically. Opens a permission dialog in Roam for user approval.
-
-#### Request
-
-**URL:** `http://localhost:{port}/api/graphs/tokens/request`
-
-**Headers:**
 ```
+POST /api/graphs/tokens/request
 Content-Type: application/json
 ```
 
-**Body:**
+This endpoint allows external tools to **programmatically request a token** from the user. It opens a permission dialog in the Roam desktop app.
+
+**Request Body:**
 ```json
 {
   "graph": "my-graph-name",
+  "description": "Claude MCP",
+  "accessLevel": "read-append",
   "graphType": "hosted",
-  "description": "roam-mcp - Claude Desktop integration",
-  "accessLevel": "full",
   "ai": true
 }
 ```
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `graph` | Yes | Graph name |
-| `graphType` | No | `hosted` (default) or `offline` |
-| `description` | Yes | Human-readable description shown in permission dialog |
-| `accessLevel` | Yes | `read-only`, `read-append`, or `full` |
-| `ai` | No | `true` if this is an AI tool (shown in UI) |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `graph` | string | Yes | Graph name |
+| `description` | string | Yes | Human-readable description of what the token is for |
+| `accessLevel` | string | Yes | One of: `"read-only"`, `"read-append"`, `"full"`. No default — must be explicit. |
+| `graphType` | string | No | `"hosted"` (default) or `"offline"` |
+| `ai` | boolean | No | Whether this token will be used by an AI agent |
 
-#### Success Response (User Approved)
+**Note:** `deviceName` is NOT a parameter. Device name is auto-detected from the OS hostname or the user's saved preferred device name. The user can modify it in the permission dialog.
 
-**Status:** 200
+**Note:** `"read-edit-own"` is currently disabled as an access level.
 
-```json
-{
-  "success": true,
-  "token": "roam-graph-local-token-R8KP2tPuxcUflAo_7tkc5lOPgo7ki",
-  "graphName": "my-graph-name",
-  "graphType": "hosted",
-  "grantedAccessLevel": "full",
-  "grantedScopes": {
-    "read": true,
-    "append": true,
-    "edit": true
-  }
-}
-```
+**Flow:**
+1. MCP server sends the request
+2. Roam opens/focuses the graph window
+3. A permission dialog appears to the user with three choices:
+   - **Allow & Configure** — Opens a token creation dialog pre-filled with the request values. User can modify before saving.
+   - **Deny** — Rejects this request.
+   - **Never Allow** — Blocks ALL future token exchange requests for this graph permanently.
+4. If the user allows and creates the token, the HTTP response returns the secret token.
 
-**Note:** `grantedAccessLevel` may be lower than requested if user has limited permissions (e.g., reader can only grant `read-only`).
+**Responses:**
 
-#### Error Responses
+| Scenario | HTTP Status | Response |
+|----------|-------------|----------|
+| User approved | 200 | `{"success": true, "token": "roam-graph-local-token-...", "graphName": "...", "graphType": "hosted", "grantedAccessLevel": "read-append", "grantedScopes": {"read": true, "append": true}}` |
+| User rejected | 403 | `{"success": false, "error": {"code": "USER_REJECTED", "message": "..."}}` |
+| Graph permanently blocked | 403 | `{"success": false, "error": {"code": "GRAPH_BLOCKED", "message": "..."}}` |
+| Another request already in progress | 409 | `{"success": false, "error": {"code": "REQUEST_IN_PROGRESS", "message": "..."}}` |
+| User didn't respond within 5 minutes | 408 | `{"success": false, "error": {"code": "TIMEOUT", "message": "..."}}` |
+| Invalid request body | 400 | `{"success": false, "error": {"code": "VALIDATION_ERROR", "message": "..."}}` |
+| Client disconnected | N/A | `{"success": false, "error": {"code": "CANCELLED", "message": "..."}}` |
 
-**Local API Disabled**
-- **Status:** 403
-```json
-{
-  "success": false,
-  "error": "Local API is disabled. Enable it in Settings menu."
-}
-```
-
-**Missing Required Field**
-- **Status:** 400
-- **Code:** `VALIDATION_ERROR`
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Graph name is required"
-  }
-}
-```
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Description is required"
-  }
-}
-```
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "accessLevel is required. Valid options: read-only, read-append, full"
-  }
-}
-```
-
-**User Rejected**
-- **Status:** 403
-- **Code:** `USER_REJECTED`
-```json
-{
-  "success": false,
-  "error": {
-    "code": "USER_REJECTED",
-    "message": "Token request was rejected by the user"
-  }
-}
-```
-
-**Graph Permanently Blocked**
-- **Status:** 403
-- **Code:** `GRAPH_BLOCKED`
-- **When:** User previously clicked "Never Allow" for this graph
-```json
-{
-  "success": false,
-  "error": {
-    "code": "GRAPH_BLOCKED",
-    "message": "Token requests for this graph have been permanently blocked"
-  }
-}
-```
-
-**Concurrent Request**
-- **Status:** 409
-- **Code:** `REQUEST_IN_PROGRESS`
-```json
-{
-  "success": false,
-  "error": {
-    "code": "REQUEST_IN_PROGRESS",
-    "message": "A token request for this graph is already in progress"
-  }
-}
-```
-
-**Timeout (5 minutes)**
-- **Status:** 408
-- **Code:** `TIMEOUT`
-```json
-{
-  "success": false,
-  "error": {
-    "code": "TIMEOUT",
-    "message": "Request timed out waiting for user response"
-  }
-}
-```
-
-**Request Cancelled**
-- **Status:** 500
-- **Code:** `CANCELLED`
-- **When:** Client disconnected or request was cancelled
-```json
-{
-  "success": false,
-  "error": {
-    "code": "CANCELLED",
-    "message": "Request was cancelled"
-  }
-}
-```
-
-**Internal Error**
-- **Status:** 500
-- **Code:** `INTERNAL_ERROR`
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INTERNAL_ERROR",
-    "message": "..."
-  }
-}
-```
+**Important behaviors:**
+- **5-minute timeout**: The user has 5 minutes to respond. This is long because encrypted graphs may require a password before the dialog appears.
+- **One at a time**: Only one token exchange request per `[graph-type, graph-name]` can be in progress. Concurrent requests get 409.
+- **Scope downgrading**: If a reader gets a request for "full" access, it's automatically downgraded to "read-only". The `grantedAccessLevel` and `grantedScopes` in the response reflect what was actually granted, which may differ from what was requested.
+- **Graph auto-open**: If the graph isn't open, Roam will open it automatically.
+- **Never Allow is persistent**: If the user clicks "Never Allow", the graph is permanently blocked for token exchange. Future requests return 403 GRAPH_BLOCKED immediately without showing a dialog. The user must manually unblock via Roam settings.
 
 ---
 
-### 3. List Open Graphs
+## 5. Graph Types: Hosted vs Offline
 
-**`GET /api/graphs/open`**
+Roam has two types of graphs:
+- **Hosted** (default): Cloud-synced graphs stored in Firebase
+- **Offline**: Local-only graphs stored only on the user's computer
 
-List currently open graph windows.
+**How this affects the MCP server:**
 
-**Note:** This endpoint does NOT require a token, only that Local API is enabled.
+1. **Tokens are scoped to (graph-name, graph-type)**: A token for hosted graph "notes" does NOT work for offline graph "notes" (even if they have the same name).
 
-#### Request
+2. **The `?type=` query parameter**: When calling `POST /api/{graph}`, pass `?type=offline` for offline graphs. Omitting it or passing `?type=hosted` targets the hosted graph.
 
-**URL:** `http://localhost:{port}/api/graphs/open`
+3. **The MCP server should abstract this away from the AI agent**: The AI agent should only see graph names/nicknames. The MCP server should internally track each graph's type and include the correct `?type=` parameter.
 
-#### Success Response
-
-**Status:** 200
-
-```json
-{
-  "success": true,
-  "result": [
-    {"name": "my-graph", "type": "hosted"},
-    {"name": "local-notes", "type": "offline"}
-  ]
-}
-```
-
-#### Error Responses
-
-**Local API Disabled**
-- **Status:** 403
-```json
-{
-  "success": false,
-  "error": "Local API is disabled. Enable it in Settings menu."
-}
-```
+4. **Config file format**: Each graph entry has a `type` field that defaults to `"hosted"`.
 
 ---
 
-### 4. List Available Graphs
+## 6. Token Scopes and Permissions
 
-**`GET /api/graphs/available`**
+### 6.1 Scope Flags
 
-List all graphs the user can access.
+Local API tokens use **composable capability flags** (not mutually exclusive roles):
 
-**Note:** This endpoint does NOT require a token, only that Local API is enabled.
+| Flag | What it allows |
+|------|---------------|
+| `read` | Queries, pulls, property access, UI operations, `data.ai.*` methods |
+| `append` | Create new blocks and pages (but not modify/delete existing ones) |
+| `edit` | Modify or delete any existing content. **Implicitly includes `append`** — a token with only `{edit: true}` can also create. |
 
-#### Request
+**Hierarchy**: `edit` implies `append` implies `read`. A token with `{read: true, edit: true}` can do everything.
 
-**URL:** `http://localhost:{port}/api/graphs/available`
+### 6.2 Scope Presets
 
-#### Success Response
+Tokens are created using presets (users pick from a dropdown, not individual checkboxes):
 
-**Status:** 200
+| Preset Key | Label | Scopes Map |
+|------------|-------|------------|
+| `read-only` | Read only | `{read: true}` |
+| `read-append` | Read + Append | `{read: true, append: true}` |
+| `full` | Full access | `{read: true, append: true, edit: true}` |
 
-```json
-{
-  "success": true,
-  "result": [
-    {"name": "my-graph", "type": "hosted"},
-    {"name": "work-notes", "type": "hosted"},
-    {"name": "local-notes", "type": "offline"}
-  ]
-}
-```
+Note: `read-edit-own` is defined but currently **disabled**.
+
+### 6.3 Action Classification
+
+Every roamAlphaAPI action requires a minimum scope:
+
+**Append-required actions** (need `append` scope):
+`data.block.create`, `data.page.create`, `data.block.fromMarkdown`, `data.page.fromMarkdown`, `file.upload`, `data.user.upsert`, `createBlock`, `createPage`, `batchActions` (when containing creates)
+
+**Edit-required actions** (need `edit` scope):
+`data.block.update`, `data.block.delete`, `data.block.move`, `data.page.update`, `data.page.delete`, `data.undo`, `data.redo`, `file.delete`, `updateBlock`, `deleteBlock`, `moveBlock`, `updatePage`, `deletePage`
+
+**Read actions** (need only `read` scope):
+Everything else — `data.q`, `data.pull`, `data.ai.getPage`, `data.ai.getBlock`, `graph.name`, `ui.*`, etc.
+
+### 6.4 Two-Level Enforcement
+
+Scopes are enforced in the **renderer process** with two checks:
+
+1. **Token scope check**: Does the token have the required scope for this action?
+   - Failure: HTTP 403 with `code: "INSUFFICIENT_SCOPE"`
+
+2. **User permission check**: Does the logged-in Roam user have permission for this action?
+   - Failure: HTTP 403 with `code: "SCOPE_EXCEEDS_PERMISSION"`
+
+**Why this matters for MCP:** If a user creates a full-access token as an editor and is later demoted to reader, the token still works for read operations. Only write attempts fail. The MCP server should handle `INSUFFICIENT_SCOPE` and `SCOPE_EXCEEDS_PERMISSION` errors gracefully and explain to the user what happened.
 
 ---
 
-## AI-Optimized Endpoints
+## 7. MCP Server Configuration
 
-The Local API exposes AI-specific endpoints under `data.ai.*` that return markdown-formatted content optimized for LLM consumption. **These are the primary endpoints the MCP should use.**
+### 7.1 Environment Variables (Single-Graph — Most Common)
 
-### `data.ai.getPage`
-
-Get a page's content as markdown.
-
-**Input:**
 ```json
 {
-  "uid": "page-uid",
-  "title": "Page Title",
-  "maxDepth": 3
-}
-```
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `uid` | One of uid/title | Page UID |
-| `title` | One of uid/title | Page title (alternative to uid) |
-| `maxDepth` | No | Max depth of children to include (null = full tree) |
-
-**Response:**
-```json
-{
-  "markdown": "# Page Title\n\n- Block 1\n  - Child block\n- Block 2"
-}
-```
-
-### `data.ai.getBlock`
-
-Get a block's content as markdown with its path.
-
-**Input:**
-```json
-{
-  "uid": "block-uid",
-  "maxDepth": 2
-}
-```
-
-**Response:**
-```json
-{
-  "markdown": "- Block content\n  - Child content",
-  "path": "Page Title > Parent Block"
-}
-```
-
-### `data.ai.getBacklinks`
-
-Get backlinks (linked references) for a page or block with pagination.
-
-**Input:**
-```json
-{
-  "uid": "page-uid",
-  "title": "Page Title",
-  "offset": 0,
-  "limit": 20,
-  "sort": "created-date",
-  "sortOrder": "desc",
-  "search": "filter text",
-  "includePath": true,
-  "maxDepth": 1
-}
-```
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `uid` / `title` | - | Target page/block |
-| `offset` | 0 | Pagination offset |
-| `limit` | 20 | Max results to return |
-| `sort` | `"created-date"` | Sort by: `"created-date"`, `"edited-date"`, `"daily-note-date"` |
-| `sortOrder` | `"desc"` | `"asc"` or `"desc"` |
-| `search` | null | Filter results by text match |
-| `includePath` | true | Include breadcrumb path |
-| `maxDepth` | 1 | Depth of children in markdown |
-
-**Response:**
-```json
-{
-  "total": 42,
-  "results": [
-    {
-      "uid": "ref-block-uid",
-      "markdown": "- References [[Page Title]] here",
-      "path": "Other Page > Section",
-      "type": "page"
+  "mcpServers": {
+    "roam": {
+      "command": "npx",
+      "args": ["roam-mcp"],
+      "env": {
+        "ROAM_API_TOKEN": "roam-graph-local-token-R8KP2tPuxcUflAo_7tkc5lOPgo7ki",
+        "ROAM_GRAPH": "my-graph-name",
+        "ROAM_GRAPH_TYPE": "hosted"
+      }
     }
-  ]
-}
-```
-
-### `data.ai.search`
-
-Full-text search across the graph.
-
-**Input:**
-```json
-{
-  "query": "search terms",
-  "offset": 0,
-  "limit": 20,
-  "includePath": true,
-  "maxDepth": 0,
-  "scope": "all"
-}
-```
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `query` | **required** | Search string |
-| `offset` | 0 | Pagination offset |
-| `limit` | 20 | Max results |
-| `includePath` | true | Include breadcrumb path |
-| `maxDepth` | 0 | Depth of children (0 = just the matching block) |
-| `scope` | `"all"` | `"all"`, `"pages"`, or `"blocks"` |
-
-**Response:**
-```json
-{
-  "total": 156,
-  "results": [
-    {
-      "uid": "block-uid",
-      "markdown": "- Matching content here",
-      "path": "Page > Parent Block",
-      "type": "page"
-    }
-  ]
-}
-```
-
-### `data.ai.searchTemplates`
-
-Search user-defined templates by name.
-
-**Input:**
-```json
-{
-  "query": "meeting"
-}
-```
-
-**Response:**
-```json
-[
-  {
-    "name": "Meeting Notes",
-    "uid": "template-uid",
-    "content": "- Attendees:\n- Agenda:\n- Notes:"
   }
-]
+}
 ```
 
-### `data.ai.getGraphGuidelines`
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ROAM_API_TOKEN` | Yes | — | The secret token (52 chars, starts with `roam-graph-local-token-`) |
+| `ROAM_GRAPH` | Yes | — | The graph name |
+| `ROAM_GRAPH_TYPE` | No | `"hosted"` | `"hosted"` or `"offline"` |
 
-Get the content of the "agent guidelines" page (if it exists). This is used by `select_graph` to return user-defined instructions for AI agents.
+### 7.2 Config File (Multi-Graph)
 
-**Input:** None (empty object or null)
-
-**Response:** Markdown string, or `null` if the page doesn't exist.
-
-```json
-"## Agent Guidelines\n\n1. Use ISO dates (YYYY-MM-DD)\n2. Always include sources\n..."
-```
-
-**Important:** The page must be titled exactly `"agent guidelines"` (case-insensitive in Roam, but the lookup is case-sensitive in the API).
-
----
-
-## AI Markdown Format
-
-The `data.ai.*` endpoints return markdown with embedded `<roam>` metadata tags. Understanding this format is critical for the MCP.
-
-### Syntax Reference
-
-| Syntax | Meaning |
-|--------|---------|
-| `<roam uid="x"/>` | Block's unique ID - use this for follow-up operations |
-| `<roam uid="x" refs="N"/>` | Block has N backlinks (referenced N times elsewhere) |
-| `[text](((uid)))` | Block reference - text is the referenced block's content |
-| `[[Page Name]]` | Page reference |
-| `{{...}}` | Embed/widget (kept as-is) |
-| `^^text^^` | Highlighted text |
-
-### Example Output
-
-```markdown
-# Project Planning <roam uid="abc123" refs="5"/>
-
-- Research phase <roam uid="def456"/>
-  - Interview stakeholders <roam uid="ghi789"/>
-  - Review [[Competitor Analysis]] <roam uid="jkl012"/>
-- Implementation <roam uid="mno345" refs="2"/>
-  - See [original spec](((xyz999))) for details <roam uid="pqr678"/>
-```
-
-### Key Points for MCP
-
-1. **Extract UIDs for operations** - When creating/updating blocks, you need parent UIDs from the `<roam uid="..."/>` tags
-2. **High refs = important** - Blocks with `refs="5"` or more are key concepts worth exploring
-3. **Block references show content** - `[text](((uid)))` shows the referenced text inline; the uid lets you navigate to the source
-4. **Page references are links** - `[[Page Name]]` can be fetched with `data.ai.getPage({title: "Page Name"})`
-
-### Using UIDs
-
-When you receive markdown with UIDs, you can:
-- **Create a child block:** Use the parent's uid in `data.block.create({location: {parent-uid: "abc123", order: 0}, block: {string: "New content"}})`
-- **Update a block:** Use the block's uid in `data.block.update({block: {uid: "def456", string: "Updated content"}})`
-- **Get more context:** Use `data.ai.getBlock({uid: "ghi789", maxDepth: 3})` to expand a block
-
----
-
-## Action Scope Requirements
-
-When making API requests, the token must have sufficient scope for the action:
-
-### Read Scope (Default)
-
-All actions not listed below require only `:read` scope:
-- `data.q`, `data.pull`, `data.pull_many`
-- `data.async.q`
-- `graph.name`, `graph.type`
-- `ui.*` (navigation, sidebars)
-- `util.generateUID`, `util.dateToPageTitle`
-- All property reads
-
-### Append Scope
-
-These actions require `:append` scope (or `:edit`):
-- `data.block.create`
-- `data.block.fromMarkdown`
-- `data.page.create`
-- `data.page.fromMarkdown`
-- `data.user.upsert`
-- `file.upload`
-- `util.uploadFile`
-- `createBlock` (legacy)
-- `createPage` (legacy)
-
-### Edit Scope
-
-These actions require `:edit` scope:
-- `data.block.update`
-- `data.block.delete`
-- `data.block.move`
-- `data.block.reorderBlocks`
-- `data.page.update`
-- `data.page.delete`
-- `data.page.addShortcut`
-- `data.page.removeShortcut`
-- `data.undo`
-- `data.redo`
-- `file.delete`
-- `updateBlock`, `deleteBlock`, `moveBlock` (legacy)
-- `updatePage`, `deletePage` (legacy)
-
----
-
-## MCP Server Architecture
-
-### Design Principles
-
-1. **One MCP server, multiple graphs** - A single MCP server handles all configured graphs
-2. **Session-local graph selection** - MCP maintains state about which graph is "active" for the current connection
-3. **Per-graph tokens** - Each graph has its own token
-4. **Stateless Local API** - The Roam Local API is stateless; all graph selection logic lives in the MCP server
-5. **Agent simplicity** - AI agents do NOT need to know about graph types; the MCP handles this internally
-
-### Configuration File
-
-**Location:** `~/.roam-mcp.json`
-
-**MCP Server Config (claude_desktop_config.json):**
 ```json
 {
   "mcpServers": {
@@ -851,7 +386,7 @@ These actions require `:edit` scope:
 }
 ```
 
-**Graph Config File (`~/.roam-mcp.json`):**
+Config file (`~/.roam-mcp.json`):
 ```json
 {
   "graphs": [
@@ -859,347 +394,252 @@ These actions require `:edit` scope:
       "name": "jfb-work-notes-2024",
       "type": "hosted",
       "token": "roam-graph-local-token-abc...",
-      "nickname": "Work"
+      "nickname": "Work",
+      "description": "Work projects and meeting notes"
     },
     {
       "name": "personal-zettelkasten",
       "type": "offline",
       "token": "roam-graph-local-token-xyz...",
-      "nickname": "Personal"
+      "nickname": "Personal",
+      "description": "Personal knowledge base"
     }
   ]
 }
 ```
 
-**Config Fields:**
-
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `name` | Yes | - | The actual graph name in Roam |
-| `type` | No | `"hosted"` | Graph type: `"hosted"` or `"offline"` |
-| `token` | Yes | - | Local API token for this graph |
-| `nickname` | Yes | - | Human-friendly name used by agents |
+| `name` | Yes | — | Roam graph name (used in the URL path) |
+| `type` | No | `"hosted"` | `"hosted"` or `"offline"` |
+| `token` | Yes | — | Secret token for this graph |
+| `nickname` | No | Uses `name` | Short human-friendly label |
+| `description` | No | — | Longer description shown to the AI |
 
-### Graph Nicknames
+### 7.3 Nickname Uniqueness Constraint
 
-Graph names are often technical (e.g., `jfb-work-notes-2024`) or UUIDs. Nicknames provide human-friendly labels.
+**Nicknames (and graph names when no nickname is set) must be unique across all configured graphs.** This is because the AI agent identifies graphs by name/nickname only — it does not know about graph types. The MCP server must validate this on config load and return a clear error if duplicates are found.
 
-**Rules:**
-- Nicknames MUST be unique across all configured graphs
-- Case-insensitive matching (e.g., "Work" matches "work")
-- Agents use nicknames, NOT raw graph names
-- Validate uniqueness on config load
-
-### Agent Simplicity: AI Does NOT Need Graph Types
-
-**Critical design decision:** The AI agent calling MCP tools does NOT need to know about graph types.
-
-When an agent calls `select_graph("Work")` or `get_page(title="My Page")`, it uses the **nickname only**. The MCP server internally maps this to the correct `(name, type, token)` tuple and includes the `?type=` parameter when calling the Local API.
-
-**Why this matters:**
-- Agents don't need to track or remember graph types
-- Tool calls remain simple: just the nickname
-- No risk of agent confusion between "hosted" and "offline" concepts
-- Prompts and tool descriptions stay clean
-
-### Handling Same-Named Hosted and Offline Graphs
-
-If the config contains both a hosted graph and an offline graph with the **same name**, **ignore the offline graph**.
-
-**Rationale:**
-- This is a rare edge case
-- Hosted graphs take precedence
-- Keeps the mental model simple
-- Avoids confusing nickname workarounds
-
-**On config load:** If duplicate names detected (after type precedence), log a warning and skip the offline entry.
+**Note:** The MCP server does not support configuring both a hosted and offline graph with the same name. If duplicates are detected, the hosted graph takes precedence and the offline entry is ignored with a warning. Each graph name should appear only once in the config.
 
 ---
 
-## Core MCP Tools for Graph Management
+## 8. MCP Server Architecture Decisions
 
-### `list_graphs`
+### 8.1 One Server, Multiple Graphs
 
-Return all configured graphs with their nicknames.
+A single MCP server instance handles all configured graphs. Do NOT require users to run separate MCP server processes per graph.
 
-**Response:**
-```json
-{
-  "graphs": [
-    { "nickname": "Work", "name": "jfb-work-notes-2024" },
-    { "nickname": "Personal", "name": "personal-zettelkasten" }
-  ]
-}
-```
+### 8.2 Session-Local Graph Selection
 
-### `select_graph`
+The MCP server maintains **in-memory session state** about which graph is "active". This is:
+- Set via the `select_graph` tool
+- Per-connection (not persisted to disk)
+- Required before any graph operation can proceed (for multi-graph configs)
 
-Set the active graph for this session. Returns graph guidelines.
+**Do NOT persist "last used graph" to disk.** This would cause cross-chat/cross-session bleed. Each MCP connection starts fresh.
 
-**Input:** `{ "graph": "Work" }` (nickname or name)
+### 8.3 Auto-Select for Single-Graph Users
 
-**What it does:**
-1. Resolve graph by nickname (or name as fallback)
-2. Call Local API: `POST /api/{graph}` with `{"action": "data.ai.getGraphGuidelines"}`
-3. If API fails → `select_graph` fails (graph unreachable)
-4. If API succeeds → set session state, return guidelines
+If exactly one graph is configured (either via env vars or a config file with one entry):
+- **Auto-select it on server startup** — no need for the AI to call `select_graph`
+- This covers 90%+ of users
 
-**Success Response:**
-```json
-{
-  "graph_name": "jfb-work-notes-2024",
-  "nickname": "Work",
-  "permissions": ["read", "append", "edit"],
-  "guidelines": "## Agent Guidelines\n\n1. Use ISO dates...",
-  "guidelines_hash": "sha256:abc123..."
-}
-```
+If multiple graphs are configured:
+- Start with **no graph selected**
+- Any tool that requires a graph returns a structured error until `select_graph` is called
 
-| Field | Description |
-|-------|-------------|
-| `graph_name` | The actual graph name in Roam |
-| `nickname` | The human-friendly nickname from config |
-| `permissions` | Array of granted scopes from the token |
-| `guidelines` | Content of the "agent guidelines" page, or null |
-| `guidelines_hash` | Hash of guidelines for caching (optional) |
+### 8.4 Agent Simplicity: AI Does NOT Need to Know Graph Types
 
-**This inherently validates graph reachability** - no separate health check needed.
+The AI agent should NEVER need to specify or think about graph types (hosted vs offline). It only uses graph names or nicknames. The MCP server internally maps each name/nickname to the correct `(name, type, token)` tuple and adds the `?type=` query parameter when calling the Local API.
 
-### `current_graph`
+### 8.5 Core Graph Management Tools
 
-Return the currently active graph and its metadata.
+| Tool | Purpose |
+|------|---------|
+| `list_graphs` | Return all configured graphs with nicknames. No graph needs to be selected. |
+| `select_graph` | Set active graph for the session. Should call the API to validate reachability and fetch guidelines. |
+| `current_graph` | Return active graph name + metadata. Error if none selected. |
 
-**Response (graph selected):**
-```json
-{
-  "graph_name": "jfb-work-notes-2024",
-  "nickname": "Work",
-  "permissions": ["read", "append", "edit"]
-}
-```
+### 8.6 Guidelines on select_graph
 
-**Response (no graph selected):**
+When `select_graph` is called, the MCP server should:
+1. Resolve graph by name or nickname
+2. Call the Local API: `POST /api/{graph}` with `{"action": "data.ai.getGraphGuidelines", "args": [{}]}`
+3. If the API call fails, `select_graph` should fail (graph unreachable or token invalid)
+4. If the API call succeeds, return guidelines + metadata to the AI, set session state
+
+This inherently validates that the graph is reachable, the token is valid, and the graph is loaded. No separate health check is needed.
+
+### 8.7 Error Format for Graph Not Selected
+
+When a tool is called without a selected graph (multi-graph mode):
 ```json
 {
   "error": {
     "code": "GRAPH_NOT_SELECTED",
-    "message": "No graph selected."
-  }
-}
-```
-
----
-
-## Auto-Select Behavior
-
-**If exactly one graph is configured:**
-- Auto-select it on MCP server startup
-- No need to call `select_graph`
-- 90%+ of users benefit from this simplification
-
-**If multiple graphs are configured:**
-- Start with NO graph selected
-- Any "real" tool (get_page, create_block, etc.) returns `GRAPH_NOT_SELECTED` error
-- Agent must call `select_graph` first
-
----
-
-## MCP Error Format for Model Recovery
-
-When a tool is called without a selected graph, return a structured error that enables AI models to self-correct:
-
-```json
-{
-  "error": {
-    "code": "GRAPH_NOT_SELECTED",
-    "message": "No graph selected. Call select_graph first.",
+    "message": "No graph selected. Call select_graph(graph_name) first.",
     "available_graphs": [
-      { "nickname": "Work", "name": "jfb-work-notes-2024" },
-      { "nickname": "Personal", "name": "personal-zettelkasten" }
+      {"name": "jfb-work-notes-2024", "nickname": "Work"},
+      {"name": "personal-zettelkasten", "nickname": "Personal"}
     ],
     "suggested_next_tool": "select_graph"
   }
 }
 ```
 
-This structured format helps the agent recover automatically.
-
 ---
 
-## Integration Flow
+## 9. Making API Calls from the MCP Server
 
-```
-MCP Server                          Local API (Roam Desktop)
-    |                                      |
-    |  POST /api/{graph}?type=offline      |
-    |  Authorization: Bearer {token}       |
-    |  {"action": "data.ai.getPage", ...}  |
-    |------------------------------------->|
-    |                                      |
-    |                            Validates token for graph
-    |                            Checks scopes
-    |                            Executes roamAlphaAPI call
-    |                                      |
-    |<-------------------------------------|
-    |  {"success": true, "result": {...}}  |
-```
+### 9.1 Request Construction
 
-Each `(name, type, token)` tuple in the MCP config corresponds to a local API token created in Roam's Graph Settings.
+For every API call, the MCP server must:
 
----
+1. **Read the port** from `~/.roam-local-api.json`
+2. **Look up the active graph's** name, type, and token
+3. **Construct the URL**: `http://localhost:{port}/api/{graph-name}` with `?type=offline` if the graph type is offline (omit for hosted)
+4. **Set headers**:
+   - `Content-Type: application/json`
+   - `Authorization: Bearer {token}`
+5. **Send the POST body** with `action` and `args`
 
-## Session and Connection Lifecycle
+### 9.2 Response Handling
 
-**Important:** MCP connection ≠ chat. The server process may persist across multiple chats.
-
-**Implications:**
-1. Session state is **per-connection**, stored in memory
-2. **Do NOT persist "last used graph" to disk** - this would cause cross-chat/cross-session bleed
-3. Auto-select only happens on init when exactly 1 graph is configured
-4. Each new connection starts fresh (no graph selected, unless auto-select applies)
-
-### Why `last-graph` Was Removed from the API Info File
-
-The Local API previously wrote `last-graph` to `~/.roam-local-api.json`. **This was removed** because:
-
-1. **Graph selection is the MCP's responsibility**, not the Local API's
-2. **The Local API should be stateless** - it validates tokens and executes requests
-3. **Persisting "last used graph" causes cross-chat bleed** - if user switches graphs in one chat, it shouldn't affect another
-4. **The token itself identifies the graph** - no ambient state needed
-
-**Do NOT rely on or expect a `last-graph` field in `~/.roam-local-api.json`.**
-
----
-
-## V2 Considerations (Out of Scope for V1)
-
-These features may be added in future versions:
-
-1. **Optional `graph` parameter on tools** - Allow tools to specify a graph without changing session state (for cross-graph operations)
-2. **Rate limiting** - Rely on Local API rate limiting for now
-3. **Resource-based guidelines** - Optimize large guidelines via MCP resources protocol
-
----
-
-## Token Acquisition Flow
-
-### Option A: User Creates Token Manually
-
-1. User opens Roam Desktop → Graph Settings → Local API Tokens
-2. User creates token with desired scope
-3. User copies token and adds to `~/.roam-mcp.json`
-
-### Option B: Programmatic Token Exchange
-
-1. MCP detects graph has no token (or token is invalid)
-2. Call `POST /api/graphs/tokens/request` with graph name and desired access level
-3. Roam opens the graph window and shows permission dialog to user
-4. User approves → MCP receives token in response
-5. MCP stores token in config file for future use
-6. Handle errors: `USER_REJECTED`, `GRAPH_BLOCKED`, `TIMEOUT`, etc.
-
-**Recommendation:** Support both flows. Option A for initial setup, Option B for better UX when adding new graphs.
-
----
-
-## Request Flow (Internal to MCP)
-
-When the MCP receives a tool call:
-
-```
-1. Check if graph is selected
-   - If not: return GRAPH_NOT_SELECTED error with available_graphs
-
-2. Look up graph config by current selection
-   - Get: name, type, token
-
-3. Build Local API request:
-   - URL: http://localhost:{port}/api/{name}
-   - If type == "offline": append ?type=offline
-   - Header: Authorization: Bearer {token}
-   - Body: { action, args }
-
-4. Send request, handle response
-
-5. Map Local API errors to MCP errors:
-   - INSUFFICIENT_SCOPE → inform about token permissions
-   - SCOPE_EXCEEDS_PERMISSION → action not allowed
-   - 401 → token invalid, may need re-auth
+**Success:**
+```json
+{"success": true, "result": "..."}
 ```
 
----
+**Errors to handle:**
 
-## Error Handling
+| HTTP Status | Meaning | MCP Server Action |
+|-------------|---------|-------------------|
+| 401 | Invalid/missing token | Report auth error to user. Token may have been revoked. |
+| 403 (INSUFFICIENT_SCOPE) | Token lacks permission for this action | Report scope error. User needs to create a token with broader scopes. |
+| 403 (SCOPE_EXCEEDS_PERMISSION) | User's Roam permission was demoted | Report permission change. User needs to check their Roam graph access. |
+| 500 | Server error (e.g., corrupted token file) | Report internal error. |
+| 504 | Graph loading timeout (30 min expired) | Graph failed to load in time. May need password for encrypted graph. |
+| Connection refused | Roam Desktop not running or API not available | Report that Roam Desktop needs to be running. |
+| ECONNREFUSED on port | Port changed or Roam restarted | Re-read `~/.roam-local-api.json` and retry. |
 
-### Local API Error → MCP Error Mapping
+### 9.3 Important: Graph Window May Need to Open
 
-```
-if error.code == "INSUFFICIENT_SCOPE":
-    # Token doesn't have required scope for this action
-    # Return error suggesting user create a more permissive token
+When an API call targets a graph that isn't currently open in Roam, the Local API will **automatically open a new window** for that graph. The HTTP request will block until the graph is loaded and ready.
 
-elif error.code == "SCOPE_EXCEEDS_PERMISSION":
-    # User's Roam permissions changed (e.g., demoted from editor to reader)
-    # This action is genuinely not allowed for this user
+**Server-side timeouts:**
+- **30 minutes** for graph loading / API readiness (`api-ready-timeout-ms`). This is deliberately long because **encrypted graphs require the user to manually enter their decryption password** before the API becomes available. If the user isn't at their computer, the request will block for the full 30 minutes and then return HTTP 504.
+- **1 hour** for actual API action execution (IPC timeout between main and renderer process).
+- If the graph window is **closed or destroyed** during the wait, the request fails immediately with HTTP 500.
 
-elif error.code == "USER_REJECTED":
-    # User declined token exchange request
-    # Don't retry immediately; inform user
-
-elif error.code == "GRAPH_BLOCKED":
-    # User permanently blocked token requests for this graph
-    # Inform user they need to unblock in Roam settings
-
-elif error.code == "REQUEST_IN_PROGRESS":
-    # Another token request is pending for this graph
-    # Wait or fail gracefully
-
-elif error.code == "TIMEOUT":
-    # User didn't respond to token exchange in 5 minutes
-    # Allow retry
-
-elif status == 401:
-    # Token invalid, expired, or wrong graph
-    # May need to re-acquire token via exchange or manual creation
-
-elif status == 403 and "Local API is disabled":
-    # User needs to enable Local API in Roam settings
-```
+**For the MCP server, this means:**
+- **Do not set client-side timeouts shorter than the server-side timeouts**, or the MCP will give up before the server does. For encrypted graphs, the user may genuinely need several minutes to notice the window, enter their password, and wait for the graph to load.
+- The first request to a graph may be noticeably slower than subsequent ones.
+- For encrypted graphs specifically, the user must be physically present to enter their password — there is no way to bypass this programmatically.
 
 ---
 
-## Migration Checklist for roam-mcp
+## 10. Token Exchange Flow (Programmatic Token Acquisition)
 
-### Breaking Changes to Address
+The MCP server can request tokens programmatically instead of requiring users to manually create them in Roam settings and copy-paste them.
 
-- [ ] **Remove env var config** - No more `ROAM_GRAPH`, `ROAM_GRAPH_TYPE`, `ROAM_API_TOKEN` env vars
-- [ ] **Remove `last-graph` reliance** - Don't read `last-graph` from `~/.roam-local-api.json`
-- [ ] **Add config file support** - Read from `~/.roam-mcp.json` (or `--config` path)
+### 10.1 When to Use Token Exchange
 
-### New Features to Implement
+Use this when the user has NOT configured a token yet. The flow is:
+1. MCP server detects missing token
+2. MCP server calls `POST /api/graphs/tokens/request`
+3. Roam shows a permission dialog to the user
+4. User approves/rejects
+5. If approved, MCP server receives the token in the HTTP response and stores it
 
-- [ ] **Token authentication** - Add `Authorization: Bearer {token}` header to ALL API requests
-- [ ] **Graph type support** - Add `?type=offline` query param for offline graphs
-- [ ] **Multi-graph support** - Implement `list_graphs`, `select_graph`, `current_graph` tools
-- [ ] **Session state** - Track currently selected graph per-connection
-- [ ] **Auto-select** - Auto-select if exactly one graph configured
-- [ ] **Nickname resolution** - Map nicknames to graph configs
-- [ ] **Config validation** - Validate uniqueness, handle same-name collisions (ignore offline)
+### 10.2 Implementation Considerations
 
-### Token Exchange (Optional but Recommended)
+- **This is a long-polling request** (up to 5 minutes). Use appropriate timeout handling.
+- **Handle 409 (REQUEST_IN_PROGRESS)**: If another tool already sent a request, wait or inform the user.
+- **Handle 403 (GRAPH_BLOCKED)**: The user previously clicked "Never Allow" for this graph. Inform the user they need to unblock in Roam settings.
+- **Handle 408 (TIMEOUT)**: The user didn't respond in 5 minutes. Allow retry.
+- **The granted access level may differ from what was requested**: Always check `grantedAccessLevel` and `grantedScopes` in the response. A reader can only grant `read-only` even if you requested `full`.
+- **Store the received token securely**: The token is shown only once.
 
-- [ ] **Implement token exchange** - Call `POST /api/graphs/tokens/request` when token missing/invalid
-- [ ] **Store acquired tokens** - Write back to config file on successful exchange
-- [ ] **Handle exchange errors** - USER_REJECTED, GRAPH_BLOCKED, TIMEOUT, etc.
+---
 
-### Error Handling
+## 11. CORS Notes
 
-- [ ] **Handle new error codes** - INSUFFICIENT_SCOPE, SCOPE_EXCEEDS_PERMISSION, GRAPH_NOT_SELECTED
-- [ ] **Structured errors** - Return errors with `code`, `message`, `available_graphs`, `suggested_next_tool`
-- [ ] **401 handling** - Detect invalid tokens and guide toward re-authentication
+The Local API returns `Access-Control-Allow-Origin: *`. This is intentional — the token provides the security boundary, not CORS. The MCP server (running as a local process, not in a browser) is unaffected by CORS anyway, but this is noted for completeness.
 
-### Documentation
+---
 
-- [ ] **Update user docs** - Explain new config file format
-- [ ] **Explain token creation** - How to create tokens in Roam settings
-- [ ] **Explain graph selection** - How multi-graph works with nicknames
+## 12. Breaking Changes from the Old (Pre-Token) API
+
+If the MCP server was built against the old unauthenticated API, these changes are required:
+
+| Change | Old Behavior | New Behavior |
+|--------|-------------|--------------|
+| Authentication | None required | Bearer token required on all `/api/{graph}` calls |
+| Enable toggle | User must enable API in Settings menu | API always runs; auth is the security boundary |
+| `~/.roam-local-api.json` | Contains `port` and `last-graph` | Contains only `port` (`last-graph` removed) |
+| Graph type | Not specified | Must specify `?type=offline` for offline graphs |
+| Error format | Varied | Consistent `{success, error: {code, message}}` |
+| Discovery endpoints | Primary way to find graphs | Still exist but deprecated for normal use; may require auth in future |
+
+---
+
+## 13. Common Pitfalls and Things to Watch For
+
+1. **Don't hardcode port 3333.** Always read from `~/.roam-local-api.json`.
+
+2. **Don't confuse local and remote token prefixes.** Local: `roam-graph-local-token-`. Remote: `roam-graph-token-`. The Local API rejects remote tokens.
+
+3. **Don't forget `?type=offline` for offline graphs.** Without it, the server assumes hosted, and the token won't match.
+
+4. **Don't send `deviceName` in token exchange requests.** It's auto-detected. Including it in the request body will be ignored.
+
+5. **Don't assume requested access level = granted access level.** Always check `grantedAccessLevel` / `grantedScopes` in the token exchange response.
+
+6. **Don't persist "last used graph" to disk.** Graph selection is session-local only.
+
+7. **Don't expose graph types to the AI agent.** The agent should only see names/nicknames. The MCP server handles type internally.
+
+8. **Don't rely on discovery endpoints.** They may be removed or authenticated. Use config-driven graph management.
+
+9. **Handle ECONNREFUSED gracefully.** Roam Desktop may not be running. Re-read the port file and consider that Roam may have restarted on a different port.
+
+10. **Handle scope errors distinctly from auth errors.** A 401 means the token is invalid/wrong. A 403 with `INSUFFICIENT_SCOPE` means the token is valid but lacks permission. A 403 with `SCOPE_EXCEEDS_PERMISSION` means the user's Roam permissions changed.
+
+11. **The `accessLevel` field in token exchange must be explicit.** There is no default. You must send one of `"read-only"`, `"read-append"`, or `"full"`. Missing or invalid values return 400.
+
+12. **Nickname matching should be case-insensitive.** When the AI calls `select_graph("work")`, it should match a graph with nickname `"Work"`.
+
+13. **Token exchange only allows one concurrent request per graph.** If you send two requests for the same graph simultaneously, the second gets 409.
+
+14. **The `result` field in successful responses can be any JSON type**: object, array, string, number, null, or boolean. It depends on which roamAlphaAPI function was called.
+
+---
+
+## 14. Quick Reference: All Endpoints
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/{graph}` | Bearer token | Execute roamAlphaAPI action |
+| POST | `/api/{graph}?type=offline` | Bearer token | Execute action on offline graph |
+| GET | `/api/graphs/open` | None | List open graph windows |
+| GET | `/api/graphs/available` | None | List all accessible graphs |
+| POST | `/api/graphs/tokens/request` | None | Request a token (shows user dialog) |
+
+---
+
+## 15. Quick Reference: All Error Codes
+
+| Code | HTTP Status | Meaning |
+|------|-------------|---------|
+| *(no code, just message)* | 401 | Authentication failure (missing/invalid/wrong token) |
+| *(no code, just message)* | 500 | Token file corrupted |
+| `INSUFFICIENT_SCOPE` | 403 | Token doesn't have required scope for this action |
+| `SCOPE_EXCEEDS_PERMISSION` | 403 | Action exceeds user's current Roam permissions |
+| `GRAPH_NOT_SELECTED` | *(MCP-level)* | No graph selected in multi-graph mode |
+| `USER_REJECTED` | 403 | User denied token exchange request |
+| `GRAPH_BLOCKED` | 403 | User previously clicked "Never Allow" for this graph |
+| `REQUEST_IN_PROGRESS` | 409 | Another token exchange request is pending for this graph |
+| `TIMEOUT` | 408 | Token exchange request timed out (5 min) |
+| `VALIDATION_ERROR` | 400 | Invalid token exchange request body |
+| `CANCELLED` | *(varies)* | Token exchange cancelled (client disconnected) |
