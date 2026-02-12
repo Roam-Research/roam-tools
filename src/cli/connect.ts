@@ -125,6 +125,14 @@ function getErrorCode(error: TokenExchangeResponse["error"]): string | undefined
   return error.code;
 }
 
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
 // ============================================================================
 // Main Connect Function
 // ============================================================================
@@ -413,27 +421,29 @@ export async function connect(): Promise<void> {
   // 11. Get nickname
   const suggestedNickname =
     finalSelectedGraph.existingNickname ||
-    finalSelectedGraph.name
-      .split("-")[0]
-      .replace(/^\w/, (c) => c.toUpperCase());
+    slugify(finalSelectedGraph.name.split("-")[0]);
 
-  const nickname = await input({
+  const rawNickname = await input({
     message: "Enter a nickname for this graph:",
     default: suggestedNickname,
     validate: (value) => {
-      if (!value.trim()) return "Nickname cannot be empty";
+      const slug = slugify(value.trim());
+      if (!slug) return "Nickname cannot be empty";
       // Check for existing nickname (excluding the current graph if updating)
       const existing = configuredGraphs.find(
         (g) =>
-          g.nickname.toLowerCase() === value.toLowerCase() &&
+          g.nickname === slug &&
           !(g.name === finalSelectedGraph.name && g.type === finalSelectedGraph.type)
       );
       if (existing) {
-        return `Nickname "${value}" is already used by "${existing.name}"`;
+        return `Nickname "${slug}" is already used by "${existing.name}"`;
       }
       return true;
     },
   });
+
+  const nickname = slugify(rawNickname.trim());
+  console.log(`→ Using nickname: ${nickname}`);
 
   // 12. Save to config
   if (!result.token) {
@@ -446,13 +456,13 @@ export async function connect(): Promise<void> {
     name: finalSelectedGraph.name,
     type: finalSelectedGraph.type,
     token: result.token,
-    nickname: nickname.trim(),
+    nickname,
     accessLevel: result.grantedAccessLevel as AccessLevel,
   };
 
   await saveGraphToConfig(graphConfig);
 
-  console.log(`\nConnected! Graph "${nickname}" saved to ~/.roam-tools.json`);
+  console.log(`\nConnected! Graph ${finalSelectedGraph.name} (nickname: ${nickname}) has been saved to ~/.roam-tools.json`);
   console.log(`\nGranted permissions: ${result.grantedAccessLevel}`);
 
   if (result.grantedAccessLevel !== accessLevel) {

@@ -37,7 +37,9 @@ export const GraphConfigSchema = z.object({
   name: z.string().regex(GRAPH_NAME_PATTERN, "Graph name can only contain letters, numbers, hyphens, and underscores").describe("Actual graph name in Roam"),
   type: z.enum(["hosted", "offline"]).default("hosted").describe("Graph type"),
   token: z.string().startsWith("roam-graph-local-token-").describe("Local API token"),
-  nickname: z.string().describe("Human-friendly name for the graph"),
+  nickname: z.string()
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Nickname must be lowercase letters, numbers, and hyphens")
+    .describe("Short identifier for the graph (lowercase, hyphens, no spaces)"),
   accessLevel: z.enum(["read-only", "read-append", "full"]).optional().describe("Token access level"),
 });
 export type GraphConfig = z.infer<typeof GraphConfigSchema>;

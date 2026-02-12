@@ -18,11 +18,11 @@ import {
   getOpenWindows, getSelection, openMainWindow, openSidebar,
 } from "./operations/navigation.js";
 import { FileGetSchema, FileUploadSchema, FileDeleteSchema, getFile, uploadFile, deleteFile } from "./operations/files.js";
-import { ListGraphsSchema, SelectGraphSchema, CurrentGraphSchema, listGraphs, selectGraph, currentGraph } from "./operations/graphs.js";
+import { ListGraphsSchema, listGraphs } from "./operations/graphs.js";
 
 // Common schema for graph parameter (used by most tools)
 const GraphSchema = z.object({
-  graph: z.string().optional().describe("Graph nickname or name (optional - uses selected graph if omitted)"),
+  graph: z.string().optional().describe("Graph nickname (optional - auto-selects if only one graph is configured)"),
 });
 
 // Helper to extend any schema with graph parameter
@@ -82,149 +82,140 @@ function defineStandaloneTool<T extends z.ZodRawShape>(
 const graphManagementTools: StandaloneToolDefinition[] = [
   defineStandaloneTool(
     "list_graphs",
-    "List all configured graphs with their nicknames. Use this to see available graphs before selecting one.",
+    "List all configured graphs with their nicknames. Also provides setup instructions for connecting additional graphs.",
     ListGraphsSchema,
     listGraphs
   ),
-  defineStandaloneTool(
-    "select_graph",
-    "Set the active graph for this session and return its guidelines. Call this before using other tools when multiple graphs are configured, or to switch between graphs.",
-    SelectGraphSchema,
-    selectGraph
-  ),
-  defineStandaloneTool(
-    "current_graph",
-    "Return the currently active graph and its metadata. Returns an error with available graphs if no graph is selected.",
-    CurrentGraphSchema,
-    currentGraph
-  ),
 ];
+
+// Note appended to all client tool descriptions
+const GUIDELINES_NOTE = "\n\nNote: Call get_graph_guidelines first when starting to work with a graph.";
 
 // Content Tools (require graph/client)
 const contentTools: ClientToolDefinition[] = [
   defineTool(
     "get_graph_guidelines",
-    "Get the agent guidelines for the current graph. Returns user-defined instructions for AI agents. Use select_graph to switch graphs or see guidelines on first connection.",
+    "IMPORTANT: Call this tool first when starting to work with a graph, before performing any other operations. Returns user-defined instructions and preferences for AI agents. The user may have specified naming conventions, preferred structures, or constraints that should guide your behavior.",
     GetGuidelinesSchema,
     getGuidelines
   ),
   defineTool(
     "create_page",
-    "Create a new page in Roam, optionally with markdown content.",
+    "Create a new page in Roam, optionally with markdown content." + GUIDELINES_NOTE,
     CreatePageSchema,
     createPage
   ),
   defineTool(
     "create_block",
-    "Create a new block under a parent, using markdown content. Supports nested bulleted lists - pass a markdown string with `- ` list items and indentation to create an entire block hierarchy in a single call.",
+    "Create a new block under a parent, using markdown content. Supports nested bulleted lists - pass a markdown string with `- ` list items and indentation to create an entire block hierarchy in a single call." + GUIDELINES_NOTE,
     CreateBlockSchema,
     createBlock
   ),
   defineTool(
     "update_block",
-    "Update an existing block's content or properties.",
+    "Update an existing block's content or properties." + GUIDELINES_NOTE,
     UpdateBlockSchema,
     updateBlock
   ),
   defineTool(
     "delete_block",
-    "Delete a block and all its children.",
+    "Delete a block and all its children." + GUIDELINES_NOTE,
     DeleteBlockSchema,
     deleteBlock
   ),
   defineTool(
     "move_block",
-    "Move a block to a new location.",
+    "Move a block to a new location." + GUIDELINES_NOTE,
     MoveBlockSchema,
     moveBlock
   ),
   defineTool(
     "delete_page",
-    "Delete a page and all its contents.",
+    "Delete a page and all its contents." + GUIDELINES_NOTE,
     DeletePageSchema,
     deletePage
   ),
   defineTool(
     "update_page",
-    "Update a page's title or children view type. Set mergePages to true if renaming to a title that already exists.",
+    "Update a page's title or children view type. Set mergePages to true if renaming to a title that already exists." + GUIDELINES_NOTE,
     UpdatePageSchema,
     updatePage
   ),
   defineTool(
     "search",
-    "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths.",
+    "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths." + GUIDELINES_NOTE,
     SearchSchema,
     search
   ),
   defineTool(
     "search_templates",
-    "Search Roam templates by name. When the user mentions 'my X template' or 'the X template', use this tool to find it. Templates are user-created reusable content blocks tagged with [[roam/templates]]. Returns template name, uid, and content as markdown.",
+    "Search Roam templates by name. When the user mentions 'my X template' or 'the X template', use this tool to find it. Templates are user-created reusable content blocks tagged with [[roam/templates]]. Returns template name, uid, and content as markdown." + GUIDELINES_NOTE,
     SearchTemplatesSchema,
     searchTemplates
   ),
   defineTool(
     "roam_query",
-    'Execute a Roam query ({{query: }} or {{[[query]]: }} blocks, NOT Datalog). Two modes: (1) UID mode - pass a block UID containing a query component to run it with saved settings/filters; (2) Query mode - pass a raw query string like "{and: [[TODO]] {not: [[DONE]]}}". Returns paginated results with markdown content.',
+    'Execute a Roam query ({{query: }} or {{[[query]]: }} blocks, NOT Datalog). Two modes: (1) UID mode - pass a block UID containing a query component to run it with saved settings/filters; (2) Query mode - pass a raw query string like "{and: [[TODO]] {not: [[DONE]]}}". Returns paginated results with markdown content.' + GUIDELINES_NOTE,
     QuerySchema,
     query
   ),
   defineTool(
     "get_page",
-    "Get a page's content as markdown. Returns content with <roam> metadata tags containing UIDs - use these for follow-up operations but strip them when showing content to the user. Show remaining content verbatim, never paraphrase. Use maxDepth for large pages.",
+    "Get a page's content as markdown. Returns content with <roam> metadata tags containing UIDs - use these for follow-up operations but strip them when showing content to the user. Show remaining content verbatim, never paraphrase. Use maxDepth for large pages." + GUIDELINES_NOTE,
     GetPageSchema,
     getPage
   ),
   defineTool(
     "get_block",
-    "Get a block's content as markdown. Returns content with <roam> metadata tags containing UIDs - use these for follow-up operations but strip them when showing content to the user. Show remaining content verbatim, never paraphrase. Use maxDepth for large blocks.",
+    "Get a block's content as markdown. Returns content with <roam> metadata tags containing UIDs - use these for follow-up operations but strip them when showing content to the user. Show remaining content verbatim, never paraphrase. Use maxDepth for large blocks." + GUIDELINES_NOTE,
     GetBlockSchema,
     getBlock
   ),
   defineTool(
     "get_backlinks",
-    "Get paginated backlinks (linked references) for a page or block, formatted as markdown. Returns total count and results with optional breadcrumb paths.",
+    "Get paginated backlinks (linked references) for a page or block, formatted as markdown. Returns total count and results with optional breadcrumb paths." + GUIDELINES_NOTE,
     GetBacklinksSchema,
     getBacklinks
   ),
   defineTool(
     "get_open_windows",
-    "Get the current view in the main window and all open sidebar windows.",
+    "Get the current view in the main window and all open sidebar windows." + GUIDELINES_NOTE,
     GetOpenWindowsSchema,
     getOpenWindows
   ),
   defineTool(
     "get_selection",
-    "Get the currently focused block and any multi-selected blocks.",
+    "Get the currently focused block and any multi-selected blocks." + GUIDELINES_NOTE,
     GetSelectionSchema,
     getSelection
   ),
   defineTool(
     "open_main_window",
-    "Navigate to a page or block in the main window.",
+    "Navigate to a page or block in the main window." + GUIDELINES_NOTE,
     OpenMainWindowSchema,
     openMainWindow
   ),
   defineTool(
     "open_sidebar",
-    "Open a page or block in the right sidebar.",
+    "Open a page or block in the right sidebar." + GUIDELINES_NOTE,
     OpenSidebarSchema,
     openSidebar
   ),
   defineTool(
     "file_get",
-    "Fetch a file hosted on Roam (handles decryption for encrypted graphs).",
+    "Fetch a file hosted on Roam (handles decryption for encrypted graphs)." + GUIDELINES_NOTE,
     FileGetSchema,
     getFile
   ),
   defineTool(
     "file_upload",
-    "Upload an image to Roam. Returns the Firebase storage URL. Usually you'll want to create a new block with the image as markdown: `![](url)`. Provide ONE of: filePath (preferred - local file, server reads directly), url (remote URL, server fetches), or base64 (raw data, fallback for sandboxed clients).",
+    "Upload an image to Roam. Returns the Firebase storage URL. Usually you'll want to create a new block with the image as markdown: `![](url)`. Provide ONE of: filePath (preferred - local file, server reads directly), url (remote URL, server fetches), or base64 (raw data, fallback for sandboxed clients)." + GUIDELINES_NOTE,
     FileUploadSchema,
     uploadFile
   ),
   defineTool(
     "file_delete",
-    "Delete a file hosted on Roam.",
+    "Delete a file hosted on Roam." + GUIDELINES_NOTE,
     FileDeleteSchema,
     deleteFile
   ),
@@ -237,6 +228,36 @@ export const tools: ToolDefinition[] = [
 
 export function findTool(name: string): ToolDefinition | undefined {
   return tools.find((t) => t.name === name);
+}
+
+/**
+ * Prepend graph nickname to a tool result.
+ */
+function prependGraphInfo(result: CallToolResult, nickname: string): CallToolResult {
+  const prefix = `Roam graph: ${nickname}`;
+  const content = result.content;
+
+  if (!content || content.length === 0) return result;
+
+  const first = content[0];
+  if (first.type === "text") {
+    return {
+      ...result,
+      content: [
+        { ...first, text: `${prefix}\n\n${first.text}` },
+        ...content.slice(1),
+      ],
+    };
+  }
+
+  // For image or other content types, prepend a text block
+  return {
+    ...result,
+    content: [
+      { type: "text", text: prefix },
+      ...content,
+    ],
+  };
 }
 
 export async function routeToolCall(
@@ -287,7 +308,13 @@ export async function routeToolCall(
       port,
     });
 
-    return await tool.action(client, restArgs);
+    const result = await tool.action(client, restArgs);
+
+    // Prepend graph info to successful responses
+    if (!result.isError) {
+      return prependGraphInfo(result, resolvedGraph.nickname);
+    }
+    return result;
   } catch (error) {
     if (error instanceof RoamError) {
       return textResult({

@@ -30,14 +30,14 @@ This is a Model Context Protocol (MCP) server and CLI for Roam Research. Both in
 
 - `src/core/client.ts` - `RoamClient` class for authenticated HTTP calls to Roam's local API. Requires token and graph type.
 
-- `src/core/graph-resolver.ts` - Loads config from `~/.roam-tools.json`, manages session state, resolves graphs by nickname or name.
+- `src/core/graph-resolver.ts` - Loads config from `~/.roam-tools.json`, resolves graphs by nickname or name (stateless, no session state).
 
 - `src/core/types.ts` - TypeScript types, Zod schemas for config validation, error codes and `RoamError` class.
 
 ### Operations
 
 Operations in `src/core/operations/` are organized by domain:
-- `graphs.ts` - Graph management (list, select, current)
+- `graphs.ts` - Graph management (list)
 - `pages.ts` - Create, get, update, delete pages; get graph guidelines
 - `blocks.ts` - Create, get, update, delete, move blocks; get backlinks
 - `search.ts` - Text search and template search
@@ -55,7 +55,8 @@ Operations in `src/core/operations/` are organized by domain:
       "name": "actual-graph-name",
       "type": "hosted",
       "token": "roam-graph-local-token-...",
-      "nickname": "MyGraph"
+      "nickname": "my-graph",
+      "accessLevel": "full"
     }
   ]
 }
@@ -66,7 +67,7 @@ Operations in `src/core/operations/` are organized by domain:
 ### Key Patterns
 
 - All client tools get an optional `graph` parameter via `withGraph()` helper
-- Standalone tools (list_graphs, select_graph, current_graph) don't use withGraph
+- Standalone tools (list_graphs) don't use withGraph
 - Zod schemas drive both validation and CLI option generation
 - `RoamError` class carries error codes and context for structured error responses
 - API versioning: `EXPECTED_API_VERSION` in types.ts must match Roam's API version
@@ -82,7 +83,13 @@ Operations in `src/core/operations/` are organized by domain:
 
 ### Graph Resolution Priority
 
+Resolution is stateless — every tool call resolves the graph independently:
+
 1. Explicit `graph` parameter on tool call
-2. Session state (set by select_graph or previous calls)
-3. Auto-select if exactly one graph configured
-4. Error with available_graphs if multiple graphs and none selected
+2. Auto-select if exactly one graph configured
+3. Error with available_graphs if multiple graphs and no `graph` param
+
+### Known Issues
+
+- `client.ts`: `isConnectionError()` is too broad — `error.cause !== undefined` matches any wrapped error, not just network failures
+- `client.ts`: `handleVersionMismatch()` calls `process.exit(1)` which kills the MCP server; should throw `RoamError` instead

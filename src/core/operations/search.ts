@@ -8,7 +8,7 @@ export const SearchSchema = z.object({
   query: z.string().describe("Search query"),
   scope: z.enum(["pages", "blocks", "all"]).optional().describe("Search scope: 'pages' for page titles only, 'blocks' for block content only, 'all' for both (default: 'all')"),
   offset: z.coerce.number().optional().describe("Skip first N results (default: 0)"),
-  limit: z.coerce.number().optional().describe("Max results (default: 20)"),
+  limit: z.coerce.number().optional().describe("Max results (default: 100)"),
   includePath: z.boolean().optional().describe("Include breadcrumb path to each result (default: true)"),
   maxDepth: z.coerce.number().optional().describe("Max depth of children to include in markdown (default: 0)"),
 });

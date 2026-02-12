@@ -87,11 +87,11 @@ Run Claude Code from the roam-mcp directory. The MCP server is configured in `.m
 
 ### Multiple Graphs
 
-Run `npm run cli -- connect` multiple times to add additional graphs. Each graph gets a nickname for easy selection.
+Run `npm run cli -- connect` multiple times to add additional graphs. Each graph gets a nickname (a lowercase slug like `work` or `team-acme`) for easy selection.
 
 **Graph Selection:**
 - **Single graph configured**: Auto-selected, no action needed
-- **Multiple graphs configured**: Use `select_graph` to choose which graph to work with
+- **Multiple graphs configured**: Pass the `graph` parameter on each tool call with the nickname
 
 ### Manual Configuration (Advanced)
 
@@ -104,7 +104,7 @@ Instead of using `connect`, you can manually create `~/.roam-tools.json`:
       "name": "your-graph-name",
       "type": "hosted",
       "token": "roam-graph-local-token-...",
-      "nickname": "MyGraph"
+      "nickname": "my-graph"
     }
   ]
 }
@@ -117,17 +117,16 @@ To create a token manually: Roam Desktop → Settings → Graph → Local API To
 | `name` | Yes | The actual graph name in Roam (as shown in the URL) |
 | `type` | No | `"hosted"` (default) for cloud graphs, `"offline"` for local-only |
 | `token` | Yes | Local API token from Roam settings |
-| `nickname` | Yes | Friendly name used to select this graph |
+| `nickname` | Yes | Slug identifier for this graph (lowercase, hyphens, no spaces) |
+| `accessLevel` | No | `"full"` (default), `"read-only"`, or `"read-append"` |
 
 ## Available Tools
 
 **Graph Management:**
 - `list_graphs` - List all configured graphs with their nicknames
-- `select_graph` - Set the active graph for this session (returns guidelines)
-- `current_graph` - Show the currently active graph
 
 **Graph Guidelines:**
-- `get_graph_guidelines` - Returns user-defined instructions for AI agents
+- `get_graph_guidelines` - Returns user-defined instructions and preferences for AI agents
 
 Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph.
 

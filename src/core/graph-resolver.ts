@@ -1,9 +1,10 @@
 // src/core/graph-resolver.ts
-// v2.0.0 - Config-based graph resolution with token authentication
+// Stateless config-based graph resolution with token authentication
 
 import { readFile, writeFile, chmod, stat } from "fs/promises";
 import { homedir } from "os";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import {
   RoamMcpConfigSchema,
   RoamMcpConfig,
@@ -13,15 +14,8 @@ import {
   ErrorCodes,
 } from "./types.js";
 
-// ============================================================================
-// Session State
-// ============================================================================
-
-// FIXME: This is global/module-level state shared across all connections.
-// If the MCP server is ever reused across sessions, graph selection will bleed.
-// Rethink whether we even want session state / selectedGraph in the MCP server,
-// or if graph should always be resolved per-call from the explicit parameter + config.
-let selectedGraph: ResolvedGraph | null = null;
+// Project root (up from dist/core/ or src/core/)
+export const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // Cached config from ~/.roam-tools.json
 let cachedConfig: RoamMcpConfig | null = null;
@@ -89,15 +83,11 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new RoamError(
-        `Roam MCP config not found at ${CONFIG_PATH}\n\n` +
-          "Please create the config file with your graph configuration:\n\n" +
-          '{\n  "graphs": [\n    {\n' +
-          '      "name": "your-graph-name",\n' +
-          '      "type": "hosted",\n' +
-          '      "token": "roam-graph-local-token-...",\n' +
-          '      "nickname": "MyGraph"\n' +
-          "    }\n  ]\n}\n\n" +
-          "Create a token in Roam: Settings > Graph > Local API Tokens",
+        `No graphs configured. Run the setup command:\n\n` +
+          `  cd ${PROJECT_ROOT}\n` +
+          `  npm run cli -- connect\n\n` +
+          `This will walk you through connecting a Roam graph.\n` +
+          `After connecting, restart this app or conversation for changes to take effect.`,
         ErrorCodes.CONFIG_NOT_FOUND
       );
     }
@@ -303,24 +293,12 @@ export async function getConfiguredGraphs(): Promise<
 }
 
 // ============================================================================
-// Session State Management
-// ============================================================================
-
-export function setSelectedGraph(graph: ResolvedGraph): void {
-  selectedGraph = graph;
-}
-
-export function getSelectedGraph(): ResolvedGraph | null {
-  return selectedGraph;
-}
-
-// ============================================================================
 // Graph Resolution
 // ============================================================================
 
 /**
  * Resolve which graph to use and return full config.
- * Priority: explicit param → session state → single configured graph → error
+ * Stateless: explicit param → single configured graph → error
  */
 export async function resolveGraph(
   providedGraph?: string
@@ -331,61 +309,43 @@ export async function resolveGraph(
   if (providedGraph) {
     const graphConfig = await findGraphConfig(providedGraph);
     if (!graphConfig) {
-      const available = config.graphs.map((g) => g.nickname).join(", ");
       throw new RoamError(
-        `Graph "${providedGraph}" not found in config. Available graphs: ${available}`,
+        `Graph "${providedGraph}" not found in config. Available graph nicknames are listed below.`,
         ErrorCodes.GRAPH_NOT_CONFIGURED,
-        { available_graphs: await getConfiguredGraphs() }
+        {
+          available_graphs: await getConfiguredGraphs(),
+          instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
+        }
       );
     }
-    // Update session state
-    const resolved: ResolvedGraph = {
+    return {
       name: graphConfig.name,
       type: graphConfig.type,
       token: graphConfig.token,
       nickname: graphConfig.nickname,
       accessLevel: graphConfig.accessLevel,
     };
-    selectedGraph = resolved;
-    return resolved;
   }
 
-  // 2. Use session-selected graph
-  if (selectedGraph) {
-    // Verify it's still in config (in case config was reloaded)
-    const stillValid = config.graphs.some((g) => g.name === selectedGraph!.name);
-    if (stillValid) {
-      return selectedGraph;
-    }
-    // Graph was removed from config, clear selection
-    selectedGraph = null;
-  }
-
-  // 3. Auto-select if exactly one graph configured
+  // 2. Auto-select if exactly one graph configured
   if (config.graphs.length === 1) {
     const graphConfig = config.graphs[0];
-    const resolved: ResolvedGraph = {
+    return {
       name: graphConfig.name,
       type: graphConfig.type,
       token: graphConfig.token,
       nickname: graphConfig.nickname,
       accessLevel: graphConfig.accessLevel,
     };
-    selectedGraph = resolved;
-    return resolved;
   }
 
-  // 4. Multiple graphs - require explicit selection
-  const graphList = config.graphs
-    .map((g) => `  - ${g.nickname} (${g.name})`)
-    .join("\n");
+  // 3. Multiple graphs - require explicit selection
   throw new RoamError(
-    `Multiple graphs configured. Please specify which graph to use:\n${graphList}\n\n` +
-      "Use select_graph or pass the graph parameter.",
+    "Multiple graphs configured. Pass a graph nickname as the graph parameter to specify which graph to use.",
     ErrorCodes.GRAPH_NOT_SELECTED,
     {
       available_graphs: await getConfiguredGraphs(),
-      suggested_next_tool: "select_graph",
+      instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
     }
   );
 }
@@ -438,11 +398,5 @@ export async function getOpenGraphs(): Promise<
 // ============================================================================
 
 export function resetState(): void {
-  selectedGraph = null;
   cachedConfig = null;
-}
-
-// Legacy export for compatibility
-export function resetLastUsedGraph(): void {
-  resetState();
 }
