@@ -88,8 +88,3 @@ Resolution is stateless — every tool call resolves the graph independently:
 1. Explicit `graph` parameter on tool call
 2. Auto-select if exactly one graph configured
 3. Error with available_graphs if multiple graphs and no `graph` param
-
-### Known Issues
-
-- `client.ts`: `isConnectionError()` is too broad — `error.cause !== undefined` matches any wrapped error, not just network failures
-- `client.ts`: `handleVersionMismatch()` calls `process.exit(1)` which kills the MCP server; should throw `RoamError` instead

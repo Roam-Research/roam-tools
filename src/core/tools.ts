@@ -260,6 +260,23 @@ function prependGraphInfo(result: CallToolResult, nickname: string): CallToolRes
   };
 }
 
+/**
+ * Convert a RoamError into a structured error result with isError: true.
+ */
+function roamErrorResult(error: RoamError): CallToolResult {
+  const errorPayload = {
+    error: {
+      code: error.code,
+      message: error.message,
+      ...(error.context || {}),
+    },
+  };
+  return {
+    content: [{ type: "text", text: JSON.stringify(errorPayload, null, 2) }],
+    isError: true,
+  };
+}
+
 export async function routeToolCall(
   toolName: string,
   args: Record<string, unknown>
@@ -281,13 +298,7 @@ export async function routeToolCall(
       return await tool.action(parsed.data);
     } catch (error) {
       if (error instanceof RoamError) {
-        return textResult({
-          error: {
-            code: error.code,
-            message: error.message,
-            ...(error.context || {}),
-          },
-        });
+        return roamErrorResult(error);
       }
       throw error;
     }
@@ -317,13 +328,7 @@ export async function routeToolCall(
     return result;
   } catch (error) {
     if (error instanceof RoamError) {
-      return textResult({
-        error: {
-          code: error.code,
-          message: error.message,
-          ...(error.context || {}),
-        },
-      });
+      return roamErrorResult(error);
     }
     throw error;
   }

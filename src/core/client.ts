@@ -66,18 +66,25 @@ export class RoamClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  // TODO: This is too broad — `error.cause !== undefined` matches any wrapped error
-  // (e.g. Zod validation, JSON parse errors), not just network failures.
-  // Should narrow to check error.cause for specific codes like ECONNREFUSED/ECONNRESET.
   private isConnectionError(error: unknown): boolean {
     if (error instanceof Error) {
-      // Node fetch connection errors
-      return (
+      if (
         error.message.includes("ECONNREFUSED") ||
         error.message.includes("fetch failed") ||
-        error.message.includes("network") ||
-        error.cause !== undefined
-      );
+        error.message.includes("network")
+      ) {
+        return true;
+      }
+      // Check error.cause for Node fetch network errors
+      if (error.cause && error.cause instanceof Error) {
+        const causeCode = (error.cause as NodeJS.ErrnoException).code;
+        return (
+          causeCode === "ECONNREFUSED" ||
+          causeCode === "ECONNRESET" ||
+          causeCode === "ENOTFOUND" ||
+          causeCode === "ETIMEDOUT"
+        );
+      }
     }
     return false;
   }
@@ -110,15 +117,10 @@ export class RoamClient {
       }
     }
 
-    // TODO: process.exit() in library code is too aggressive — in MCP context this kills
-    // the entire server. Should throw a RoamError and let the caller decide.
-    console.error(
-      `\n[FATAL] Roam API version mismatch!\n` +
-        `  Roam API version: ${serverVersion}\n` +
-        `  MCP expected version: ${EXPECTED_API_VERSION}\n` +
-        `  ${advice}\n`
+    throw new RoamError(
+      `Roam API version mismatch! Roam API: ${serverVersion}, MCP expected: ${EXPECTED_API_VERSION}. ${advice}`,
+      ErrorCodes.VERSION_MISMATCH
     );
-    process.exit(1);
   }
 
   /**
