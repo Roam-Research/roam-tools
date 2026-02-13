@@ -10,6 +10,7 @@ npm run typecheck    # Type-check without emitting
 npm run mcp          # Run MCP server in dev mode (tsx)
 npm run cli -- <command> [options]  # Run CLI in dev mode
 npm run cli -- connect              # Interactive setup for graph tokens
+npm run cli -- connect --graph <name> --nickname <name>  # Non-interactive setup (for scripts/agents)
 ```
 
 ## Architecture
@@ -20,7 +21,7 @@ This is a Model Context Protocol (MCP) server and CLI for Roam Research. Both in
 
 - `src/mcp/index.ts` - MCP server using stdio transport. Registers tools from `core/tools.ts` with the MCP SDK.
 - `src/cli/index.ts` - CLI using Commander.js. Dynamically generates commands from the same tool definitions.
-- `src/cli/connect.ts` - Interactive setup command for token exchange with Roam.
+- `src/cli/connect.ts` - Setup command for token exchange with Roam. Has two modes: interactive (no flags, uses inquirer prompts) and non-interactive (`--graph` flag, uses CLI options). Both paths must be kept in sync when modifying the connect flow.
 
 ### Core Layer
 

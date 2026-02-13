@@ -85,8 +85,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new RoamError(
         `No graphs configured. Run the setup command:\n\n` +
-          `  cd ${PROJECT_ROOT}\n` +
-          `  npm run cli -- connect\n\n` +
+          `  cd ${PROJECT_ROOT} && npm run cli -- connect\n\n` +
           `This will walk you through connecting a Roam graph.\n` +
           `After connecting, restart this app or conversation for changes to take effect.`,
         ErrorCodes.CONFIG_NOT_FOUND

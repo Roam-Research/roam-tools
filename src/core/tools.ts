@@ -287,8 +287,7 @@ function enrichResultWithTokenStatus(result: CallToolResult, nickname: string): 
     `Roam graph: ${nickname}\n\n` +
     `WARNING: The token for this graph has been revoked.\n` +
     `Run the connect command to set up a new token:\n` +
-    `  cd ${PROJECT_ROOT}\n` +
-    `  npm run cli -- connect\n`;
+    `  cd ${PROJECT_ROOT} && npm run cli -- connect\n`;
 
   const first = result.content?.[0];
   if (first?.type === "text") {

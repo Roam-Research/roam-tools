@@ -41,18 +41,42 @@ npm run build
 
 ### 3. Connect a Graph
 
-Run the interactive setup:
+**Interactive** (recommended for first-time setup):
 
 ```bash
 npm run cli -- connect
 ```
 
-This will:
-1. Open Roam if it's not running
-2. Show your available graphs
-3. Let you select permissions (full, read-append, or read-only)
-4. Open a permission dialog in Roam for you to approve
-5. Save the token to `~/.roam-tools.json`
+This will walk you through selecting a graph, choosing permissions, and approving the token in Roam.
+
+**Non-interactive** (for scripts and LLM agents):
+
+```bash
+# example to connect to a your graph called "my-graph-name" which you generally refer to as "My Team Graph"
+npm run cli -- connect --graph my-graph-name --nickname "My Team Graph" --access-level full
+
+# example to connect to a public graph - our "help" graph
+npm run cli -- connect --graph help --public --nickname "Roam official help graph" 
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--graph <name>` | — | Graph name (enables non-interactive mode) |
+| `--nickname <name>` | Required with `--graph` | Short name you'll use to refer to this graph |
+| `--access-level <level>` | `full` | `full`, `read-append`, or `read-only` |
+| `--public` | — | Public graph (read-only, hosted) |
+| `--type <type>` | `hosted` | `hosted` or `offline` |
+
+**Note:** Both modes require a human to approve the token dialog in the Roam desktop app.
+
+To remove a connection:
+
+```bash
+npm run cli -- connect --remove --graph my-graph-name
+npm run cli -- connect --remove --graph help
+npm run cli -- connect --remove --nickname "My Team Graph"
+npm run cli -- connect --remove --nickname "Roam official help graph"
+```
 
 Run `connect` again to add more graphs or update permissions.
 
@@ -87,7 +111,7 @@ Run Claude Code from the roam-mcp directory. The MCP server is configured in `.m
 
 ### Multiple Graphs
 
-Run `npm run cli -- connect` multiple times to add additional graphs. Each graph gets a nickname (a lowercase slug like `work` or `team-acme`) for easy selection.
+Run `npm run cli -- connect` multiple times to add additional graphs. Each graph gets a nickname (a short name like "work" or "team acme") for easy selection.
 
 **Graph Selection:**
 - **Single graph configured**: Auto-selected, no action needed
@@ -164,7 +188,8 @@ A command-line interface is available for setup and direct tool access:
 
 ```bash
 # Setup
-npm run cli -- connect              # Interactive graph connection
+npm run cli -- connect                          # Interactive graph connection
+npm run cli -- connect --graph <name> --nickname <name>  # Non-interactive connection
 
 # Tools (same as MCP server)
 npm run cli -- list-graphs

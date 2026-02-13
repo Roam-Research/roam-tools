@@ -177,7 +177,20 @@ tools.forEach((tool) => {
 
 program
   .command("connect")
-  .description("Interactively connect to a Roam graph and obtain a token")
-  .action(connect);
+  .description("Connect to a Roam graph and obtain a token")
+  .option("--graph <name>", "Graph name (enables non-interactive mode)")
+  .option("--nickname <name>", "Short name you'll use to refer to this graph (required with --graph)")
+  .option("--access-level <level>", "Access level: full, read-append, or read-only")
+  .option("--public", "Public graph (read-only, hosted)")
+  .option("--type <type>", "Graph type: hosted or offline")
+  .option("--remove", "Remove a graph connection (use with --graph or --nickname)")
+  .addHelpText("after", `
+Examples:
+  npm run cli -- connect                                                                      Interactive setup
+  npm run cli -- connect --graph my-graph --nickname "main graph" --access-level read-append  Connect with read-append access
+  npm run cli -- connect --graph help --public --nickname "Roam Help"                         Connect to a public graph
+  npm run cli -- connect --remove --graph "help"                                              Remove a connection
+`)
+  .action((options) => connect(options));
 
 program.parse();
