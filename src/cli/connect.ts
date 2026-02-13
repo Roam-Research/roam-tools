@@ -258,20 +258,10 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
       try {
         availableGraphs = await fetchAvailableGraphs(port);
       } catch (retryError) {
-        const retryErr = retryError as Error;
-        if (retryErr.message.includes("Local API is disabled")) {
-          console.error("\nLocal API is disabled in Roam.");
-          console.error("To enable it: Menu Bar > Settings > Enable Local API");
-          process.exit(1);
-        }
         console.error("\nCould not connect to Roam Desktop.");
         console.error("Please make sure Roam is running and try again.");
         process.exit(1);
       }
-    } else if ((error as Error).message.includes("Local API is disabled")) {
-      console.error("\nLocal API is disabled in Roam.");
-      console.error("To enable it: Menu Bar > Settings > Enable Local API");
-      process.exit(1);
     } else {
       throw error;
     }

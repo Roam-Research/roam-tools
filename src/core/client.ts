@@ -178,8 +178,6 @@ export class RoamClient {
           "The token has more permissions than your user account allows. " +
           "Please check your Roam user permissions for this graph."
         );
-      case ErrorCodes.LOCAL_API_DISABLED:
-        return "Local API is disabled. Please enable it in Roam Settings > Graph > Local API.";
       default:
         return error?.message || "Access denied. Please check your permissions.";
     }
@@ -329,7 +327,11 @@ export class RoamClient {
       if (this.isConnectionError(error)) {
         // Reset cached port so we re-read from config after Roam starts
         this.port = null;
-        await this.openRoamDeepLink();
+        try {
+          await this.openRoamDeepLink();
+        } catch {
+          // Best-effort — don't let deep link failure prevent retries
+        }
 
         let delay = 500;
         const maxDelay = 15000;
@@ -346,6 +348,13 @@ export class RoamClient {
           }
           delay = Math.min(delay * 2, maxDelay);
         }
+        // All retries exhausted
+        throw new RoamError(
+          "Could not connect to Roam Desktop after multiple attempts. " +
+            "Please restart the Roam desktop app and also this app and then retry again. " +
+            "If you continue having issues, please let us know at support@roamresearch.com.",
+          ErrorCodes.CONNECTION_FAILED
+        );
       }
       throw error;
     }

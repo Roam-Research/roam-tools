@@ -24,11 +24,9 @@ This MCP server connects to Roam's local HTTP API, which runs on your machine wh
 
 ## Getting Started
 
-### 1. Enable the Local API in Roam
+### 1. Roam Desktop App
 
-The local API is available in the desktop app.
-
-In the menu bar, open settings and check "Enable Local API".
+The local API requires the Roam **desktop app** (not the web version). Make sure it's installed and you can open your graph in it.
 
 ### 2. Install
 
