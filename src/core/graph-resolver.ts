@@ -12,6 +12,7 @@ import {
   ResolvedGraph,
   RoamError,
   ErrorCodes,
+  AccessLevel,
 } from "./types.js";
 
 // Project root (up from dist/core/ or src/core/)
@@ -243,6 +244,35 @@ export async function removeGraphFromConfig(nickname: string): Promise<boolean> 
 }
 
 /**
+ * Update a graph's access level and/or token status in config.
+ * No-ops if nothing changed (avoids unnecessary disk writes).
+ */
+export async function updateGraphTokenStatus(
+  nickname: string,
+  updates: { accessLevel?: AccessLevel; tokenStatus?: "active" | "revoked" }
+): Promise<void> {
+  const config = await readRawConfig();
+  const graph = config.graphs.find(
+    (g) => g.nickname.toLowerCase() === nickname.toLowerCase()
+  );
+  if (!graph) return;
+
+  let changed = false;
+  if (updates.accessLevel !== undefined && graph.accessLevel !== updates.accessLevel) {
+    graph.accessLevel = updates.accessLevel;
+    changed = true;
+  }
+  if (updates.tokenStatus !== undefined && graph.tokenStatus !== updates.tokenStatus) {
+    graph.tokenStatus = updates.tokenStatus;
+    changed = true;
+  }
+  if (!changed) return;
+
+  await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+  clearConfigCache();
+}
+
+/**
  * Get all configured graphs (returns empty array if config doesn't exist)
  * Unlike getMcpConfig(), this doesn't throw if config is missing.
  */
@@ -282,13 +312,14 @@ export async function findGraphConfig(
  * Get list of all configured graphs (for list_graphs tool and error messages)
  */
 export async function getConfiguredGraphs(): Promise<
-  Array<{ nickname: string; name: string; accessLevel: string }>
+  Array<{ nickname: string; name: string; accessLevel: string; tokenStatus?: string }>
 > {
   const config = await getMcpConfig();
   return config.graphs.map((g) => ({
     nickname: g.nickname,
     name: g.name,
     accessLevel: g.accessLevel || "full",
+    ...(g.tokenStatus ? { tokenStatus: g.tokenStatus } : {}),
   }));
 }
 

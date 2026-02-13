@@ -41,6 +41,7 @@ export const GraphConfigSchema = z.object({
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Nickname must be lowercase letters, numbers, and hyphens")
     .describe("Short identifier for the graph (lowercase, hyphens, no spaces)"),
   accessLevel: z.enum(["read-only", "read-append", "full"]).optional().describe("Token access level"),
+  tokenStatus: z.enum(["active", "revoked"]).optional().describe("Token validity status (synced from Roam)"),
 });
 export type GraphConfig = z.infer<typeof GraphConfigSchema>;
 
@@ -255,6 +256,22 @@ export interface QueryResponse {
   total: number;
   results: QueryResult[];
 }
+
+// Token info from POST /api/graphs/tokens/info
+export interface TokenInfoResponse {
+  success: boolean;
+  graphName?: string;
+  graphType?: GraphType;
+  grantedAccessLevel?: string;
+  grantedScopes?: { read?: boolean; append?: boolean; edit?: boolean };
+  description?: string;
+}
+
+// Three-state result for getTokenInfo()
+export type TokenInfoResult =
+  | { status: "active"; info: TokenInfoResponse }
+  | { status: "revoked" }
+  | { status: "unknown" }; // network error, 404, etc.
 
 // Client config (v2.0.0 - requires token and type)
 export interface RoamClientConfig {

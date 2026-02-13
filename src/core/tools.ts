@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { CallToolResult } from "./types.js";
+import type { CallToolResult, TokenInfoResponse, AccessLevel } from "./types.js";
 import { RoamError, textResult } from "./types.js";
 import { RoamClient } from "./client.js";
-import { resolveGraph, getPort } from "./graph-resolver.js";
+import { resolveGraph, getPort, updateGraphTokenStatus, PROJECT_ROOT } from "./graph-resolver.js";
 import {
   CreatePageSchema, GetPageSchema, DeletePageSchema, UpdatePageSchema, GetGuidelinesSchema,
   createPage, getPage, deletePage, updatePage, getGuidelines,
@@ -261,6 +261,49 @@ function prependGraphInfo(result: CallToolResult, nickname: string): CallToolRes
 }
 
 /**
+ * Enrich a JSON text result with token info (accessLevel + scopes).
+ */
+function enrichResultWithTokenInfo(result: CallToolResult, info: TokenInfoResponse): CallToolResult {
+  const first = result.content?.[0];
+  if (!first || first.type !== "text") return result;
+  try {
+    const parsed = JSON.parse(first.text);
+    parsed.accessLevel = info.grantedAccessLevel;
+    parsed.scopes = info.grantedScopes;
+    return {
+      ...result,
+      content: [{ ...first, text: JSON.stringify(parsed, null, 2) }, ...result.content.slice(1)],
+    };
+  } catch {
+    return result;
+  }
+}
+
+/**
+ * Prepend a token revocation warning to the result.
+ */
+function enrichResultWithTokenStatus(result: CallToolResult, nickname: string): CallToolResult {
+  const warning =
+    `Roam graph: ${nickname}\n\n` +
+    `WARNING: The token for this graph has been revoked.\n` +
+    `Run the connect command to set up a new token:\n` +
+    `  cd ${PROJECT_ROOT}\n` +
+    `  npm run cli -- connect\n`;
+
+  const first = result.content?.[0];
+  if (first?.type === "text") {
+    return {
+      ...result,
+      content: [{ ...first, text: warning + "\n" + first.text }, ...result.content.slice(1)],
+    };
+  }
+  return {
+    ...result,
+    content: [{ type: "text", text: warning }, ...(result.content || [])],
+  };
+}
+
+/**
  * Convert a RoamError into a structured error result with isError: true.
  */
 function roamErrorResult(error: RoamError): CallToolResult {
@@ -319,6 +362,69 @@ export async function routeToolCall(
       port,
     });
 
+    // Special handling for get_graph_guidelines: sync token info in parallel
+    if (tool.name === "get_graph_guidelines") {
+      const [actionSettled, tokenInfoSettled] = await Promise.allSettled([
+        tool.action(client, restArgs),
+        client.getTokenInfo(),
+      ]);
+
+      // getTokenInfo() never throws, so always fulfilled
+      const tokenInfoResult = tokenInfoSettled.status === "fulfilled"
+        ? tokenInfoSettled.value
+        : { status: "unknown" as const };
+
+      // Handle revoked token FIRST (before examining action result)
+      if (tokenInfoResult.status === "revoked") {
+        try {
+          await updateGraphTokenStatus(resolvedGraph.nickname, { tokenStatus: "revoked" });
+        } catch {}
+
+        const baseResult: CallToolResult = actionSettled.status === "fulfilled"
+          ? actionSettled.value
+          : actionSettled.reason instanceof RoamError
+            ? roamErrorResult(actionSettled.reason)
+            : { content: [{ type: "text", text: String(actionSettled.reason) }], isError: true };
+
+        return enrichResultWithTokenStatus(baseResult, resolvedGraph.nickname);
+      }
+
+      // Not revoked — if action failed, propagate the original error
+      if (actionSettled.status === "rejected") {
+        throw actionSettled.reason;
+      }
+
+      const result = actionSettled.value;
+
+      if (tokenInfoResult.status === "active") {
+        const info = tokenInfoResult.info;
+        // Validate access level before writing to prevent config corruption
+        const validLevels: AccessLevel[] = ["read-only", "read-append", "full"];
+        const level = validLevels.includes(info.grantedAccessLevel as AccessLevel)
+          ? (info.grantedAccessLevel as AccessLevel)
+          : undefined;
+        try {
+          await updateGraphTokenStatus(resolvedGraph.nickname, {
+            ...(level ? { accessLevel: level } : {}),
+            tokenStatus: "active",
+          });
+        } catch {}
+
+        if (!result.isError) {
+          const enriched = enrichResultWithTokenInfo(result, info);
+          return prependGraphInfo(enriched, resolvedGraph.nickname);
+        }
+        return result;
+      }
+
+      // status === "unknown" — proceed without enrichment
+      if (!result.isError) {
+        return prependGraphInfo(result, resolvedGraph.nickname);
+      }
+      return result;
+    }
+
+    // Normal flow for all other tools
     const result = await tool.action(client, restArgs);
 
     // Prepend graph info to successful responses

@@ -41,6 +41,7 @@ interface GraphChoice extends AvailableGraph {
   existingNickname?: string;
   isCustomOption?: boolean;
   isPublicGraph?: boolean;
+  tokenStatus?: string;
 }
 
 // ============================================================================
@@ -206,6 +207,7 @@ export async function connect(): Promise<void> {
       isOpen,
       isConnected: !!configured,
       existingNickname: configured?.nickname,
+      tokenStatus: configured?.tokenStatus,
     };
   });
 
@@ -222,6 +224,7 @@ export async function connect(): Promise<void> {
         isConnected: true,
         existingNickname: configured.nickname,
         isPublicGraph: true,
+        tokenStatus: configured.tokenStatus,
       });
     }
   }
@@ -261,9 +264,9 @@ export async function connect(): Promise<void> {
         let label = `${g.name} (${g.type})`;
         if (g.isOpen) label += " [open]";
         if (g.isPublicGraph && g.isConnected) {
-          label += ` [public, connected as "${g.existingNickname}"]`;
+          label += ` [public, connected as "${g.existingNickname}"${g.tokenStatus === "revoked" ? ", token revoked" : ""}]`;
         } else if (g.isConnected) {
-          label += ` [connected as "${g.existingNickname}"]`;
+          label += ` [connected as "${g.existingNickname}"${g.tokenStatus === "revoked" ? ", token revoked" : ""}]`;
         }
         return {
           name: label,
@@ -319,38 +322,86 @@ export async function connect(): Promise<void> {
 
   // 8. Handle already connected graph
   if (finalSelectedGraph.isConnected) {
-    const action = await select({
-      message: `This graph is already connected as "${finalSelectedGraph.existingNickname}". What would you like to do?`,
-      choices: [
-        {
-          name: "Request new token with different permissions",
-          value: "new-token",
-        },
-        {
-          name: "Remove from config",
-          value: "remove",
-        },
-        {
-          name: "Cancel",
-          value: "cancel",
-        },
-      ],
-    });
+    const existingConfig = configuredGraphs.find(
+      (c) => c.name === finalSelectedGraph.name && c.type === finalSelectedGraph.type
+    );
 
-    if (action === "cancel") {
-      console.log("Cancelled.");
-      return;
+    if (existingConfig?.tokenStatus === "revoked") {
+      // Token has been revoked — show revoked-specific menu
+      const action = await select({
+        message: `The token for "${finalSelectedGraph.existingNickname}" has been revoked. What would you like to do?`,
+        choices: [
+          {
+            name: "Replace with a new token",
+            value: "replace",
+          },
+          {
+            name: "Remove from config",
+            value: "remove",
+          },
+          {
+            name: "Cancel",
+            value: "cancel",
+          },
+        ],
+      });
+
+      if (action === "cancel") {
+        console.log("Cancelled.");
+        return;
+      }
+
+      if (action === "remove") {
+        await removeGraphFromConfig(finalSelectedGraph.existingNickname!);
+        console.log(
+          `Removed "${finalSelectedGraph.existingNickname}" from config.`
+        );
+        return;
+      }
+
+      // action === "replace" — fall through to token request flow
+    } else {
+      // Normal connected flow
+      const action = await select({
+        message: `This graph is already connected as "${finalSelectedGraph.existingNickname}". What would you like to do?`,
+        choices: [
+          {
+            name: "Change token permissions",
+            value: "change-permissions",
+          },
+          {
+            name: "Remove from config",
+            value: "remove",
+          },
+          {
+            name: "Cancel",
+            value: "cancel",
+          },
+        ],
+      });
+
+      if (action === "cancel") {
+        console.log("Cancelled.");
+        return;
+      }
+
+      if (action === "remove") {
+        await removeGraphFromConfig(finalSelectedGraph.existingNickname!);
+        console.log(
+          `Removed "${finalSelectedGraph.existingNickname}" from config.`
+        );
+        return;
+      }
+
+      if (action === "change-permissions") {
+        console.log("\nTo change this token's permissions:");
+        console.log("  1. Open Roam Desktop and open the graph");
+        console.log("  2. Go to Settings > Graph > Local API Tokens");
+        console.log('  3. Find the token and adjust its permissions');
+        console.log("\nChanges will be synced automatically next time the MCP is started.");
+        return;
+      }
     }
-
-    if (action === "remove") {
-      await removeGraphFromConfig(finalSelectedGraph.existingNickname!);
-      console.log(
-        `Removed "${finalSelectedGraph.existingNickname}" from config.`
-      );
-      return;
-    }
-
-    // Continue with new-token flow
   }
 
   // 9. Select access level (skip for public graphs - always read-only)

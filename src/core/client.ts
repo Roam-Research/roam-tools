@@ -10,6 +10,8 @@ import type {
   RoamClientConfig,
   RoamApiError,
   GraphType,
+  TokenInfoResult,
+  TokenInfoResponse,
 } from "./types.js";
 import {
   EXPECTED_API_VERSION,
@@ -236,6 +238,52 @@ export class RoamClient {
   ): void {
     if (!response.success) {
       this.handleApiError(httpStatus, response);
+    }
+  }
+
+  /**
+   * Query the token info endpoint for current permissions.
+   * Best-effort: returns "unknown" on any failure except confirmed revocation.
+   */
+  async getTokenInfo(): Promise<TokenInfoResult> {
+    try {
+      const port = await this.getPort();
+      const response = await fetch(
+        `http://127.0.0.1:${port}/api/graphs/tokens/info`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: this.token,
+            graph: this.graphName,
+            type: this.graphType,
+          }),
+        }
+      );
+
+      if (response.status === 401) {
+        try {
+          const data = (await response.json()) as {
+            error?: { code?: string } | string;
+          };
+          const code =
+            typeof data.error === "object" ? data.error?.code : undefined;
+          if (code === "TOKEN_NOT_FOUND") {
+            return { status: "revoked" };
+          }
+        } catch {
+          // Couldn't parse 401 body
+        }
+        return { status: "unknown" };
+      }
+
+      if (!response.ok) return { status: "unknown" };
+
+      const data = (await response.json()) as TokenInfoResponse;
+      if (!data.success) return { status: "unknown" };
+      return { status: "active", info: data };
+    } catch {
+      return { status: "unknown" };
     }
   }
 
