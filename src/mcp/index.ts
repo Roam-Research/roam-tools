@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { tools, routeToolCall } from "../core/tools.js";
 
-const server = new McpServer({ name: "roam-mcp", version: "0.1.0" });
+const server = new McpServer({ name: "roam-mcp", version: "0.2.0" });
 
 // Register each tool with its Zod schema
 for (const tool of tools) {
@@ -16,6 +16,7 @@ for (const tool of tools) {
       try {
         return await routeToolCall(tool.name, args as Record<string, unknown>);
       } catch (error) {
+        // Safety net for unexpected errors (RoamErrors are handled by routeToolCall)
         const message = error instanceof Error ? error.message : String(error);
         return {
           content: [{ type: "text", text: message }],

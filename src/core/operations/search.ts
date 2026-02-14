@@ -26,7 +26,7 @@ export async function search(client: RoamClient, params: SearchParams): Promise<
     query: params.query,
     scope: params.scope ?? "all",
     offset: params.offset ?? 0,
-    limit: params.limit ?? 100,
+    limit: params.limit ?? 20,
     includePath: params.includePath ?? true,
   };
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;

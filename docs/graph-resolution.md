@@ -2,52 +2,84 @@
 
 How the MCP server determines which Roam graph to use.
 
-## Resolution Order
+## Configuration File
 
-When a tool is called, the graph is determined in this priority order:
-
-1. **Explicit graph parameter** - If the tool call includes a `graph` param, use it
-2. **In-memory state** - Last used graph from the current session
-3. **Config file** - `last-graph` field from `~/.roam-local-api.json`
-4. **Query open graphs** - Fallback: ask Roam which graphs are currently open
-
-Once a graph is determined, it's stored in memory for subsequent calls in the same session.
-
-## Request Execution
-
-After resolving the graph name, the client simply makes the API request. Roam handles opening the graph if it's not already open.
-
-## Connection Error Handling
-
-If the Roam server isn't running (connection refused), the client:
-
-1. Opens Roam via deep link: `roam://#/app/{graphName}`
-2. Waits 3 seconds for Roam to start
-3. Retries the request
-
-This is the **only** case where the MCP server intervenes - when Roam itself isn't running.
-
-## Config File
-
-The config file `~/.roam-local-api.json` is written by Roam and contains:
+The MCP server reads graph configuration from `~/.roam-tools.json`:
 
 ```json
 {
-  "port": 3333,
-  "last-graph": "my-graph-name"
+  "graphs": [
+    {
+      "name": "my-graph-name",
+      "type": "hosted",
+      "token": "roam-graph-local-token-...",
+      "nickname": "my-graph"
+    }
+  ]
 }
 ```
+
+Each graph requires:
+- `name`: The actual graph name in Roam
+- `type`: `"hosted"` (cloud) or `"offline"` (local-only)
+- `token`: Local API token from Roam settings
+- `nickname`: Slug identifier for the graph (lowercase, hyphens, no spaces). Must match `[a-z0-9]+(-[a-z0-9]+)*`
+
+## Resolution Order
+
+Graph resolution is stateless — every tool call resolves the graph independently:
+
+1. **Explicit graph parameter** — If the tool call includes a `graph` param, look it up by nickname (or name as fallback)
+2. **Auto-select** — If exactly one graph is configured, use it automatically
+3. **Error** — If multiple graphs are configured and no `graph` param is provided, return error with `available_graphs` inline
+
+## Nickname Resolution
+
+Graphs are referenced by nickname (case-insensitive) with a fallback to the canonical name:
+
+- `--graph "my-graph"` → matches nickname "my-graph"
+- `--graph "my-actual-graph"` → matches by canonical name as fallback
+
+Nicknames are constrained to slugs (`[a-z0-9]+(-[a-z0-9]+)*`). The `connect` CLI auto-slugifies user input.
+
+## Response Format
+
+All client tool responses are prefixed with `Roam graph: {nickname}` so the agent always knows which graph it's operating on.
+
+## Port Discovery
+
+The API port is read from `~/.roam-local-api.json` (written by Roam):
+
+```json
+{
+  "port": 3333
+}
+```
+
+If the file doesn't exist, defaults to port 3333.
 
 ## Error Cases
 
 | Scenario | Result |
 |----------|--------|
-| No graph name available anywhere | Error: "Could not determine which graph to use" |
-| Roam not running, no known graph | Error: "Roam is not running and no graph name is available" |
-| Multiple graphs open, none specified | Error listing open graphs for user to choose |
+| Config file not found | Error: "Roam MCP config not found" with setup instructions |
+| Graph not in config | Error listing available graphs |
+| Multiple graphs, no `graph` param | Error with `available_graphs` inline — no extra `list_graphs` call needed |
+| Invalid token | Authentication error with guidance |
+| Roam not running | Launches Roam via deep link and retries |
 
-## Design Principles
+## Graph Type Handling
 
-- **Keep it simple**: Just figure out the graph name and make the request
-- **Let Roam do its job**: Roam handles opening graphs when you make API calls to them
-- **Only intervene when necessary**: The only special case is when Roam isn't running at all
+- **Hosted graphs** (default): Standard cloud-synced Roam graphs
+- **Offline graphs**: Local-only graphs, requires `?type=offline` query param
+
+The MCP server handles this automatically based on the `type` field in config.
+
+## Same-Name Collision
+
+If both a hosted and offline graph have the same name:
+- The hosted graph takes precedence
+- The offline graph is ignored
+- A warning is logged
+
+Use unique nicknames to avoid confusion.
