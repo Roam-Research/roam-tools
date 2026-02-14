@@ -22,7 +22,7 @@ import { ListGraphsSchema, listGraphs } from "./operations/graphs.js";
 
 // Common schema for graph parameter (used by most tools)
 const GraphSchema = z.object({
-  graph: z.string().optional().describe("Graph nickname (optional - auto-selects if only one graph is configured)"),
+  graph: z.string().optional().describe("Graph nickname or name (optional - auto-selects if only one graph is configured)"),
 });
 
 // Helper to extend any schema with graph parameter
