@@ -223,7 +223,11 @@ export class RoamClient {
 
     // 500 - Server errors
     if (status >= 500) {
-      throw new RoamError(`Server error: ${message}`, ErrorCodes.INTERNAL_ERROR);
+      const hint = message.toLowerCase().includes("promise error")
+        ? "\n\nThis can happen if the graph was closed before the request completed, " +
+          "especially for encrypted graphs, when closed before the password was entered."
+        : "";
+      throw new RoamError(`Server error: ${message}${hint}`, ErrorCodes.INTERNAL_ERROR);
     }
 
     // Other errors
