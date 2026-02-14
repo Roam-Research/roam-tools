@@ -41,7 +41,7 @@ export const GraphConfigSchema = z.object({
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Nickname must be lowercase letters, numbers, and hyphens")
     .describe("Short identifier for the graph (lowercase, hyphens, no spaces)"),
   accessLevel: z.enum(["read-only", "read-append", "full"]).optional().describe("Token access level"),
-  tokenStatus: z.enum(["active", "revoked"]).optional().describe("Token validity status (synced from Roam)"),
+  lastKnownTokenStatus: z.enum(["active", "revoked"]).optional().describe("Token validity status from last sync with Roam"),
 });
 export type GraphConfig = z.infer<typeof GraphConfigSchema>;
 
@@ -57,6 +57,7 @@ export interface ResolvedGraph {
   token: string;
   nickname: string;
   accessLevel?: AccessLevel;
+  lastKnownTokenStatus?: "active" | "revoked";
 }
 
 // ============================================================================

@@ -72,6 +72,7 @@ Operations in `src/core/operations/` are organized by domain:
 - Zod schemas drive both validation and CLI option generation
 - `RoamError` class carries error codes and context for structured error responses
 - API versioning: `EXPECTED_API_VERSION` in types.ts must match Roam's API version
+- Config I/O (`~/.roam-tools.json`): No in-memory cache — config is read fresh from disk on every tool call. Write functions (`saveGraphToConfig`, `removeGraphFromConfig`, `updateGraphTokenStatus`) read the file at the last moment, apply the change, and write immediately. Invalid config errors are returned to the agent as `RoamError` (no `process.exit`), so the agent can tell the user what's wrong.
 
 ### Authentication Flow
 

@@ -41,7 +41,7 @@ interface GraphChoice extends AvailableGraph {
   existingNickname?: string;
   isCustomOption?: boolean;
   isPublicGraph?: boolean;
-  tokenStatus?: string;
+  lastKnownTokenStatus?: string;
 }
 
 export interface ConnectOptions {
@@ -346,7 +346,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
         ),
         isConnected: !!configured,
         existingNickname: configured?.nickname,
-        tokenStatus: configured?.tokenStatus,
+        lastKnownTokenStatus: configured?.lastKnownTokenStatus,
       };
     }
   } else {
@@ -363,7 +363,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
         isOpen,
         isConnected: !!configured,
         existingNickname: configured?.nickname,
-        tokenStatus: configured?.tokenStatus,
+        lastKnownTokenStatus: configured?.lastKnownTokenStatus,
       };
     });
 
@@ -380,7 +380,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
           isConnected: true,
           existingNickname: configured.nickname,
           isPublicGraph: true,
-          tokenStatus: configured.tokenStatus,
+          lastKnownTokenStatus: configured.lastKnownTokenStatus,
         });
       }
     }
@@ -420,9 +420,9 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
           let label = `${g.name} (${g.type})`;
           if (g.isOpen) label += " [open]";
           if (g.isPublicGraph && g.isConnected) {
-            label += ` [public, connected as "${g.existingNickname}"${g.tokenStatus === "revoked" ? ", token revoked" : ""}]`;
+            label += ` [public, connected as "${g.existingNickname}"${g.lastKnownTokenStatus === "revoked" ? ", token revoked" : ""}]`;
           } else if (g.isConnected) {
-            label += ` [connected as "${g.existingNickname}"${g.tokenStatus === "revoked" ? ", token revoked" : ""}]`;
+            label += ` [connected as "${g.existingNickname}"${g.lastKnownTokenStatus === "revoked" ? ", token revoked" : ""}]`;
           }
           return {
             name: label,
@@ -492,7 +492,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
       (c) => c.name === finalSelectedGraph.name && c.type === finalSelectedGraph.type
     );
 
-    if (existingConfig?.tokenStatus === "revoked") {
+    if (existingConfig?.lastKnownTokenStatus === "revoked") {
       // Token has been revoked — show revoked-specific menu
       const action = await select({
         message: `The token for "${finalSelectedGraph.existingNickname}" has been revoked. What would you like to do?`,
@@ -564,6 +564,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
         console.log("  1. Open Roam Desktop and open the graph");
         console.log("  2. Go to Settings > Graph > Local API Tokens");
         console.log('  3. Find the token and adjust its permissions');
+        // Permission changes are synced when get_graph_guidelines calls getTokenInfo()
         console.log("\nChanges will be synced automatically next time the MCP is started.");
         return;
       }

@@ -31,7 +31,7 @@ export async function listGraphs(): Promise<CallToolResult> {
     return textResult({
       graphs,
       instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
-      setup: `To connect additional graphs, the user should run:\n  cd ${PROJECT_ROOT} && npm run cli -- connect\nAfter connecting, restart this app or conversation for changes to take effect.`,
+      setup: `To connect additional graphs, the user should run:\n  cd ${PROJECT_ROOT} && npm run cli -- connect\nAfter connecting, try your request again.`,
     });
   } catch (error) {
     if (error instanceof RoamError) {

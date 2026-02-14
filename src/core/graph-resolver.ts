@@ -18,8 +18,9 @@ import {
 // Project root (up from dist/core/ or src/core/)
 export const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-// Cached config from ~/.roam-tools.json
-let cachedConfig: RoamMcpConfig | null = null;
+// Warning suppression flags (prevent spamming on every tool call)
+let permissionCheckDone = false;
+let dedupWarningShown = false;
 
 // ============================================================================
 // Port Discovery (from ~/.roam-local-api.json)
@@ -61,25 +62,26 @@ async function writeConfigFile(path: string, data: string): Promise<void> {
 }
 
 export async function getMcpConfig(): Promise<RoamMcpConfig> {
-  if (cachedConfig) return cachedConfig;
-
   let content: string;
   try {
     content = await readFile(CONFIG_PATH, "utf-8");
 
     // Check file permissions (Unix only — skip on Windows)
-    try {
-      const fileStat = await stat(CONFIG_PATH);
-      const mode = fileStat.mode & 0o777;
-      if (mode & 0o077) {
-        console.error(
-          `[roam-mcp] WARNING: ${CONFIG_PATH} has overly permissive permissions (0${mode.toString(8)}). ` +
-            `This file contains API tokens and should not be accessible by others. ` +
-            `Run: chmod 600 ${CONFIG_PATH}`
-        );
+    if (!permissionCheckDone) {
+      permissionCheckDone = true;
+      try {
+        const fileStat = await stat(CONFIG_PATH);
+        const mode = fileStat.mode & 0o777;
+        if (mode & 0o077) {
+          console.error(
+            `[roam-mcp] WARNING: ${CONFIG_PATH} has overly permissive permissions (0${mode.toString(8)}). ` +
+              `This file contains API tokens and should not be accessible by others. ` +
+              `Run: chmod 600 ${CONFIG_PATH}`
+          );
+        }
+      } catch {
+        // Ignore permission check errors (e.g., Windows)
       }
-    } catch {
-      // Ignore permission check errors (e.g., Windows)
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -87,7 +89,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
         `No graphs configured. Run the setup command:\n\n` +
           `  cd ${PROJECT_ROOT} && npm run cli -- connect\n\n` +
           `This will walk you through connecting a Roam graph.\n` +
-          `After connecting, restart this app or conversation for changes to take effect.`,
+          `After connecting, try your request again.`,
         ErrorCodes.CONFIG_NOT_FOUND
       );
     }
@@ -133,32 +135,38 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
   for (const graph of validated.data.graphs) {
     const existing = graphsByName.get(graph.name);
     if (existing) {
-      // If existing is hosted, skip the new one (regardless of type)
-      // If existing is offline and new is hosted, replace with hosted
+      if (!dedupWarningShown) {
+        dedupWarningShown = true;
+        // If existing is hosted, skip the new one (regardless of type)
+        // If existing is offline and new is hosted, replace with hosted
+        if (existing.type === "hosted") {
+          console.error(
+            `[roam-mcp] Warning: Ignoring duplicate graph "${graph.name}" (${graph.type}), using hosted version`
+          );
+        } else if (graph.type === "hosted") {
+          console.error(
+            `[roam-mcp] Warning: Replacing offline graph "${graph.name}" with hosted version`
+          );
+        } else {
+          console.error(
+            `[roam-mcp] Warning: Ignoring duplicate offline graph "${graph.name}"`
+          );
+        }
+      }
+      // Apply dedup logic regardless of whether warning was shown
       if (existing.type === "hosted") {
-        console.error(
-          `[roam-mcp] Warning: Ignoring duplicate graph "${graph.name}" (${graph.type}), using hosted version`
-        );
         continue;
       } else if (graph.type === "hosted") {
-        console.error(
-          `[roam-mcp] Warning: Replacing offline graph "${graph.name}" with hosted version`
-        );
         graphsByName.set(graph.name, graph);
-      } else {
-        console.error(
-          `[roam-mcp] Warning: Ignoring duplicate offline graph "${graph.name}"`
-        );
       }
+      // else: both offline, skip the duplicate (continue already handled hosted case)
     } else {
       graphsByName.set(graph.name, graph);
     }
   }
 
   // Rebuild graphs array with deduplication applied
-  const deduplicatedGraphs = Array.from(graphsByName.values());
-  cachedConfig = { graphs: deduplicatedGraphs };
-  return cachedConfig;
+  return { graphs: Array.from(graphsByName.values()) };
 }
 
 // ============================================================================
@@ -166,23 +174,42 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
 // ============================================================================
 
 /**
- * Clear the cached config (call after writing to config file)
- */
-export function clearConfigCache(): void {
-  cachedConfig = null;
-}
-
-/**
- * Read the raw config file without caching (for write operations)
+ * Read the raw config file for write operations (no dedup, but validates with Zod).
+ * Returns empty config if file doesn't exist (so saveGraphToConfig can create the initial file).
  */
 async function readRawConfig(): Promise<RoamMcpConfig> {
+  let content: string;
   try {
-    const content = await readFile(CONFIG_PATH, "utf-8");
-    return JSON.parse(content) as RoamMcpConfig;
-  } catch {
-    // Return empty config if file doesn't exist
-    return { graphs: [] };
+    content = await readFile(CONFIG_PATH, "utf-8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { graphs: [] };
+    }
+    throw error;
   }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new RoamError(
+      `Invalid JSON in ${CONFIG_PATH}. Please check the file format.`,
+      ErrorCodes.VALIDATION_ERROR
+    );
+  }
+
+  const validated = RoamMcpConfigSchema.safeParse(parsed);
+  if (!validated.success) {
+    const issues = validated.error.issues
+      .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
+    throw new RoamError(
+      `Invalid config in ${CONFIG_PATH}:\n${issues}`,
+      ErrorCodes.VALIDATION_ERROR
+    );
+  }
+
+  return validated.data;
 }
 
 /**
@@ -218,7 +245,6 @@ export async function saveGraphToConfig(newGraph: GraphConfig): Promise<void> {
   }
 
   await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
-  clearConfigCache();
 }
 
 /**
@@ -238,7 +264,6 @@ export async function removeGraphFromConfig(nickname: string): Promise<boolean> 
   }
 
   await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
-  clearConfigCache();
   return true;
 }
 
@@ -248,7 +273,7 @@ export async function removeGraphFromConfig(nickname: string): Promise<boolean> 
  */
 export async function updateGraphTokenStatus(
   nickname: string,
-  updates: { accessLevel?: AccessLevel; tokenStatus?: "active" | "revoked" }
+  updates: { accessLevel?: AccessLevel; lastKnownTokenStatus?: "active" | "revoked" }
 ): Promise<void> {
   const config = await readRawConfig();
   const graph = config.graphs.find(
@@ -261,14 +286,13 @@ export async function updateGraphTokenStatus(
     graph.accessLevel = updates.accessLevel;
     changed = true;
   }
-  if (updates.tokenStatus !== undefined && graph.tokenStatus !== updates.tokenStatus) {
-    graph.tokenStatus = updates.tokenStatus;
+  if (updates.lastKnownTokenStatus !== undefined && graph.lastKnownTokenStatus !== updates.lastKnownTokenStatus) {
+    graph.lastKnownTokenStatus = updates.lastKnownTokenStatus;
     changed = true;
   }
   if (!changed) return;
 
   await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
-  clearConfigCache();
 }
 
 /**
@@ -311,14 +335,14 @@ export async function findGraphConfig(
  * Get list of all configured graphs (for list_graphs tool and error messages)
  */
 export async function getConfiguredGraphs(): Promise<
-  Array<{ nickname: string; name: string; accessLevel: string; tokenStatus?: string }>
+  Array<{ nickname: string; name: string; accessLevel: string; lastKnownTokenStatus?: string }>
 > {
   const config = await getMcpConfig();
   return config.graphs.map((g) => ({
     nickname: g.nickname,
     name: g.name,
     accessLevel: g.accessLevel || "full",
-    ...(g.tokenStatus ? { tokenStatus: g.tokenStatus } : {}),
+    ...(g.lastKnownTokenStatus ? { lastKnownTokenStatus: g.lastKnownTokenStatus } : {}),
   }));
 }
 
@@ -354,6 +378,7 @@ export async function resolveGraph(
       token: graphConfig.token,
       nickname: graphConfig.nickname,
       accessLevel: graphConfig.accessLevel,
+      lastKnownTokenStatus: graphConfig.lastKnownTokenStatus,
     };
   }
 
@@ -366,6 +391,7 @@ export async function resolveGraph(
       token: graphConfig.token,
       nickname: graphConfig.nickname,
       accessLevel: graphConfig.accessLevel,
+      lastKnownTokenStatus: graphConfig.lastKnownTokenStatus,
     };
   }
 
@@ -423,10 +449,3 @@ export async function getOpenGraphs(): Promise<
   return (data.result || []).map((g) => ({ name: g.name, type: g.type }));
 }
 
-// ============================================================================
-// Testing Utilities
-// ============================================================================
-
-export function resetState(): void {
-  cachedConfig = null;
-}

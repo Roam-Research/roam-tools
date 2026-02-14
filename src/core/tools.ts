@@ -375,9 +375,11 @@ export async function routeToolCall(
 
       // Handle revoked token FIRST (before examining action result)
       if (tokenInfoResult.status === "revoked") {
-        try {
-          await updateGraphTokenStatus(resolvedGraph.nickname, { tokenStatus: "revoked" });
-        } catch {}
+        if (resolvedGraph.lastKnownTokenStatus !== "revoked") {
+          try {
+            await updateGraphTokenStatus(resolvedGraph.nickname, { lastKnownTokenStatus: "revoked" });
+          } catch {}
+        }
 
         const baseResult: CallToolResult = actionSettled.status === "fulfilled"
           ? actionSettled.value
@@ -402,12 +404,17 @@ export async function routeToolCall(
         const level = validLevels.includes(info.grantedAccessLevel as AccessLevel)
           ? (info.grantedAccessLevel as AccessLevel)
           : undefined;
-        try {
-          await updateGraphTokenStatus(resolvedGraph.nickname, {
-            ...(level ? { accessLevel: level } : {}),
-            tokenStatus: "active",
-          });
-        } catch {}
+        // Only write to config if something actually changed
+        const accessLevelChanged = level && resolvedGraph.accessLevel !== level;
+        const tokenStatusChanged = resolvedGraph.lastKnownTokenStatus !== "active";
+        if (accessLevelChanged || tokenStatusChanged) {
+          try {
+            await updateGraphTokenStatus(resolvedGraph.nickname, {
+              ...(accessLevelChanged ? { accessLevel: level } : {}),
+              lastKnownTokenStatus: "active",
+            });
+          } catch {}
+        }
 
         if (!result.isError) {
           const enriched = enrichResultWithTokenInfo(result, info);
@@ -416,7 +423,12 @@ export async function routeToolCall(
         return result;
       }
 
-      // status === "unknown" — proceed without enrichment
+      // status === "unknown" — action succeeded, so token isn't revoked; clear stale status
+      if (resolvedGraph.lastKnownTokenStatus !== "active") {
+        try {
+          await updateGraphTokenStatus(resolvedGraph.nickname, { lastKnownTokenStatus: "active" });
+        } catch {}
+      }
       if (!result.isError) {
         return prependGraphInfo(result, resolvedGraph.nickname);
       }
