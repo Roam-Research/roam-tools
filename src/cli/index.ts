@@ -60,7 +60,7 @@ const program = new Command();
 program
   .name("roam")
   .description("Roam Research CLI")
-  .version("0.2.0");
+  .version("0.3.0");
 
 // Helper to check if a Zod schema field is optional
 function isOptional(schema: z.ZodTypeAny): boolean {
