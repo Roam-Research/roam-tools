@@ -598,7 +598,35 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
     });
   }
 
-  // 8. Request token (blocks until user approves in Roam)
+  // 8. Get nickname (before token request so all input is collected upfront)
+  let nickname: string;
+  if (nonInteractive) {
+    nickname = slugify(options.nickname!);
+    console.log(`→ Using nickname: ${nickname}`);
+  } else {
+    const rawNickname = await input({
+      message: "Enter a short name you'll use to refer to this graph:",
+      validate: (value) => {
+        const slug = slugify(value.trim());
+        if (!slug) return "Nickname cannot be empty";
+        // Check for existing nickname (excluding the current graph if updating)
+        const existing = configuredGraphs.find(
+          (g) =>
+            g.nickname === slug &&
+            !(g.name === finalSelectedGraph.name && g.type === finalSelectedGraph.type)
+        );
+        if (existing) {
+          return `Nickname "${slug}" is already used by "${existing.name}"`;
+        }
+        return true;
+      },
+    });
+
+    nickname = slugify(rawNickname.trim());
+    console.log(`→ Using nickname: ${nickname}`);
+  }
+
+  // 9. Request token (blocks until user approves in Roam)
   console.log("\nWaiting for approval in Roam Desktop...");
   console.log("(A dialog should appear in the Roam app - please approve it)");
 
@@ -636,34 +664,6 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
         console.error(`\nError: ${errorMessage}`);
     }
     process.exit(1);
-  }
-
-  // 9. Get nickname
-  let nickname: string;
-  if (nonInteractive) {
-    nickname = slugify(options.nickname!);
-    console.log(`→ Using nickname: ${nickname}`);
-  } else {
-    const rawNickname = await input({
-      message: "Enter a short name you'll use to refer to this graph:",
-      validate: (value) => {
-        const slug = slugify(value.trim());
-        if (!slug) return "Nickname cannot be empty";
-        // Check for existing nickname (excluding the current graph if updating)
-        const existing = configuredGraphs.find(
-          (g) =>
-            g.nickname === slug &&
-            !(g.name === finalSelectedGraph.name && g.type === finalSelectedGraph.type)
-        );
-        if (existing) {
-          return `Nickname "${slug}" is already used by "${existing.name}"`;
-        }
-        return true;
-      },
-    });
-
-    nickname = slugify(rawNickname.trim());
-    console.log(`→ Using nickname: ${nickname}`);
   }
 
   // 10. Save to config
