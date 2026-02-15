@@ -193,4 +193,27 @@ Examples:
 `)
   .action((options) => connect(options));
 
+// ============================================================================
+// HTTP Server Command
+// ============================================================================
+
+program
+  .command("http")
+  .description("Start an HTTP transport server for remote MCP access (e.g., via Tailscale Funnel)")
+  .option("--port <number>", "Port to listen on (default: 3939)")
+  .option("--regenerate-path-secret", "Regenerate the URL path secret (for rotation)")
+  .addHelpText("after", `
+Examples:
+  npm run cli -- http                              Start with defaults
+  npm run cli -- http --port 4000                  Custom port
+  npm run cli -- http --regenerate-path-secret     Rotate path secret
+`)
+  .action(async (options) => {
+    const { startHttpServer } = await import("../mcp/http.js");
+    await startHttpServer({
+      port: options.port ? Number(options.port) : undefined,
+      regeneratePathSecret: options.regeneratePathSecret ?? false,
+    });
+  });
+
 program.parse();

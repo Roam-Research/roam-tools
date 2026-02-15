@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import {
   RoamMcpConfigSchema,
   RoamMcpConfig,
+  HttpConfig,
   GraphConfig,
   ResolvedGraph,
   RoamError,
@@ -292,6 +293,28 @@ export async function updateGraphTokenStatus(
   }
   if (!changed) return;
 
+  await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+}
+
+/**
+ * Get HTTP config from ~/.roam-tools.json (or undefined if not set).
+ */
+export async function getHttpConfig(): Promise<HttpConfig | undefined> {
+  try {
+    const config = await readRawConfig();
+    return config.http;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Save HTTP config to ~/.roam-tools.json.
+ * Follows the same read-modify-write pattern as saveGraphToConfig.
+ */
+export async function saveHttpConfig(httpConfig: HttpConfig): Promise<void> {
+  const config = await readRawConfig();
+  config.http = httpConfig;
   await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult, TokenInfoResponse, AccessLevel } from "./types.js";
 import { RoamError, textResult } from "./types.js";
 import { RoamClient } from "./client.js";
@@ -37,6 +38,7 @@ export interface ClientToolDefinition {
   schema: z.ZodObject<z.ZodRawShape>;
   action: (client: RoamClient, args: unknown) => Promise<CallToolResult>;
   type: "client";
+  mutates: boolean;
 }
 
 // Standalone tool that handles its own graph resolution
@@ -46,6 +48,7 @@ export interface StandaloneToolDefinition {
   schema: z.ZodObject<z.ZodRawShape>;
   action: (args: unknown) => Promise<CallToolResult>;
   type: "standalone";
+  mutates: boolean;
 }
 
 export type ToolDefinition = ClientToolDefinition | StandaloneToolDefinition;
@@ -53,7 +56,8 @@ export type ToolDefinition = ClientToolDefinition | StandaloneToolDefinition;
 // Helper to create tool with graph parameter
 function defineTool<T extends z.ZodRawShape>(
   name: string, description: string, schema: z.ZodObject<T>,
-  action: (client: RoamClient, args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>
+  action: (client: RoamClient, args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>,
+  mutates: boolean = false,
 ): ClientToolDefinition {
   return {
     name,
@@ -61,13 +65,15 @@ function defineTool<T extends z.ZodRawShape>(
     schema: withGraph(schema),
     action: (client, args) => action(client, args as z.infer<z.ZodObject<T>>),
     type: "client",
+    mutates,
   };
 }
 
 // Helper to create standalone tool (no graph parameter, handles its own resolution)
 function defineStandaloneTool<T extends z.ZodRawShape>(
   name: string, description: string, schema: z.ZodObject<T>,
-  action: (args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>
+  action: (args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>,
+  mutates: boolean = false,
 ): StandaloneToolDefinition {
   return {
     name,
@@ -75,6 +81,7 @@ function defineStandaloneTool<T extends z.ZodRawShape>(
     schema: schema,
     action: (args) => action(args as z.infer<z.ZodObject<T>>),
     type: "standalone",
+    mutates,
   };
 }
 
@@ -103,43 +110,50 @@ const contentTools: ClientToolDefinition[] = [
     "create_page",
     "Create a new page in Roam, optionally with markdown content." + GUIDELINES_NOTE,
     CreatePageSchema,
-    createPage
+    createPage,
+    true,
   ),
   defineTool(
     "create_block",
     "Create a new block under a parent, using markdown content. Supports nested bulleted lists - pass a markdown string with `- ` list items and indentation to create an entire block hierarchy in a single call." + GUIDELINES_NOTE,
     CreateBlockSchema,
-    createBlock
+    createBlock,
+    true,
   ),
   defineTool(
     "update_block",
     "Update an existing block's content or properties." + GUIDELINES_NOTE,
     UpdateBlockSchema,
-    updateBlock
+    updateBlock,
+    true,
   ),
   defineTool(
     "delete_block",
     "Delete a block and all its children." + GUIDELINES_NOTE,
     DeleteBlockSchema,
-    deleteBlock
+    deleteBlock,
+    true,
   ),
   defineTool(
     "move_block",
     "Move a block to a new location." + GUIDELINES_NOTE,
     MoveBlockSchema,
-    moveBlock
+    moveBlock,
+    true,
   ),
   defineTool(
     "delete_page",
     "Delete a page and all its contents." + GUIDELINES_NOTE,
     DeletePageSchema,
-    deletePage
+    deletePage,
+    true,
   ),
   defineTool(
     "update_page",
     "Update a page's title or children view type. Set mergePages to true if renaming to a title that already exists." + GUIDELINES_NOTE,
     UpdatePageSchema,
-    updatePage
+    updatePage,
+    true,
   ),
   defineTool(
     "search",
@@ -211,13 +225,15 @@ const contentTools: ClientToolDefinition[] = [
     "file_upload",
     "Upload an image to Roam. Returns the Firebase storage URL. Usually you'll want to create a new block with the image as markdown: `![](url)`. Provide ONE of: filePath (preferred - local file, server reads directly), url (remote URL, server fetches), or base64 (raw data, fallback for sandboxed clients)." + GUIDELINES_NOTE,
     FileUploadSchema,
-    uploadFile
+    uploadFile,
+    true,
   ),
   defineTool(
     "file_delete",
     "Delete a file hosted on Roam." + GUIDELINES_NOTE,
     FileDeleteSchema,
-    deleteFile
+    deleteFile,
+    true,
   ),
 ];
 
@@ -228,6 +244,35 @@ export const tools: ToolDefinition[] = [
 
 export function findTool(name: string): ToolDefinition | undefined {
   return tools.find((t) => t.name === name);
+}
+
+/**
+ * Register tools on an McpServer instance.
+ * Optional onMutatingCall callback is invoked before executing a mutating tool
+ * (used by the HTTP server to log write operations to stderr).
+ */
+export function registerTools(
+  server: McpServer,
+  options?: { onMutatingCall?: (toolName: string) => void }
+): number {
+  for (const tool of tools) {
+    server.registerTool(
+      tool.name,
+      { description: tool.description, inputSchema: tool.schema },
+      async (args) => {
+        if (tool.mutates && options?.onMutatingCall) {
+          options.onMutatingCall(tool.name);
+        }
+        try {
+          return await routeToolCall(tool.name, args as Record<string, unknown>);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          return { content: [{ type: "text", text: message }], isError: true };
+        }
+      }
+    );
+  }
+  return tools.length;
 }
 
 /**
