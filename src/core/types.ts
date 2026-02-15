@@ -45,8 +45,17 @@ export const GraphConfigSchema = z.object({
 });
 export type GraphConfig = z.infer<typeof GraphConfigSchema>;
 
+export const HttpConfigSchema = z.object({
+  token: z.string().min(1).describe("Bearer token for remote MCP access"),
+  pathSecret: z.string().min(1).optional().describe("URL path secret for authless clients (opt-in)"),
+  port: z.number().default(3939).describe("HTTP server port"),
+  allowedHosts: z.array(z.string()).optional().describe("Additional allowed Host header values"),
+});
+export type HttpConfig = z.infer<typeof HttpConfigSchema>;
+
 export const RoamMcpConfigSchema = z.object({
   graphs: z.array(GraphConfigSchema).min(1, "At least one graph must be configured"),
+  http: HttpConfigSchema.optional(),
 });
 export type RoamMcpConfig = z.infer<typeof RoamMcpConfigSchema>;
 
