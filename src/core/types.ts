@@ -82,6 +82,10 @@ export const ErrorCodes = {
   USER_REJECTED: "USER_REJECTED",
   GRAPH_BLOCKED: "GRAPH_BLOCKED",
 
+  // Token request errors
+  TIMEOUT: "TIMEOUT",
+  REQUEST_IN_PROGRESS: "REQUEST_IN_PROGRESS",
+
   // 404 errors
   UNKNOWN_ACTION: "UNKNOWN_ACTION",
 

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { CallToolResult, TokenInfoResponse, AccessLevel } from "./types.js";
 import { RoamError, textResult } from "./types.js";
 import { RoamClient } from "./client.js";
-import { resolveGraph, getPort, updateGraphTokenStatus, PROJECT_ROOT } from "./graph-resolver.js";
+import { resolveGraph, getPort, updateGraphTokenStatus } from "./graph-resolver.js";
 import {
   CreatePageSchema, GetPageSchema, DeletePageSchema, UpdatePageSchema, GetGuidelinesSchema,
   createPage, getPage, deletePage, updatePage, getGuidelines,
@@ -18,7 +18,7 @@ import {
   getOpenWindows, getSelection, openMainWindow, openSidebar,
 } from "./operations/navigation.js";
 import { FileGetSchema, FileUploadSchema, FileDeleteSchema, getFile, uploadFile, deleteFile } from "./operations/files.js";
-import { ListGraphsSchema, listGraphs } from "./operations/graphs.js";
+import { ListGraphsSchema, SetupNewGraphSchema, listGraphs, setupNewGraph } from "./operations/graphs.js";
 
 // Common schema for graph parameter (used by most tools)
 const GraphSchema = z.object({
@@ -85,6 +85,12 @@ const graphManagementTools: StandaloneToolDefinition[] = [
     "List all configured graphs with their nicknames. Also provides setup instructions for connecting additional graphs.",
     ListGraphsSchema,
     listGraphs
+  ),
+  defineStandaloneTool(
+    "setup_new_graph",
+    "Set up a new Roam graph for access, or list available graphs. Call without arguments to see which graphs are available in Roam Desktop. Call with graph and nickname to connect a specific graph — ask the user what they'd like to call the graph before choosing a nickname. The user will see an approval dialog in Roam desktop app and must approve the token request. If the graph is already configured, returns the existing configuration without making changes.",
+    SetupNewGraphSchema,
+    setupNewGraph
   ),
 ];
 
@@ -286,8 +292,7 @@ function enrichResultWithTokenStatus(result: CallToolResult, nickname: string): 
   const warning =
     `Roam graph: ${nickname}\n\n` +
     `WARNING: The token for this graph has been revoked.\n` +
-    `Run the connect command to set up a new token:\n` +
-    `  cd ${PROJECT_ROOT} && npm run cli -- connect\n`;
+    `Call setup_new_graph with this graph's name to request a new token.\n`;
 
   const first = result.content?.[0];
   if (first?.type === "text") {
