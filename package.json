@@ -1,11 +1,20 @@
 {
-  "name": "roam-mcp",
+  "name": "@roam-research/roam-mcp",
   "version": "0.3.1",
   "description": "Roam Research MCP server and CLI",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Roam-Research/roam-tools.git"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
   "type": "module",
   "main": "dist/mcp/index.js",
   "bin": {
-    "roam-cli": "dist/cli/index.js"
+    "roam-mcp": "dist/mcp/index.js",
+    "roam": "dist/cli/index.js"
   },
   "scripts": {
     "mcp": "tsx src/mcp/index.ts",
