@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { search, select, input } from "@inquirer/prompts";
-import open from "open";
 import {
   getPort,
   getConfiguredGraphsSafe,
@@ -9,31 +8,22 @@ import {
   removeGraphFromConfig,
 } from "../core/graph-resolver.js";
 import type { GraphConfig, GraphType, AccessLevel } from "../core/types.js";
+import {
+  fetchAvailableGraphs,
+  requestToken,
+  sleep,
+  openRoamApp,
+  slugify,
+} from "../core/roam-api.js";
+import type {
+  AvailableGraph,
+  GraphsResponse,
+  TokenExchangeResponse,
+} from "../core/roam-api.js";
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface AvailableGraph {
-  name: string;
-  type: GraphType;
-}
-
-interface GraphsResponse {
-  success: boolean;
-  result?: AvailableGraph[];
-  error?: string;
-}
-
-interface TokenExchangeResponse {
-  success: boolean;
-  token?: string;
-  graphName?: string;
-  graphType?: GraphType;
-  grantedAccessLevel?: string;
-  grantedScopes?: { read?: boolean; append?: boolean; edit?: boolean };
-  error?: { code?: string; message?: string } | string;
-}
 
 interface GraphChoice extends AvailableGraph {
   isOpen: boolean;
@@ -57,24 +47,8 @@ export interface ConnectOptions {
 // API Functions
 // ============================================================================
 
-async function fetchAvailableGraphs(port: number): Promise<AvailableGraph[]> {
-  const url = `http://localhost:${port}/api/graphs/available`;
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  const data = (await response.json()) as GraphsResponse;
-
-  if (!data.success) {
-    throw new Error(data.error || "Failed to get available graphs");
-  }
-
-  return data.result || [];
-}
-
 async function fetchOpenGraphs(port: number): Promise<AvailableGraph[]> {
-  const url = `http://localhost:${port}/api/graphs/open`;
+  const url = `http://127.0.0.1:${port}/api/graphs/open`;
   const response = await fetch(url, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
@@ -90,39 +64,9 @@ async function fetchOpenGraphs(port: number): Promise<AvailableGraph[]> {
   return data.result || [];
 }
 
-async function requestToken(
-  port: number,
-  graph: string,
-  graphType: GraphType,
-  accessLevel: string
-): Promise<TokenExchangeResponse> {
-  const url = `http://localhost:${port}/api/graphs/tokens/request`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      graph,
-      graphType,
-      description: "roam-mcp CLI",
-      accessLevel,
-      ai: true,
-    }),
-  });
-
-  return (await response.json()) as TokenExchangeResponse;
-}
-
 // ============================================================================
 // Helpers
 // ============================================================================
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function openRoamApp(): Promise<void> {
-  await open("roam://open");
-}
 
 function getErrorMessage(error: TokenExchangeResponse["error"]): string {
   if (!error) return "Unknown error";
@@ -133,14 +77,6 @@ function getErrorMessage(error: TokenExchangeResponse["error"]): string {
 function getErrorCode(error: TokenExchangeResponse["error"]): string | undefined {
   if (!error || typeof error === "string") return undefined;
   return error.code;
-}
-
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .replace(/-{2,}/g, "-");
 }
 
 // ============================================================================
@@ -252,7 +188,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
       console.log("Roam Desktop is not running. Opening...");
       await openRoamApp();
       console.log("Waiting for Roam to start...");
-      await sleep(3000);
+      await sleep(5000);
 
       // Retry
       try {

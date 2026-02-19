@@ -86,9 +86,9 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new RoamError(
-        `No graphs configured. Run the setup command:\n\n` +
+        `No graphs configured. Use the setup_new_graph tool to connect a Roam graph, ` +
+          `or run the CLI setup command:\n\n` +
           `  cd ${PROJECT_ROOT} && npm run cli -- connect\n\n` +
-          `This will walk you through connecting a Roam graph.\n` +
           `After connecting, try your request again.`,
         ErrorCodes.CONFIG_NOT_FOUND
       );
@@ -430,7 +430,7 @@ export async function getOpenGraphs(): Promise<
   Array<{ name: string; type: string }>
 > {
   const port = await getPort();
-  const url = `http://localhost:${port}/api/graphs/open`;
+  const url = `http://127.0.0.1:${port}/api/graphs/open`;
 
   const response = await fetch(url, {
     method: "GET",

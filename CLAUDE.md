@@ -13,6 +13,15 @@ npm run cli -- connect              # Interactive setup for graph tokens
 npm run cli -- connect --graph <name> --nickname <name>  # Non-interactive setup (for scripts/agents)
 ```
 
+## Version Bumps
+
+The version must be updated in three files, then lock file synced:
+
+1. `package.json` — `"version"` field
+2. `src/mcp/index.ts` — `McpServer` constructor `version` string
+3. `src/cli/index.ts` — Commander `.version()` call
+4. Run `npm install` to sync `package-lock.json`
+
 ## Architecture
 
 This is a Model Context Protocol (MCP) server and CLI for Roam Research. Both interfaces share the same core logic.
@@ -33,12 +42,14 @@ This is a Model Context Protocol (MCP) server and CLI for Roam Research. Both in
 
 - `src/core/graph-resolver.ts` - Loads config from `~/.roam-tools.json`, resolves graphs by nickname or name (stateless, no session state).
 
+- `src/core/roam-api.ts` - Shared API functions (fetch available graphs, request tokens, helpers) used by both CLI connect and the MCP `setup_new_graph` tool.
+
 - `src/core/types.ts` - TypeScript types, Zod schemas for config validation, error codes and `RoamError` class.
 
 ### Operations
 
 Operations in `src/core/operations/` are organized by domain:
-- `graphs.ts` - Graph management (list)
+- `graphs.ts` - Graph management (list, setup new graph)
 - `pages.ts` - Create, get, update, delete pages; get graph guidelines
 - `blocks.ts` - Create, get, update, delete, move blocks; get backlinks
 - `search.ts` - Text search and template search
@@ -68,7 +79,7 @@ Operations in `src/core/operations/` are organized by domain:
 ### Key Patterns
 
 - All client tools get an optional `graph` parameter via `withGraph()` helper
-- Standalone tools (list_graphs) don't use withGraph
+- Standalone tools (list_graphs, setup_new_graph) don't use withGraph
 - Zod schemas drive both validation and CLI option generation
 - `RoamError` class carries error codes and context for structured error responses
 - API versioning: `EXPECTED_API_VERSION` in types.ts must match Roam's API version

@@ -146,6 +146,7 @@ To create a token manually: Roam Desktop → Settings → Graph → Local API To
 
 **Graph Management:**
 - `list_graphs` - List all configured graphs with their nicknames
+- `setup_new_graph` - Set up a new graph connection, or list available graphs
 
 **Graph Guidelines:**
 - `get_graph_guidelines` - Returns user-defined instructions and preferences for AI agents
