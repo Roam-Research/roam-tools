@@ -1,8 +1,10 @@
+#!/usr/bin/env node
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { tools, routeToolCall } from "../core/tools.js";
 
-const server = new McpServer({ name: "roam-mcp", version: "0.3.1" });
+const server = new McpServer({ name: "roam-mcp", version: "0.3.2" });
 
 // Register each tool with its Zod schema
 for (const tool of tools) {

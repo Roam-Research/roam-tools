@@ -28,21 +28,12 @@ This MCP server connects to Roam's local HTTP API, which runs on your machine wh
 
 The local API requires the Roam **desktop app** (not the web version). Make sure it's installed and you can open your graph in it.
 
-### 2. Install
-
-```bash
-git clone https://github.com/Roam-Research/roam-mcp.git
-cd roam-mcp
-npm install
-npm run build
-```
-
-### 3. Connect a Graph
+### 2. Connect a Graph
 
 **Interactive** (recommended for first-time setup):
 
 ```bash
-npm run cli -- connect
+npx -y -p @roam-research/roam-mcp roam connect
 ```
 
 This will walk you through selecting a graph, choosing permissions, and approving the token in Roam.
@@ -50,11 +41,11 @@ This will walk you through selecting a graph, choosing permissions, and approvin
 **Non-interactive** (for scripts and LLM agents):
 
 ```bash
-# example to connect to a your graph called "my-graph-name" which you generally refer to as "My Team Graph"
-npm run cli -- connect --graph my-graph-name --nickname "My Team Graph" --access-level full
+# example to connect to your graph called "my-graph-name" which you generally refer to as "My Team Graph"
+npx -y -p @roam-research/roam-mcp roam connect --graph my-graph-name --nickname "My Team Graph" --access-level full
 
 # example to connect to a public graph - our "help" graph
-npm run cli -- connect --graph help --public --nickname "Roam official help graph" 
+npx -y -p @roam-research/roam-mcp roam connect --graph help --public --nickname "Roam official help graph"
 ```
 
 | Flag | Default | Description |
@@ -70,46 +61,47 @@ npm run cli -- connect --graph help --public --nickname "Roam official help grap
 To remove a connection:
 
 ```bash
-npm run cli -- connect --remove --graph my-graph-name
-npm run cli -- connect --remove --graph help
-npm run cli -- connect --remove --nickname "My Team Graph"
-npm run cli -- connect --remove --nickname "Roam official help graph"
+npx -y -p @roam-research/roam-mcp roam connect --remove --graph my-graph-name
+npx -y -p @roam-research/roam-mcp roam connect --remove --nickname "My Team Graph"
 ```
 
 Run `connect` again to add more graphs or update permissions.
 
-### 4. Connect to an MCP Client
+### 3. Connect to an MCP Client
 
-**Option A: Configure your MCP client**
+**Claude Desktop**
 
-Point your MCP client to the server:
-
-```
-node /path/to/roam-mcp/dist/mcp/index.js
-```
-
-For Claude Desktop, add to your config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add to your Claude Desktop config file:
 
 ```json
 {
   "mcpServers": {
     "roam": {
-      "command": "node",
-      "args": ["/path/to/roam-mcp/dist/mcp/index.js"]
+      "command": "npx",
+      "args": ["-y", "@roam-research/roam-mcp"]
     }
   }
 }
 ```
 
-Replace `/path/to/roam-mcp` with the actual path.
+Config file location:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
 
-**Option B: Claude Code**
+Restart Claude Desktop after saving.
 
-Run Claude Code from the roam-mcp directory. The MCP server is configured in `.mcp.json` and will be available automatically.
+**Claude Code**
+
+```bash
+claude mcp add -s user roam-mcp -- npx -y @roam-research/roam-mcp
+```
+
+This makes Roam available in all your Claude Code sessions. To add it to a single project only, use `-s local` instead.
 
 ### Multiple Graphs
 
-Run `npm run cli -- connect` multiple times to add additional graphs. Each graph gets a nickname (a short name like "work" or "team acme") for easy selection.
+Run `connect` multiple times to add additional graphs. Each graph gets a nickname (a short name like "work" or "team acme") for easy selection.
 
 **Graph Selection:**
 - **Single graph configured**: Auto-selected, no action needed
@@ -183,21 +175,40 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 
 ## CLI
 
-A command-line interface is available for setup and direct tool access:
+A CLI is bundled with the package for setup and direct tool access:
 
 ```bash
-# Setup
-npm run cli -- connect                          # Interactive graph connection
-npm run cli -- connect --graph <name> --nickname <name>  # Non-interactive connection
-
-# Tools (same as MCP server)
-npm run cli -- list-graphs
-npm run cli -- search --query "my notes"
-npm run cli -- get-page --title "My Page"
-npm run cli -- create-block --parent-uid "abc123" --markdown "Hello world"
+npx -y -p @roam-research/roam-mcp roam connect                          # Interactive graph connection
+npx -y -p @roam-research/roam-mcp roam connect --graph <name> --nickname <name>  # Non-interactive
+npx -y -p @roam-research/roam-mcp roam list-graphs
+npx -y -p @roam-research/roam-mcp roam search --query "my notes"
+npx -y -p @roam-research/roam-mcp roam get-page --title "My Page"
 ```
 
-Run `npm run cli -- --help` to see all available commands.
+Run `npx -y -p @roam-research/roam-mcp roam --help` to see all available commands.
+
+If you prefer shorter commands, install globally with `npm install -g @roam-research/roam-mcp`, then use `roam` directly (e.g. `roam connect`, `roam search`). Note that global installs don't auto-update — you'll need to re-run the install command to get new versions.
+
+## Development
+
+To work on this project from source:
+
+```bash
+git clone https://github.com/Roam-Research/roam-mcp.git
+cd roam-mcp
+npm install
+npm run build
+```
+
+See [npm packaging design](docs/npm-packaging-design.md) for why the package is structured this way.
+
+Development commands:
+
+```bash
+npm run mcp              # Run MCP server in dev mode (tsx)
+npm run cli -- connect   # Run CLI in dev mode
+npm run typecheck        # Type-check without emitting
+```
 
 ## Contributing
 
