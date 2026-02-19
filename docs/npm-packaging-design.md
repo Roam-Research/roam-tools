@@ -116,6 +116,44 @@ npm run mcp                         # MCP server (dev mode)
 npm run cli -- connect              # CLI (dev mode)
 ```
 
+## Releasing a New Version
+
+### 1. Bump the version
+
+The version appears in three files:
+
+1. `package.json` — `"version"` field
+2. `src/mcp/index.ts` — `McpServer` constructor `version` string
+3. `src/cli/index.ts` — Commander `.version()` call
+
+Then sync the lock file:
+
+```bash
+npm install
+```
+
+### 2. Commit and tag
+
+```bash
+git add -A && git commit -m "bump version to X.Y.Z"
+git tag vX.Y.Z
+git push origin main --tags
+```
+
+### 3. Publish to npm
+
+If CI is configured (see [mcp-registry-publishing.md](mcp-registry-publishing.md)), pushing the tag triggers automated publish. Otherwise, publish manually:
+
+```bash
+npm publish
+```
+
+The `prepublishOnly` script runs typecheck and build automatically before publish. The `publishConfig` field ensures scoped package publishes as public.
+
+### 4. MCP Registry (optional)
+
+See [mcp-registry-publishing.md](mcp-registry-publishing.md) for publishing to the MCP Registry.
+
 ## Future: Splitting the CLI
 
 If the CLI grows substantially, it can be split into its own package:
