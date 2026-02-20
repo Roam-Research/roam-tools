@@ -6,9 +6,8 @@ import { randomUUID } from "crypto";
 import { mkdirSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import type { CallToolResult } from "../core/types.js";
-import { RoamError, ErrorCodes } from "../core/types.js";
-import { tools, routeToolCall } from "../core/tools.js";
+import type { CallToolResult } from "@roam-research/roam-tools-core";
+import { RoamError, ErrorCodes, tools, routeToolCall } from "@roam-research/roam-tools-core";
 import { connect } from "./connect.js";
 
 // Get file extension from MIME type
@@ -60,7 +59,7 @@ const program = new Command();
 program
   .name("roam")
   .description("Roam Research CLI")
-  .version("0.3.2");
+  .version("0.4.0");
 
 // Helper to check if a Zod schema field is optional
 function isOptional(schema: z.ZodTypeAny): boolean {

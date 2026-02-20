@@ -33,7 +33,7 @@ The local API requires the Roam **desktop app** (not the web version). Make sure
 **Interactive** (recommended for first-time setup):
 
 ```bash
-npx -y -p @roam-research/roam-mcp roam connect
+npx @roam-research/roam-cli connect
 ```
 
 This will walk you through selecting a graph, choosing permissions, and approving the token in Roam.
@@ -42,10 +42,10 @@ This will walk you through selecting a graph, choosing permissions, and approvin
 
 ```bash
 # example to connect to your graph called "my-graph-name" which you generally refer to as "My Team Graph"
-npx -y -p @roam-research/roam-mcp roam connect --graph my-graph-name --nickname "My Team Graph" --access-level full
+npx @roam-research/roam-cli connect --graph my-graph-name --nickname "My Team Graph" --access-level full
 
 # example to connect to a public graph - our "help" graph
-npx -y -p @roam-research/roam-mcp roam connect --graph help --public --nickname "Roam official help graph"
+npx @roam-research/roam-cli connect --graph help --public --nickname "Roam official help graph"
 ```
 
 | Flag | Default | Description |
@@ -61,8 +61,8 @@ npx -y -p @roam-research/roam-mcp roam connect --graph help --public --nickname 
 To remove a connection:
 
 ```bash
-npx -y -p @roam-research/roam-mcp roam connect --remove --graph my-graph-name
-npx -y -p @roam-research/roam-mcp roam connect --remove --nickname "My Team Graph"
+npx @roam-research/roam-cli connect --remove --graph my-graph-name
+npx @roam-research/roam-cli connect --remove --nickname "My Team Graph"
 ```
 
 Run `connect` again to add more graphs or update permissions.
@@ -113,6 +113,7 @@ Instead of using `connect`, you can manually create `~/.roam-tools.json`:
 
 ```json
 {
+  "version": 1,
   "graphs": [
     {
       "name": "your-graph-name",
@@ -175,32 +176,40 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 
 ## CLI
 
-A CLI is bundled with the package for setup and direct tool access:
+The CLI is available as a separate package:
 
 ```bash
-npx -y -p @roam-research/roam-mcp roam connect                          # Interactive graph connection
-npx -y -p @roam-research/roam-mcp roam connect --graph <name> --nickname <name>  # Non-interactive
-npx -y -p @roam-research/roam-mcp roam list-graphs
-npx -y -p @roam-research/roam-mcp roam search --query "my notes"
-npx -y -p @roam-research/roam-mcp roam get-page --title "My Page"
+npx @roam-research/roam-cli connect                          # Interactive graph connection
+npx @roam-research/roam-cli connect --graph <name> --nickname <name>  # Non-interactive
+npx @roam-research/roam-cli list-graphs
+npx @roam-research/roam-cli search --query "my notes"
+npx @roam-research/roam-cli get-page --title "My Page"
 ```
 
-Run `npx -y -p @roam-research/roam-mcp roam --help` to see all available commands.
+Run `npx @roam-research/roam-cli --help` to see all available commands.
 
-If you prefer shorter commands, install globally with `npm install -g @roam-research/roam-mcp`, then use `roam` directly (e.g. `roam connect`, `roam search`). Note that global installs don't auto-update — you'll need to re-run the install command to get new versions.
+If you prefer shorter commands, install globally with `npm install -g @roam-research/roam-cli`, then use `roam` directly (e.g. `roam connect`, `roam search`). Note that global installs don't auto-update — you'll need to re-run the install command to get new versions.
+
+## Packages
+
+This repository is a monorepo with three packages:
+
+| Package | Description |
+|---------|-------------|
+| [`@roam-research/roam-tools-core`](packages/core) | Shared core library (client, tools, operations, config, types) |
+| [`@roam-research/roam-mcp`](packages/mcp) | MCP server — connect Claude/Cursor/etc. to Roam |
+| [`@roam-research/roam-cli`](packages/cli) | CLI — setup and direct tool access |
 
 ## Development
 
 To work on this project from source:
 
 ```bash
-git clone https://github.com/Roam-Research/roam-mcp.git
-cd roam-mcp
+git clone https://github.com/Roam-Research/roam-tools.git
+cd roam-tools
 npm install
 npm run build
 ```
-
-See [npm packaging design](docs/npm-packaging-design.md) for why the package is structured this way.
 
 Development commands:
 
@@ -208,7 +217,11 @@ Development commands:
 npm run mcp              # Run MCP server in dev mode (tsx)
 npm run cli -- connect   # Run CLI in dev mode
 npm run typecheck        # Type-check without emitting
+npm run version:check    # Verify all package versions are consistent
+npm run version:bump 0.5.0  # Bump all packages to a new version
 ```
+
+See [npm packaging design](docs/npm-packaging-design.md) for why the packages are structured this way.
 
 ## Contributing
 

@@ -1,27 +1,29 @@
 # npm Packaging Design
 
-## What This Package Contains
+## What This Repository Contains
 
-This repo has two entry points that share a common core:
+This is a monorepo with three packages that share a common core:
 
-1. **MCP Server** (`src/mcp/index.ts`) — A Model Context Protocol server that communicates over stdio. MCP clients (Claude Desktop, Cursor, etc.) launch this process and talk to it via stdin/stdout. It exposes Roam Research operations as MCP tools.
+1. **MCP Server** (`packages/mcp/`) — A Model Context Protocol server that communicates over stdio. MCP clients (Claude Desktop, Cursor, etc.) launch this process and talk to it via stdin/stdout. It exposes Roam Research operations as MCP tools.
 
-2. **CLI** (`src/cli/index.ts`) — A command-line interface (Commander.js). Used for setup (`connect` to authenticate with a Roam graph) and direct tool access (`search`, `get-page`, etc.). Auto-generated from the same tool definitions as the MCP server.
+2. **CLI** (`packages/cli/`) — A command-line interface (Commander.js). Used for setup (`connect` to authenticate with a Roam graph) and direct tool access (`search`, `get-page`, etc.). Auto-generated from the same tool definitions as the MCP server.
 
-3. **Core** (`src/core/`) — Shared layer: Roam API client, tool definitions, graph resolution, operations. Both MCP server and CLI import from here.
+3. **Core** (`packages/core/`) — Shared layer: Roam API client, tool definitions, graph resolution, operations. Both MCP server and CLI import from here via `@roam-research/roam-tools-core`.
 
-## Package
+## Packages
 
-```
-@roam-research/roam-mcp
-```
+| Package | Bin | Purpose | Used by |
+|---------|-----|---------|---------|
+| `@roam-research/roam-tools-core` | — | Shared core library | MCP, CLI (dependency) |
+| `@roam-research/roam-mcp` | `roam-mcp` | MCP stdio server | MCP clients |
+| `@roam-research/roam-cli` | `roam` | CLI with subcommands | Humans |
 
-Two binaries:
+### Why three packages
 
-| Binary | Entry | Purpose | Used by |
-|--------|-------|---------|---------|
-| `roam-mcp` | `dist/mcp/index.js` | MCP stdio server | MCP clients |
-| `roam` | `dist/cli/index.js` | CLI with subcommands | Humans |
+- The MCP server doesn't need CLI-only dependencies (`commander`, `@inquirer/prompts`)
+- The CLI doesn't need the MCP SDK for its binary
+- Users who only want the MCP server don't need to download CLI dependencies
+- The core library is shared and only installed once via npm deduplication
 
 ## Why `@roam-research/roam-mcp`
 
@@ -48,15 +50,17 @@ This means MCP client configuration is clean and predictable:
 
 No `-p` flag. No explicit binary selection. No ambiguity.
 
-### Why not `@roam-research/mcp`
+### Why `@roam-research/roam-cli`
 
-With `@roam-research/mcp`, npx would look for a bin called `mcp`. Our bins are `roam-mcp` and `roam` — neither matches. With two bins and no name match, npx errors: "could not determine executable to run."
+Same npx resolution logic:
 
-Workaround exists (`npx -p @roam-research/mcp roam-mcp`) but it's verbose and fragile for documentation.
+- Package: `@roam-research/roam-cli`
+- npx looks for bin: `roam-cli`... no match
+- But bin field has `roam` and it's the only bin, so npx resolves it
 
-### Why not unscoped `roam-mcp`
-
-An unscoped name would make npx simpler (`npx roam-mcp`) but loses organizational ownership. Anyone could have registered `roam-mcp`. The `@roam-research` scope provides verified namespace ownership on npm.
+```bash
+npx @roam-research/roam-cli connect
+```
 
 ## Why Two Separate Binaries (Not a Unified Entry Point)
 
@@ -66,15 +70,23 @@ We considered a single binary where no-args starts the MCP server and subcommand
 - **Future CLI evolution.** The `roam` command may grow to include interactive features (TUI, background daemon, etc.) that would conflict with MCP server mode.
 - **Explicit is better.** `roam-mcp` starts the server. `roam` is the CLI. No ambiguity about what each command does.
 
-## Why No Generic `mcp` Binary
+## Development Mode
 
-We could have added a bin called `mcp` to make `npx @roam-research/mcp` resolve. We didn't because:
+The core package uses a `"development"` export condition:
 
-- `mcp` is extremely generic — other MCP servers may also want this name
-- It pollutes the global PATH with a namespace-unsafe command
-- It creates collision risk when multiple MCP packages are installed globally
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  }
+}
+```
 
-`roam-mcp` is namespaced and unambiguous.
+When running `tsx --conditions development`, imports resolve directly to TypeScript source. This means `npm run mcp` and `npm run cli` work without building core first.
 
 ## Usage
 
@@ -91,77 +103,58 @@ We could have added a bin called `mcp` to make `npx @roam-research/mcp` resolve.
 }
 ```
 
+### CLI
+
+```bash
+npx @roam-research/roam-cli connect
+npx @roam-research/roam-cli search --query "my notes"
+```
+
 ### Global Install
 
 ```bash
-npm install -g @roam-research/roam-mcp
-```
-
-This adds both `roam-mcp` and `roam` to your PATH:
-
-```bash
-roam-mcp                            # starts MCP server (stdio)
-roam connect                        # setup: connect a graph
-roam search --query "my notes"      # CLI tool access
+npm install -g @roam-research/roam-mcp    # MCP server
+npm install -g @roam-research/roam-cli    # CLI
 ```
 
 ### From Source (development)
 
 ```bash
-git clone https://github.com/Roam-Research/roam-mcp.git
-cd roam-mcp
+git clone https://github.com/Roam-Research/roam-tools.git
+cd roam-tools
 npm install
 npm run build
 npm run mcp                         # MCP server (dev mode)
 npm run cli -- connect              # CLI (dev mode)
 ```
 
+## Config Versioning
+
+The `~/.roam-tools.json` config file includes a `version` field (default: 1). When a client reads a config with a higher version than it supports, it throws a clear "please update" error before Zod validation. This prevents confusing schema validation errors when a newer tool has changed the config format.
+
 ## Releasing a New Version
 
 ### 1. Bump the version
 
-The version appears in three files:
-
-1. `package.json` — `"version"` field
-2. `src/mcp/index.ts` — `McpServer` constructor `version` string
-3. `src/cli/index.ts` — Commander `.version()` call
-
-Then sync the lock file:
-
 ```bash
-npm install
+npm run version:bump 0.5.0    # Updates all 7 locations
+npm install                    # Sync package-lock.json
 ```
 
-### 2. Commit and tag
+### 2. Verify
+
+```bash
+npm run version:check    # Ensure all versions are consistent
+npm run build            # Build all packages
+npm run typecheck        # Type-check
+```
+
+### 3. Commit and publish
 
 ```bash
 git add -A && git commit -m "bump version to X.Y.Z"
-git tag vX.Y.Z
-git push origin main --tags
+git push origin master
+npm run publish:all
 ```
 
-### 3. Publish to npm
-
-If CI is configured (see [mcp-registry-publishing.md](mcp-registry-publishing.md)), pushing the tag triggers automated publish. Otherwise, publish manually:
-
-```bash
-npm publish
-```
-
-The `prepublishOnly` script runs typecheck and build automatically before publish. The `publishConfig` field ensures scoped package publishes as public.
-
-### 4. MCP Registry (optional)
-
-See [mcp-registry-publishing.md](mcp-registry-publishing.md) for publishing to the MCP Registry.
-
-## Future: Splitting the CLI
-
-If the CLI grows substantially, it can be split into its own package:
-
-1. Publish `@roam-research/roam` with bin `roam`
-2. Remove the `roam` bin from `@roam-research/roam-mcp` (keep only `roam-mcp`)
-3. Communicate as a semver major version bump
-
-When users update `@roam-research/roam-mcp`, npm removes bin shims that no longer exist in the `bin` field. The `roam` command disappears unless they install the new CLI package. This is clean and predictable — no ghost binaries.
-
-The shared core code can be handled by having `@roam-research/roam` depend on `@roam-research/roam-mcp` and import its internals, or by extracting a `@roam-research/roam-core` package. This decision can be deferred until the split actually happens.
+This runs version:check, builds, then publishes core → mcp → cli in order.

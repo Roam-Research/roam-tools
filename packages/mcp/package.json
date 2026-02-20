@@ -1,0 +1,35 @@
+{
+  "name": "@roam-research/roam-mcp",
+  "version": "0.4.0",
+  "description": "Roam Research MCP server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Roam-Research/roam-tools.git",
+    "directory": "packages/mcp"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "roam-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "keywords": [
+    "roam",
+    "roam-research",
+    "mcp",
+    "model-context-protocol"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@roam-research/roam-tools-core": "0.4.0"
+  }
+}

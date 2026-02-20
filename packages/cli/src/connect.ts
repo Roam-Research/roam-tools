@@ -1,25 +1,19 @@
-#!/usr/bin/env node
-
 import { search, select, input } from "@inquirer/prompts";
 import {
   getPort,
   getConfiguredGraphsSafe,
   saveGraphToConfig,
   removeGraphFromConfig,
-} from "../core/graph-resolver.js";
-import type { GraphConfig, GraphType, AccessLevel } from "../core/types.js";
-import {
   fetchAvailableGraphs,
   requestToken,
   sleep,
   openRoamApp,
   slugify,
-} from "../core/roam-api.js";
+} from "@roam-research/roam-tools-core";
 import type {
-  AvailableGraph,
-  GraphsResponse,
-  TokenExchangeResponse,
-} from "../core/roam-api.js";
+  GraphConfig, GraphType, AccessLevel,
+  AvailableGraph, GraphsResponse, TokenExchangeResponse,
+} from "@roam-research/roam-tools-core";
 
 // ============================================================================
 // Types

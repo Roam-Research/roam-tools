@@ -1,0 +1,32 @@
+{
+  "name": "@roam-research/roam-cli",
+  "version": "0.4.0",
+  "description": "Roam Research CLI",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Roam-Research/roam-tools.git",
+    "directory": "packages/cli"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "roam": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "keywords": ["roam", "roam-research", "cli"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.2.0",
+    "commander": "^14.0.2",
+    "zod": "^3.25.76",
+    "@roam-research/roam-tools-core": "0.4.0"
+  }
+}

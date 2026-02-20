@@ -1,50 +1,19 @@
 {
-  "name": "@roam-research/roam-mcp",
-  "version": "0.3.2",
-  "description": "Roam Research MCP server and CLI",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Roam-Research/roam-tools.git"
-  },
-  "files": [
-    "dist/",
-    "README.md"
-  ],
-  "type": "module",
-  "main": "dist/mcp/index.js",
-  "bin": {
-    "roam-mcp": "dist/mcp/index.js",
-    "roam": "dist/cli/index.js"
-  },
-  "keywords": [
-    "roam",
-    "roam-research",
-    "mcp",
-    "model-context-protocol"
-  ],
-  "engines": {
-    "node": ">=18"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
+  "workspaces": ["packages/core", "packages/mcp", "packages/cli"],
   "scripts": {
-    "mcp": "tsx src/mcp/index.ts",
-    "cli": "tsx src/cli/index.ts",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run typecheck && npm run build"
-  },
-  "dependencies": {
-    "@inquirer/prompts": "^8.2.0",
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "commander": "^14.0.2",
-    "open": "^11.0.0",
-    "zod": "^3.25.76"
+    "build": "tsc --build tsconfig.build.json",
+    "typecheck": "tsc --build tsconfig.build.json --force",
+    "mcp": "tsx --conditions development packages/mcp/src/index.ts",
+    "cli": "tsx --conditions development packages/cli/src/index.ts",
+    "version:bump": "node scripts/bump-version.mjs",
+    "version:check": "node scripts/check-versions.mjs",
+    "publish:all": "npm run version:check && npm run build && npm publish -w packages/core && npm publish -w packages/mcp && npm publish -w packages/cli"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
-  }
+  },
+  "engines": { "node": ">=18" }
 }

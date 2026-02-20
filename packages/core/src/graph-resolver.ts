@@ -3,8 +3,7 @@
 
 import { readFile, writeFile, chmod, stat } from "fs/promises";
 import { homedir } from "os";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 import {
   RoamMcpConfigSchema,
   RoamMcpConfig,
@@ -13,10 +12,8 @@ import {
   RoamError,
   ErrorCodes,
   AccessLevel,
+  CONFIG_VERSION,
 } from "./types.js";
-
-// Project root (up from dist/core/ or src/core/)
-export const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // Warning suppression flags (prevent spamming on every tool call)
 let permissionCheckDone = false;
@@ -61,6 +58,24 @@ async function writeConfigFile(path: string, data: string): Promise<void> {
   await chmod(path, 0o600);
 }
 
+/**
+ * Check that the config file version is not newer than what this client supports.
+ * Must run on raw parsed JSON BEFORE Zod validation — a future version may change
+ * the schema structure, and Zod would reject it with a confusing error.
+ */
+function checkConfigVersion(parsed: Record<string, unknown>): void {
+  const version = typeof parsed.version === "number" ? parsed.version : 1;
+  if (version > CONFIG_VERSION) {
+    throw new RoamError(
+      `Your ~/.roam-tools.json (version ${version}) was written by a newer version of Roam tools. ` +
+      `This client only supports config version ${CONFIG_VERSION}. ` +
+      `Please update @roam-research/roam-mcp and @roam-research/roam-cli to the latest version.`,
+      ErrorCodes.CONFIG_TOO_NEW,
+      { configVersion: version, supportedVersion: CONFIG_VERSION }
+    );
+  }
+}
+
 export async function getMcpConfig(): Promise<RoamMcpConfig> {
   let content: string;
   try {
@@ -88,7 +103,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
       throw new RoamError(
         `No graphs configured. Use the setup_new_graph tool to connect a Roam graph, ` +
           `or run the CLI setup command:\n\n` +
-          `  cd ${PROJECT_ROOT} && npm run cli -- connect\n\n` +
+          `  npx @roam-research/roam-cli connect\n\n` +
           `After connecting, try your request again.`,
         ErrorCodes.CONFIG_NOT_FOUND
       );
@@ -105,6 +120,8 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
       ErrorCodes.VALIDATION_ERROR
     );
   }
+
+  checkConfigVersion(parsed as Record<string, unknown>);
 
   const validated = RoamMcpConfigSchema.safeParse(parsed);
   if (!validated.success) {
@@ -166,7 +183,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
   }
 
   // Rebuild graphs array with deduplication applied
-  return { graphs: Array.from(graphsByName.values()) };
+  return { version: validated.data.version ?? 1, graphs: Array.from(graphsByName.values()) };
 }
 
 // ============================================================================
@@ -183,7 +200,7 @@ async function readRawConfig(): Promise<RoamMcpConfig> {
     content = await readFile(CONFIG_PATH, "utf-8");
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { graphs: [] };
+      return { version: CONFIG_VERSION, graphs: [] };
     }
     throw error;
   }
@@ -197,6 +214,8 @@ async function readRawConfig(): Promise<RoamMcpConfig> {
       ErrorCodes.VALIDATION_ERROR
     );
   }
+
+  checkConfigVersion(parsed as Record<string, unknown>);
 
   const validated = RoamMcpConfigSchema.safeParse(parsed);
   if (!validated.success) {
@@ -244,7 +263,8 @@ export async function saveGraphToConfig(newGraph: GraphConfig): Promise<void> {
     config.graphs.push(newGraph); // Add new
   }
 
-  await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+  const output = { version: CONFIG_VERSION, graphs: config.graphs };
+  await writeConfigFile(CONFIG_PATH, JSON.stringify(output, null, 2));
 }
 
 /**
@@ -263,7 +283,8 @@ export async function removeGraphFromConfig(nickname: string): Promise<boolean> 
     return false; // Graph not found
   }
 
-  await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+  const output = { version: CONFIG_VERSION, graphs: config.graphs };
+  await writeConfigFile(CONFIG_PATH, JSON.stringify(output, null, 2));
   return true;
 }
 
@@ -292,7 +313,8 @@ export async function updateGraphTokenStatus(
   }
   if (!changed) return;
 
-  await writeConfigFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+  const output = { version: CONFIG_VERSION, graphs: config.graphs };
+  await writeConfigFile(CONFIG_PATH, JSON.stringify(output, null, 2));
 }
 
 /**
