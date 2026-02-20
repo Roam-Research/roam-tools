@@ -20,6 +20,8 @@ export const UpdateBlockSchema = z.object({
   string: z.string().optional().describe("New text content"),
   open: z.boolean().optional().describe("Collapse state"),
   heading: z.coerce.number().optional().describe("Heading level (0-3)"),
+  childrenViewType: z.enum(["bullet", "numbered", "document"]).optional().describe("How children are displayed (bullet, numbered, or document)"),
+  textAlign: z.enum(["left", "center", "right", "justify"]).optional().describe("Text alignment"),
 });
 
 export const DeleteBlockSchema = z.object({
@@ -91,6 +93,8 @@ export async function updateBlock(client: RoamClient, params: UpdateBlockParams)
   if (params.string !== undefined) block.string = params.string;
   if (params.open !== undefined) block.open = params.open;
   if (params.heading !== undefined) block.heading = params.heading;
+  if (params.childrenViewType !== undefined) block["children-view-type"] = params.childrenViewType;
+  if (params.textAlign !== undefined) block["text-align"] = params.textAlign;
 
   await client.call("data.block.update", [{ block }]);
   return textResult({ success: true });
