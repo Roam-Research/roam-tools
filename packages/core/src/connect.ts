@@ -1,25 +1,19 @@
-#!/usr/bin/env node
-
 import { search, select, input } from "@inquirer/prompts";
 import {
   getPort,
   getConfiguredGraphsSafe,
   saveGraphToConfig,
   removeGraphFromConfig,
-} from "../core/graph-resolver.js";
-import type { GraphConfig, GraphType, AccessLevel } from "../core/types.js";
+} from "./graph-resolver.js";
 import {
   fetchAvailableGraphs,
   requestToken,
   sleep,
   openRoamApp,
   slugify,
-} from "../core/roam-api.js";
-import type {
-  AvailableGraph,
-  GraphsResponse,
-  TokenExchangeResponse,
-} from "../core/roam-api.js";
+} from "./roam-api.js";
+import type { GraphConfig, GraphType, AccessLevel } from "./types.js";
+import type { AvailableGraph, GraphsResponse, TokenExchangeResponse } from "./roam-api.js";
 
 // ============================================================================
 // Types
@@ -34,6 +28,8 @@ interface GraphChoice extends AvailableGraph {
   lastKnownTokenStatus?: string;
 }
 
+// These options must stay in sync with the Commander options in packages/cli/src/index.ts
+// and the manual arg parsing in packages/mcp/src/index.ts.
 export interface ConnectOptions {
   graph?: string;
   nickname?: string;

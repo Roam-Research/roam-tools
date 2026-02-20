@@ -3,3 +3,8 @@ dist/
 *.log
 .DS_Store
 .mcp.json
+*.tsbuildinfo
+.claude/
+*.tgz
+.env
+.env.*

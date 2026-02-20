@@ -46,6 +46,7 @@ export const GraphConfigSchema = z.object({
 export type GraphConfig = z.infer<typeof GraphConfigSchema>;
 
 export const RoamMcpConfigSchema = z.object({
+  version: z.number().int().positive().optional(),
   graphs: z.array(GraphConfigSchema).min(1, "At least one graph must be configured"),
 });
 export type RoamMcpConfig = z.infer<typeof RoamMcpConfigSchema>;
@@ -98,6 +99,7 @@ export const ErrorCodes = {
   GRAPH_NOT_CONFIGURED: "GRAPH_NOT_CONFIGURED",
   GRAPH_NOT_SELECTED: "GRAPH_NOT_SELECTED",
   CONNECTION_FAILED: "CONNECTION_FAILED",
+  CONFIG_TOO_NEW: "CONFIG_TOO_NEW",
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
@@ -117,6 +119,12 @@ export class RoamError extends Error {
 // ============================================================================
 // API Types
 // ============================================================================
+
+// Config version for ~/.roam-tools.json format compatibility.
+// Users may have different versions of roam-mcp and roam-cli installed,
+// so a newer version may write a config that an older version can't parse.
+// Bump this when the config schema changes in a breaking way.
+export const CONFIG_VERSION = 1;
 
 // API version this client expects (major.minor must match)
 export const EXPECTED_API_VERSION = "1.1.0";
