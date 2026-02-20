@@ -1,0 +1,21 @@
+repos:
+  - repo: local
+    hooks:
+      - id: pnpm-lint
+        name: pnpm lint
+        entry: pnpm lint
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: pnpm-format-check
+        name: pnpm format:check
+        entry: pnpm format:check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: pnpm-typecheck
+        name: pnpm typecheck
+        entry: pnpm typecheck
+        language: system
+        pass_filenames: false
+        always_run: true

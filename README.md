@@ -223,6 +223,8 @@ pnpm cli -- connect         # Run CLI in dev mode
 pnpm typecheck              # Type-check (force rebuild, checks all packages)
 pnpm lint                   # Lint packages and scripts with Oxlint
 pnpm format:check           # Check formatting with Oxfmt
+pnpm prek:install           # Install git pre-commit hook (runs lint/format/typecheck on commit)
+pnpm prek:run               # Run all configured pre-commit hooks manually
 pnpm version:check          # Verify all package versions are consistent
 pnpm version:bump 0.5.0     # Bump all packages to a new version
 ```

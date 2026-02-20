@@ -14,14 +14,19 @@
     "cli": "tsx --conditions development packages/cli/src/index.ts",
     "version:bump": "node scripts/bump-version.mjs",
     "version:check": "node scripts/check-versions.mjs",
+    "prek:install": "pnpm exec prek install",
+    "prek:run": "pnpm exec prek run --all-files",
     "publish:all": "pnpm run version:check && pnpm run build && pnpm --filter @roam-research/roam-tools-core publish && pnpm --filter @roam-research/roam-mcp publish && pnpm --filter @roam-research/roam-cli publish"
   },
   "devDependencies": {
+    "@j178/prek": "0.3.3",
     "@types/node": "^20.0.0",
     "oxfmt": "^0.33.0",
     "oxlint": "^1.48.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }
