@@ -25,6 +25,37 @@ This is a monorepo with three packages that share a common core:
 - Users who only want the MCP server don't need to download CLI dependencies
 - The core library is shared and only installed once via npm deduplication
 
+### Architecture
+
+```mermaid
+graph TD
+    subgraph "Three Packages"
+        E["@roam-research/roam-tools-core"] --> F["@roam-research/roam-mcp<br/>(MCP server)"]
+        E --> G["@roam-research/roam-cli<br/>(CLI)"]
+    end
+```
+
+Both MCP and CLI are thin wrappers — all real logic lives in core. Here's the runtime data flow for a tool call like `search`:
+
+```mermaid
+sequenceDiagram
+    participant User as Claude Desktop
+    participant MCP as @roam-research/roam-mcp
+    participant Core as @roam-research/roam-tools-core
+    participant Roam as Roam Desktop App
+
+    User->>MCP: Tool call: search({ query: "meeting notes", graph: "work" })
+    MCP->>Core: routeToolCall("search", { query: "meeting notes", graph: "work" })
+    Core->>Core: resolveGraph("work") → reads ~/.roam-tools.json
+    Core->>Core: new RoamClient({ graphName, token, type })
+    Core->>Roam: POST http://127.0.0.1:3333/api/my-workspace
+    Roam-->>Core: { success: true, result: [...] }
+    Core-->>MCP: { content: [{ type: "text", text: "..." }] }
+    MCP-->>User: MCP tool result with search results
+```
+
+The CLI follows the exact same path — `roam search --query "meeting notes" --graph work` enters through Commander instead of MCP stdio.
+
 ## Why `@roam-research/roam-mcp`
 
 ### npx resolution for scoped packages
@@ -72,21 +103,48 @@ We considered a single binary where no-args starts the MCP server and subcommand
 
 ## Development Mode
 
-The core package uses a `"development"` export condition:
+In a monorepo, the MCP and CLI packages import from `@roam-research/roam-tools-core`. In production, that resolves to compiled JavaScript in `dist/`. But during development, you don't want to rebuild core every time you change a file.
 
-```json
-{
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "development": "./src/index.ts",
-      "import": "./dist/index.js"
-    }
-  }
-}
+The solution uses Node.js **export conditions**:
+
+```
+                        ┌──────────────────────────────────────┐
+                        │   @roam-research/roam-tools-core     │
+                        │   package.json "exports":            │
+                        │                                      │
+                        │   "development" → ./src/index.ts     │
+ tsx --conditions       │   "import"      → ./dist/index.js    │
+ development            └────────┬─────────────────┬───────────┘
+                                 │                 │
+                    Dev mode resolves here    Prod resolves here
+                    (TypeScript source)      (compiled JS)
 ```
 
-When running `tsx --conditions development`, imports resolve directly to TypeScript source. This means `npm run mcp` and `npm run cli` work without building core first.
+When you run `npm run mcp` (which uses `tsx --conditions development`), Node resolves the import to raw TypeScript source. `tsx` transpiles it on the fly. No build step needed during development. Changes are picked up on next restart without rebuilding.
+
+## Design Decisions
+
+### Why core depends on the MCP SDK
+
+The core package re-exports MCP types like `CallToolResult` that are used in tool definitions. The SDK is needed for these type imports, not for server functionality. Only the MCP package actually creates an `McpServer` or uses the stdio transport.
+
+### The `./connect` entry point
+
+The `connect` module (interactive graph setup, token exchange) lives in core so both MCP and CLI can share it. It's exposed as a **separate export entry point** (`@roam-research/roam-tools-core/connect`), not part of the main barrel — so `@inquirer/prompts` is only loaded when `connect` is explicitly imported, never during normal MCP server operation.
+
+The MCP binary dynamically imports connect (`await import("@roam-research/roam-tools-core/connect")`) only when `roam-mcp connect` is invoked, then exits before the MCP server code runs. The CLI statically imports it since CLI users expect prompt dependencies to be present.
+
+### Why pinned core dependency versions
+
+The core dependency in MCP and CLI is pinned (`"0.4.0"`, not `"^0.4.0"`) because all three packages always release together at the same version. A semver range would suggest that MCP v0.5.0 could work with core v0.4.0, which isn't tested or guaranteed.
+
+### Alternatives considered
+
+**Single package with subpath exports** — keep one `@roam-research/roam-mcp` package but expose multiple entry points. Simpler (one publish, one version), but bloated installs (everyone downloads all dependencies), confusing npm listing (is this an MCP server or a CLI?), and core can't be used independently.
+
+**Separate git repositories** — three repos with core published as a standalone package. True independence, but cross-repo changes are painful (core change requires publish + update in MCP and CLI), no shared development mode trick, and version drift between packages.
+
+**Monorepo (chosen)** — clean package boundaries with shared development workflow. The main cost is version coordination across 7 locations, handled by `scripts/bump-version.mjs`.
 
 ## Usage
 
