@@ -12,8 +12,8 @@ export const FileGetSchema = z.object({
 
 export const FileUploadSchema = z.object({
   filePath: z.string().optional().describe("Local file path (preferred) - server reads the file directly"),
-  url: z.string().optional().describe("Remote URL to fetch the image from"),
-  base64: z.string().optional().describe("Base64-encoded image data (fallback for sandboxed clients)"),
+  url: z.string().optional().describe("Remote URL to fetch the file from"),
+  base64: z.string().optional().describe("Base64-encoded file data (fallback for sandboxed clients)"),
   mimetype: z.string().optional().describe("MIME type (e.g., image/png, image/jpeg) - auto-detected if not provided"),
   filename: z.string().optional().describe("Original filename for reference - derived from path/url if not provided"),
 });

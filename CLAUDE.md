@@ -111,6 +111,7 @@ Config versioning: `CONFIG_VERSION` in `types.ts` defines the current version. I
 - API versioning: `EXPECTED_API_VERSION` in types.ts must match Roam's API version
 - Config I/O (`~/.roam-tools.json`): No in-memory cache — config is read fresh from disk on every tool call. Write functions (`saveGraphToConfig`, `removeGraphFromConfig`, `updateGraphTokenStatus`) read the file at the last moment, apply the change, and write immediately. Invalid config errors are returned to the agent as `RoamError` (no `process.exit`), so the agent can tell the user what's wrong.
 - Development mode: `tsx --conditions development` resolves core's `"development"` export condition to source TypeScript, so `npm run mcp` / `npm run cli` work without building core first.
+- README maintenance: The package READMEs (`packages/mcp/README.md`, `packages/cli/README.md`) are self-contained docs that npm users see first — often the only docs they read. When adding tools, changing setup steps, or modifying behavior, update these READMEs alongside the root `README.md`. The MCP README uses underscore tool names (`list_graphs`), the CLI README uses hyphenated command names (`list-graphs`).
 
 ### Workspace Structure
 

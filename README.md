@@ -144,7 +144,7 @@ To create a token manually: Roam Desktop → Settings → Graph → Local API To
 **Graph Guidelines:**
 - `get_graph_guidelines` - Returns user-defined instructions and preferences for AI agents
 
-Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph.
+Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[roam/agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph.
 
 **Content:**
 - `create_page` - Create page with markdown content
@@ -220,7 +220,7 @@ Development commands:
 ```bash
 npm run mcp              # Run MCP server in dev mode (tsx)
 npm run cli -- connect   # Run CLI in dev mode
-npm run typecheck        # Type-check without emitting
+npm run typecheck        # Type-check (force rebuild, checks all packages)
 npm run version:check    # Verify all package versions are consistent
 npm run version:bump 0.5.0  # Bump all packages to a new version
 ```

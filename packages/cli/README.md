@@ -2,6 +2,23 @@
 
 Command-line interface for [Roam Research](https://roamresearch.com/).
 
+Used for setup (connecting graphs, managing tokens) and direct tool access (search, get pages, create blocks, etc.).
+
+> **Alpha Software**: This project is in early development and subject to breaking changes.
+
+> [!CAUTION]
+> **Full Write Access**: The CLI can create, modify, and delete pages and blocks in your Roam graph. **Changes may be difficult or impossible to undo.** Roam does not have a traditional undo history that can reverse bulk operations or deletions made through the API.
+>
+> **Recommendations:**
+> - Back up your graph before use
+> - Start with a test graph
+> - Be specific in your commands to avoid unintended changes
+
+## Prerequisites
+
+- **Node.js** v18 or later
+- **Roam Research desktop app** (the local API is not available in the web version)
+
 ## Install
 
 ```bash
@@ -15,6 +32,26 @@ roam connect
 ```
 
 This walks you through selecting a graph, choosing permissions, and approving the token in the Roam desktop app.
+
+**Non-interactive** (for scripts and LLM agents):
+
+```bash
+roam connect --graph my-graph-name --nickname "My Team Graph" --access-level full
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--graph <name>` | — | Graph name (enables non-interactive mode) |
+| `--nickname <name>` | Required with `--graph` | Short name you'll use to refer to this graph |
+| `--access-level <level>` | `full` | `full`, `read-append`, or `read-only` |
+| `--public` | — | Public graph (read-only, hosted) |
+| `--type <type>` | `hosted` | `hosted` or `offline` |
+
+To remove a connection:
+
+```bash
+roam connect --remove --graph my-graph-name
+```
 
 ## Usage
 
@@ -30,6 +67,64 @@ If you only have one graph configured, the `--graph` flag is optional.
 
 Run `roam --help` to see all available commands.
 
+## Multiple Graphs
+
+Run `connect` multiple times to add additional graphs. Each graph gets a nickname (a short name like "work" or "team acme") for easy selection.
+
+- **Single graph configured**: Auto-selected, no action needed
+- **Multiple graphs configured**: Pass `--graph <name-or-nickname>` on each command
+
+## Available Tools
+
+All tools are available as CLI commands. Run `roam <command> --help` for details on any command.
+
+**Graph Management:**
+- `list-graphs` - List all configured graphs with their nicknames
+- `setup-new-graph` - Set up a new graph connection, or list available graphs
+
+**Graph Guidelines:**
+- `get-graph-guidelines` - Returns user-defined instructions and preferences for AI agents
+
+Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[roam/agent guidelines]]` with your instructions.
+
+**Content:**
+- `create-page` - Create page with markdown content
+- `update-page` - Update page title or children view type
+- `delete-page` - Delete a page
+- `create-block` - Add markdown content under a parent
+- `update-block` - Update block content/properties
+- `move-block` - Move a block to a new location
+- `delete-block` - Delete a block
+
+**Read:**
+- `search` - Search pages/blocks
+- `search-templates` - Search Roam templates by name
+- `roam-query` - Execute a Roam query (`{{query:}}` blocks, not Datalog)
+- `get-page` - Get page content as markdown
+- `get-block` - Get block content as markdown
+- `get-backlinks` - Get references to a page/block
+
+**Navigation:**
+- `get-open-windows` - Main window view and all sidebar windows
+- `get-selection` - Currently focused block and multi-selected blocks
+- `open-main-window` - Navigate to page/block
+- `open-sidebar` - Open in right sidebar
+
+**Files:**
+- `file-get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
+- `file-upload` - Upload a file to Roam (from local path, URL, or base64)
+- `file-delete` - Delete a file hosted on Roam
+
+## Updating
+
+To update to the latest version:
+
+```bash
+npm install -g @roam-research/roam-cli
+```
+
+Check your current version with `roam --version`.
+
 ## Using with npx
 
 If you prefer not to install globally, you can use npx:
@@ -41,4 +136,4 @@ npx @roam-research/roam-cli search --query "my notes"
 
 ## Documentation
 
-See the [main repository](https://github.com/Roam-Research/roam-tools) for full documentation.
+See the [main repository](https://github.com/Roam-Research/roam-tools) for development setup, contributing guidelines, and architecture details.
