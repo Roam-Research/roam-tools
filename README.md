@@ -33,19 +33,19 @@ The local API requires the Roam **desktop app** (not the web version). Make sure
 **Interactive** (recommended for first-time setup):
 
 ```bash
-npx @roam-research/roam-cli connect
+npx @roam-research/roam-mcp connect
 ```
 
-This will walk you through selecting a graph, choosing permissions, and approving the token in Roam.
+This will walk you through selecting a graph, choosing permissions, and approving the token in Roam. You can also use `npx @roam-research/roam-cli connect` if you have the CLI package installed.
 
 **Non-interactive** (for scripts and LLM agents):
 
 ```bash
 # example to connect to your graph called "my-graph-name" which you generally refer to as "My Team Graph"
-npx @roam-research/roam-cli connect --graph my-graph-name --nickname "My Team Graph" --access-level full
+npx @roam-research/roam-mcp connect --graph my-graph-name --nickname "My Team Graph" --access-level full
 
 # example to connect to a public graph - our "help" graph
-npx @roam-research/roam-cli connect --graph help --public --nickname "Roam official help graph"
+npx @roam-research/roam-mcp connect --graph help --public --nickname "Roam official help graph"
 ```
 
 | Flag | Default | Description |
@@ -61,8 +61,8 @@ npx @roam-research/roam-cli connect --graph help --public --nickname "Roam offic
 To remove a connection:
 
 ```bash
-npx @roam-research/roam-cli connect --remove --graph my-graph-name
-npx @roam-research/roam-cli connect --remove --nickname "My Team Graph"
+npx @roam-research/roam-mcp connect --remove --graph my-graph-name
+npx @roam-research/roam-mcp connect --remove --nickname "My Team Graph"
 ```
 
 Run `connect` again to add more graphs or update permissions.

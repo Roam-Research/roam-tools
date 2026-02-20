@@ -9,7 +9,7 @@ Connects Claude, Cursor, and other MCP clients to your Roam graphs for reading, 
 ### 1. Connect a graph
 
 ```bash
-npx @roam-research/roam-cli connect
+npx @roam-research/roam-mcp connect
 ```
 
 ### 2. Add to your MCP client

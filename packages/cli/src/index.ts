@@ -8,7 +8,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import type { CallToolResult } from "@roam-research/roam-tools-core";
 import { RoamError, ErrorCodes, tools, routeToolCall } from "@roam-research/roam-tools-core";
-import { connect } from "./connect.js";
+import { connect } from "@roam-research/roam-tools-core/connect";
 
 // Get file extension from MIME type
 function getExtensionFromMimeType(mimeType: string): string {

@@ -1,5 +1,63 @@
 #!/usr/bin/env node
 
+// ============================================================================
+// CLI subcommand: roam-mcp connect
+// Dynamically imports connect to avoid loading @inquirer/prompts during
+// normal MCP server operation.
+// ============================================================================
+
+if (process.argv[2] === "connect") {
+  const args = process.argv.slice(3);
+
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(`Usage: roam-mcp connect [options]
+
+Connect to a Roam graph and obtain a token.
+
+Options:
+  --graph <name>          Graph name (enables non-interactive mode)
+  --nickname <name>       Short name for this graph (required with --graph)
+  --access-level <level>  Access level: full, read-append, or read-only
+  --public                Public graph (read-only, hosted)
+  --type <type>           Graph type: hosted or offline
+  --remove                Remove a graph connection (use with --graph or --nickname)
+  -h, --help              Show this help message
+
+Examples:
+  roam-mcp connect                                                              Interactive setup
+  roam-mcp connect --graph my-graph --nickname "main graph"                     Connect with defaults
+  roam-mcp connect --graph my-graph --nickname "main graph" --access-level full Connect with full access
+  roam-mcp connect --graph help --public --nickname "Roam Help"                 Connect to a public graph
+  roam-mcp connect --remove --graph help                                        Remove a connection`);
+    process.exit(0);
+  }
+
+  function getFlag(flag: string): string | undefined {
+    const idx = args.indexOf(flag);
+    if (idx === -1 || idx + 1 >= args.length) return undefined;
+    const value = args[idx + 1];
+    if (value.startsWith("--")) return undefined;
+    return value;
+  }
+
+  const options = {
+    graph: getFlag("--graph"),
+    nickname: getFlag("--nickname"),
+    accessLevel: getFlag("--access-level"),
+    public: args.includes("--public"),
+    type: getFlag("--type"),
+    remove: args.includes("--remove"),
+  };
+
+  const { connect } = await import("@roam-research/roam-tools-core/connect");
+  await connect(options);
+  process.exit(0);
+}
+
+// ============================================================================
+// MCP Server (default mode)
+// ============================================================================
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { tools, routeToolCall, getMcpConfig, RoamError, ErrorCodes } from "@roam-research/roam-tools-core";

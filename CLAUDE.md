@@ -8,8 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run build        # Compile TypeScript (tsc --build, builds core → mcp + cli)
 npm run typecheck    # Type-check (force rebuild, checks all packages)
 npm run mcp          # Run MCP server in dev mode (tsx with development condition)
+npm run mcp -- connect              # Interactive setup for graph tokens (via MCP binary)
 npm run cli -- <command> [options]  # Run CLI in dev mode
-npm run cli -- connect              # Interactive setup for graph tokens
+npm run cli -- connect              # Interactive setup for graph tokens (via CLI)
 npm run cli -- connect --graph <name> --nickname <name>  # Non-interactive setup (for scripts/agents)
 ```
 
@@ -45,13 +46,15 @@ This is a monorepo with three npm packages for Roam Research tools:
 
 ### Entry Points
 
-- `packages/mcp/src/index.ts` - MCP server using stdio transport. Imports from `@roam-research/roam-tools-core`.
+- `packages/mcp/src/index.ts` - MCP server using stdio transport. Also handles `roam-mcp connect` subcommand (detects `process.argv[2] === "connect"` and dynamically imports the connect module).
 - `packages/cli/src/index.ts` - CLI using Commander.js. Dynamically generates commands from the same tool definitions.
-- `packages/cli/src/connect.ts` - Setup command for token exchange with Roam. Has two modes: interactive (no flags, uses inquirer prompts) and non-interactive (`--graph` flag, uses CLI options). Both paths must be kept in sync when modifying the connect flow.
+- `packages/core/src/connect.ts` - Setup command for token exchange with Roam, shared by both MCP and CLI. Has two modes: interactive (no flags, uses inquirer prompts) and non-interactive (`--graph` flag, uses CLI options). Exposed as a separate export entry point (`@roam-research/roam-tools-core/connect`) to avoid loading `@inquirer/prompts` during normal MCP server operation.
 
 ### Core Layer (`packages/core/src/`)
 
 - `index.ts` - Barrel export. MCP and CLI import everything from `@roam-research/roam-tools-core` which resolves to this file.
+
+- `connect.ts` - Graph connection/setup logic. Exported separately as `@roam-research/roam-tools-core/connect` (not part of the main barrel) to isolate the `@inquirer/prompts` dependency.
 
 - `tools.ts` - Central tool registry. Two types of tools:
   - **Standalone tools** (graph management): Handle their own resolution

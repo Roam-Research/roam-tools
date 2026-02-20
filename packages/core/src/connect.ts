@@ -4,16 +4,16 @@ import {
   getConfiguredGraphsSafe,
   saveGraphToConfig,
   removeGraphFromConfig,
+} from "./graph-resolver.js";
+import {
   fetchAvailableGraphs,
   requestToken,
   sleep,
   openRoamApp,
   slugify,
-} from "@roam-research/roam-tools-core";
-import type {
-  GraphConfig, GraphType, AccessLevel,
-  AvailableGraph, GraphsResponse, TokenExchangeResponse,
-} from "@roam-research/roam-tools-core";
+} from "./roam-api.js";
+import type { GraphConfig, GraphType, AccessLevel } from "./types.js";
+import type { AvailableGraph, GraphsResponse, TokenExchangeResponse } from "./roam-api.js";
 
 // ============================================================================
 // Types
