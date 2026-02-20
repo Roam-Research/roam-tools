@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm run build        # Compile TypeScript (tsc --build, builds core → mcp + cli)
+npm run clean        # Remove build artifacts (dist/ and tsbuildinfo)
 npm run typecheck    # Type-check (force rebuild, checks all packages)
 npm run mcp          # Run MCP server in dev mode (tsx with development condition)
 npm run mcp -- connect              # Interactive setup for graph tokens (via MCP binary)

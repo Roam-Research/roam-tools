@@ -1,6 +1,6 @@
 {
   "name": "@roam-research/roam-cli",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Roam Research CLI",
   "repository": {
     "type": "git",
@@ -16,7 +16,11 @@
     "dist/",
     "README.md"
   ],
-  "keywords": ["roam", "roam-research", "cli"],
+  "keywords": [
+    "roam",
+    "roam-research",
+    "cli"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -29,6 +33,6 @@
   "dependencies": {
     "commander": "^14.0.2",
     "zod": "^3.25.76",
-    "@roam-research/roam-tools-core": "0.4.0"
+    "@roam-research/roam-tools-core": "0.4.1"
   }
 }

@@ -36,7 +36,7 @@ The local API requires the Roam **desktop app** (not the web version). Make sure
 npx @roam-research/roam-mcp connect
 ```
 
-This will walk you through selecting a graph, choosing permissions, and approving the token in Roam. You can also use `npx @roam-research/roam-cli connect` if you have the CLI package installed.
+This will walk you through selecting a graph, choosing permissions, and approving the token in Roam. You can also use the CLI: install globally with `npm install -g @roam-research/roam-cli`, then use `roam connect`.
 
 **Non-interactive** (for scripts and LLM agents):
 
@@ -176,19 +176,23 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 
 ## CLI
 
-The CLI is available as a separate package:
+Install globally for quick access:
 
 ```bash
-npx @roam-research/roam-cli connect                          # Interactive graph connection
-npx @roam-research/roam-cli connect --graph <name> --nickname <name>  # Non-interactive
-npx @roam-research/roam-cli list-graphs
-npx @roam-research/roam-cli search --query "my notes"
-npx @roam-research/roam-cli get-page --title "My Page"
+npm install -g @roam-research/roam-cli
 ```
 
-Run `npx @roam-research/roam-cli --help` to see all available commands.
+```bash
+roam list-graphs
+roam connect                                                    # Interactive setup
+roam connect --graph <name> --nickname <name>                   # Non-interactive
+roam search --query "my notes" --graph <name-or-nickname>
+roam get-page --title "My Page" --graph <name-or-nickname>
+```
 
-If you prefer shorter commands, install globally with `npm install -g @roam-research/roam-cli`, then use `roam` directly (e.g. `roam connect`, `roam search`). Note that global installs don't auto-update — you'll need to re-run the install command to get new versions.
+If you only have one graph configured, the `--graph` flag is optional.
+
+Run `roam --help` to see all available commands. You can also use `npx @roam-research/roam-cli` without installing globally.
 
 ## Packages
 
