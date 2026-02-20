@@ -1,6 +1,6 @@
 {
   "name": "@roam-research/roam-mcp",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Roam Research MCP server",
   "repository": {
     "type": "git",
@@ -33,6 +33,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@roam-research/roam-tools-core": "0.4.1"
+    "@roam-research/roam-tools-core": "0.4.2"
   }
 }

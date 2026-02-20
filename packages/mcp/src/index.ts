@@ -64,7 +64,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { tools, routeToolCall, getMcpConfig, RoamError, ErrorCodes } from "@roam-research/roam-tools-core";
 
-const server = new McpServer({ name: "roam-mcp", version: "0.4.1" });
+const server = new McpServer({ name: "roam-mcp", version: "0.4.2" });
 
 // Register each tool with its Zod schema
 for (const tool of tools) {
