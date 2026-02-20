@@ -32,6 +32,9 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "prepublishOnly": "npm run --prefix ../.. build"
+  },
   "dependencies": {
     "@inquirer/prompts": "^8.2.0",
     "@modelcontextprotocol/sdk": "^1.0.0",

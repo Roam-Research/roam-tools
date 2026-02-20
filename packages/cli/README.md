@@ -2,12 +2,16 @@
 
 Command-line interface for [Roam Research](https://roamresearch.com/).
 
-Used for setup (connecting graphs, managing tokens) and direct tool access (search, get pages, etc.).
+## Install
+
+```bash
+npm install -g @roam-research/roam-cli
+```
 
 ## Setup
 
 ```bash
-npx @roam-research/roam-cli connect
+roam connect
 ```
 
 This walks you through selecting a graph, choosing permissions, and approving the token in the Roam desktop app.
@@ -15,14 +19,25 @@ This walks you through selecting a graph, choosing permissions, and approving th
 ## Usage
 
 ```bash
-npx @roam-research/roam-cli connect                          # Interactive graph connection
-npx @roam-research/roam-cli connect --graph <name> --nickname <name>  # Non-interactive
-npx @roam-research/roam-cli list-graphs
-npx @roam-research/roam-cli search --query "my notes"
-npx @roam-research/roam-cli get-page --title "My Page"
+roam list-graphs
+roam connect                                                    # Interactive setup
+roam connect --graph <name> --nickname <name>                   # Non-interactive
+roam search --query "my notes" --graph <name-or-nickname>
+roam get-page --title "My Page" --graph <name-or-nickname>
 ```
 
-Run `npx @roam-research/roam-cli --help` to see all available commands.
+If you only have one graph configured, the `--graph` flag is optional.
+
+Run `roam --help` to see all available commands.
+
+## Using with npx
+
+If you prefer not to install globally, you can use npx:
+
+```bash
+npx @roam-research/roam-cli connect
+npx @roam-research/roam-cli search --query "my notes"
+```
 
 ## Documentation
 

@@ -174,6 +174,8 @@ tools.forEach((tool) => {
 // Interactive Setup Command
 // ============================================================================
 
+// These options must stay in sync with ConnectOptions in packages/core/src/connect.ts
+// and the manual arg parsing in packages/mcp/src/index.ts.
 program
   .command("connect")
   .description("Connect to a Roam graph and obtain a token")

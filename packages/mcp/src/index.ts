@@ -32,6 +32,8 @@ Examples:
     process.exit(0);
   }
 
+  // These flags must stay in sync with ConnectOptions in packages/core/src/connect.ts
+  // and the Commander options in packages/cli/src/index.ts.
   function getFlag(flag: string): string | undefined {
     const idx = args.indexOf(flag);
     if (idx === -1 || idx + 1 >= args.length) return undefined;

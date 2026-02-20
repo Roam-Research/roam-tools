@@ -28,6 +28,9 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "prepublishOnly": "npm run --prefix ../.. build"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@roam-research/roam-tools-core": "0.4.0"

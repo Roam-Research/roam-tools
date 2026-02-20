@@ -28,6 +28,8 @@ interface GraphChoice extends AvailableGraph {
   lastKnownTokenStatus?: string;
 }
 
+// These options must stay in sync with the Commander options in packages/cli/src/index.ts
+// and the manual arg parsing in packages/mcp/src/index.ts.
 export interface ConnectOptions {
   graph?: string;
   nickname?: string;

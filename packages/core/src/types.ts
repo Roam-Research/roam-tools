@@ -120,7 +120,10 @@ export class RoamError extends Error {
 // API Types
 // ============================================================================
 
-// Config version for ~/.roam-tools.json format compatibility
+// Config version for ~/.roam-tools.json format compatibility.
+// Users may have different versions of roam-mcp and roam-cli installed,
+// so a newer version may write a config that an older version can't parse.
+// Bump this when the config schema changes in a breaking way.
 export const CONFIG_VERSION = 1;
 
 // API version this client expects (major.minor must match)

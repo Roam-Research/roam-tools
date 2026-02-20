@@ -23,6 +23,9 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "prepublishOnly": "npm run --prefix ../.. build"
+  },
   "dependencies": {
     "commander": "^14.0.2",
     "zod": "^3.25.76",

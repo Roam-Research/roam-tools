@@ -1,4 +1,5 @@
 {
+  "name": "roam-tools",
   "private": true,
   "workspaces": ["packages/core", "packages/mcp", "packages/cli"],
   "scripts": {
