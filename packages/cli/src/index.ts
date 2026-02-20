@@ -26,7 +26,12 @@ function getExtensionFromMimeType(mimeType: string): string {
 }
 
 // Write image to temp directory and return metadata
-function writeImageToTemp(data: string, mimeType: string): { type: "image"; path: string; mimeType: string; size: number } | { type: "image"; data: string; mimeType: string } {
+function writeImageToTemp(
+  data: string,
+  mimeType: string,
+):
+  | { type: "image"; path: string; mimeType: string; size: number }
+  | { type: "image"; data: string; mimeType: string } {
   try {
     const tempDir = join(tmpdir(), "roam");
     mkdirSync(tempDir, { recursive: true });
@@ -56,10 +61,7 @@ function writeImageToTemp(data: string, mimeType: string): { type: "image"; path
 
 const program = new Command();
 
-program
-  .name("roam")
-  .description("Roam Research CLI")
-  .version("0.4.2");
+program.name("roam").description("Roam Research CLI").version("0.4.2");
 
 // Helper to check if a Zod schema field is optional
 function isOptional(schema: z.ZodTypeAny): boolean {
@@ -91,9 +93,7 @@ function hasBooleanType(schema: z.ZodTypeAny): boolean {
 
 // Build commands dynamically from shared tool definitions
 tools.forEach((tool) => {
-  const cmd = program
-    .command(tool.name.replace(/_/g, "-"))
-    .description(tool.description);
+  const cmd = program.command(tool.name.replace(/_/g, "-")).description(tool.description);
 
   // Add options from Zod schema shape
   const shape = tool.schema.shape as Record<string, z.ZodTypeAny>;
@@ -152,7 +152,10 @@ tools.forEach((tool) => {
         // Show available graphs for GRAPH_NOT_SELECTED
         if (error.code === ErrorCodes.GRAPH_NOT_SELECTED && error.context?.available_graphs) {
           console.error("\nAvailable graphs:");
-          const graphs = error.context.available_graphs as Array<{ nickname: string; name: string }>;
+          const graphs = error.context.available_graphs as Array<{
+            nickname: string;
+            name: string;
+          }>;
           for (const g of graphs) {
             console.error(`  - ${g.nickname} (${g.name})`);
           }
@@ -180,18 +183,24 @@ program
   .command("connect")
   .description("Connect to a Roam graph and obtain a token")
   .option("--graph <name>", "Graph name (enables non-interactive mode)")
-  .option("--nickname <name>", "Short name you'll use to refer to this graph (required with --graph)")
+  .option(
+    "--nickname <name>",
+    "Short name you'll use to refer to this graph (required with --graph)",
+  )
   .option("--access-level <level>", "Access level: full, read-append, or read-only")
   .option("--public", "Public graph (read-only, hosted)")
   .option("--type <type>", "Graph type: hosted or offline")
   .option("--remove", "Remove a graph connection (use with --graph or --nickname)")
-  .addHelpText("after", `
+  .addHelpText(
+    "after",
+    `
 Examples:
-  npm run cli -- connect                                                                      Interactive setup
-  npm run cli -- connect --graph my-graph --nickname "main graph" --access-level read-append  Connect with read-append access
-  npm run cli -- connect --graph help --public --nickname "Roam Help"                         Connect to a public graph
-  npm run cli -- connect --remove --graph "help"                                              Remove a connection
-`)
+  pnpm cli -- connect                                                                      Interactive setup
+  pnpm cli -- connect --graph my-graph --nickname "main graph" --access-level read-append  Connect with read-append access
+  pnpm cli -- connect --graph help --public --nickname "Roam Help"                         Connect to a public graph
+  pnpm cli -- connect --remove --graph "help"                                              Remove a connection
+`,
+  )
   .action((options) => connect(options));
 
 program.parse();

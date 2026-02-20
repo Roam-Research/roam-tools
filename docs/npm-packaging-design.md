@@ -120,7 +120,7 @@ The solution uses Node.js **export conditions**:
                     (TypeScript source)      (compiled JS)
 ```
 
-When you run `npm run mcp` (which uses `tsx --conditions development`), Node resolves the import to raw TypeScript source. `tsx` transpiles it on the fly. No build step needed during development. Changes are picked up on next restart without rebuilding.
+When you run `pnpm mcp` (which uses `tsx --conditions development`), Node resolves the import to raw TypeScript source. `tsx` transpiles it on the fly. No build step needed during development. Changes are picked up on next restart without rebuilding.
 
 ## Design Decisions
 
@@ -134,9 +134,9 @@ The `connect` module (interactive graph setup, token exchange) lives in core so 
 
 The MCP binary dynamically imports connect (`await import("@roam-research/roam-tools-core/connect")`) only when `roam-mcp connect` is invoked, then exits before the MCP server code runs. The CLI statically imports it since CLI users expect prompt dependencies to be present.
 
-### Why pinned core dependency versions
+### Why `workspace:` core dependency versions
 
-The core dependency in MCP and CLI is pinned (`"0.4.0"`, not `"^0.4.0"`) because all three packages always release together at the same version. A semver range would suggest that MCP v0.5.0 could work with core v0.4.0, which isn't tested or guaranteed.
+The core dependency in MCP and CLI uses the workspace protocol (`"workspace:0.4.0"`, not `"^0.4.0"`) because all three packages always release together at the same version. A semver range would suggest that MCP v0.5.0 could work with core v0.4.0, which isn't tested or guaranteed.
 
 ### Alternatives considered
 
@@ -180,10 +180,10 @@ npm install -g @roam-research/roam-cli    # CLI
 ```bash
 git clone https://github.com/Roam-Research/roam-tools.git
 cd roam-tools
-npm install
-npm run build
-npm run mcp                         # MCP server (dev mode)
-npm run cli -- connect              # CLI (dev mode)
+pnpm install
+pnpm build
+pnpm mcp                            # MCP server (dev mode)
+pnpm cli -- connect                 # CLI (dev mode)
 ```
 
 ## Config Versioning
@@ -195,16 +195,16 @@ The `~/.roam-tools.json` config file includes a `version` field (default: 1). Wh
 ### 1. Bump the version
 
 ```bash
-npm run version:bump 0.5.0    # Updates all 7 locations
-npm install                    # Sync package-lock.json
+pnpm version:bump 0.5.0    # Updates all 7 locations
+pnpm install                # Sync pnpm-lock.yaml
 ```
 
 ### 2. Verify
 
 ```bash
-npm run version:check    # Ensure all versions are consistent
-npm run build            # Build all packages
-npm run typecheck        # Type-check
+pnpm version:check    # Ensure all versions are consistent
+pnpm build            # Build all packages
+pnpm typecheck        # Type-check
 ```
 
 ### 3. Commit and publish
@@ -212,7 +212,7 @@ npm run typecheck        # Type-check
 ```bash
 git add -A && git commit -m "bump version to X.Y.Z"
 git push origin master
-npm run publish:all
+pnpm publish:all
 ```
 
 This runs version:check, builds, then publishes core → mcp → cli in order.

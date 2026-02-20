@@ -28,11 +28,11 @@
     "node": ">=18"
   },
   "scripts": {
-    "prepublishOnly": "npm run --prefix ../.. build"
+    "prepublishOnly": "pnpm -C ../.. build"
   },
   "dependencies": {
     "commander": "^14.0.2",
     "zod": "^3.25.76",
-    "@roam-research/roam-tools-core": "0.4.2"
+    "@roam-research/roam-tools-core": "workspace:0.4.2"
   }
 }

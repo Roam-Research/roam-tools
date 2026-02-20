@@ -5,14 +5,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Run Commands
 
 ```bash
-npm run build        # Compile TypeScript (tsc --build, builds core → mcp + cli)
-npm run clean        # Remove build artifacts (dist/ and tsbuildinfo)
-npm run typecheck    # Type-check (force rebuild, checks all packages)
-npm run mcp          # Run MCP server in dev mode (tsx with development condition)
-npm run mcp -- connect              # Interactive setup for graph tokens (via MCP binary)
-npm run cli -- <command> [options]  # Run CLI in dev mode
-npm run cli -- connect              # Interactive setup for graph tokens (via CLI)
-npm run cli -- connect --graph <name> --nickname <name>  # Non-interactive setup (for scripts/agents)
+pnpm build           # Compile TypeScript (tsc --build, builds core → mcp + cli)
+pnpm clean           # Remove build artifacts (dist/ and tsbuildinfo)
+pnpm typecheck       # Type-check (force rebuild, checks all packages)
+pnpm lint            # Lint with oxlint
+pnpm lint:fix        # Lint and auto-fix
+pnpm format          # Format with oxc_formatter
+pnpm format:check    # Check formatting without writing
+pnpm mcp             # Run MCP server in dev mode (tsx with development condition)
+pnpm mcp -- connect              # Interactive setup for graph tokens (via MCP binary)
+pnpm cli -- <command> [options]  # Run CLI in dev mode
+pnpm cli -- connect              # Interactive setup for graph tokens (via CLI)
+pnpm cli -- connect --graph <name> --nickname <name>  # Non-interactive setup (for scripts/agents)
+pnpm prek:install    # Install prek pre-commit hooks
+pnpm prek:run        # Run prek checks manually
 ```
 
 ## Version Bumps
@@ -20,8 +26,8 @@ npm run cli -- connect --graph <name> --nickname <name>  # Non-interactive setup
 The version must be updated in 7 places across three packages. Use the automated script:
 
 ```bash
-npm run version:bump 0.5.0    # Updates all 7 locations at once
-npm install                    # Sync package-lock.json
+pnpm version:bump 0.5.0    # Updates all 7 locations at once
+pnpm install                # Sync pnpm-lock.yaml
 ```
 
 The 7 locations:
@@ -33,7 +39,7 @@ The 7 locations:
 6. `packages/mcp/src/index.ts` — `McpServer` constructor `version` string
 7. `packages/cli/src/index.ts` — Commander `.version()` call
 
-Run `npm run version:check` to verify all versions are consistent.
+Run `pnpm version:check` to verify all versions are consistent.
 
 ## Architecture
 
@@ -110,7 +116,7 @@ Config versioning: `CONFIG_VERSION` in `types.ts` defines the current version. I
 - `RoamError` class carries error codes and context for structured error responses
 - API versioning: `EXPECTED_API_VERSION` in types.ts must match Roam's API version
 - Config I/O (`~/.roam-tools.json`): No in-memory cache — config is read fresh from disk on every tool call. Write functions (`saveGraphToConfig`, `removeGraphFromConfig`, `updateGraphTokenStatus`) read the file at the last moment, apply the change, and write immediately. Invalid config errors are returned to the agent as `RoamError` (no `process.exit`), so the agent can tell the user what's wrong.
-- Development mode: `tsx --conditions development` resolves core's `"development"` export condition to source TypeScript, so `npm run mcp` / `npm run cli` work without building core first.
+- Development mode: `tsx --conditions development` resolves core's `"development"` export condition to source TypeScript, so `pnpm mcp` / `pnpm cli` work without building core first.
 - README maintenance: The package READMEs (`packages/mcp/README.md`, `packages/cli/README.md`) are self-contained docs that npm users see first — often the only docs they read. When adding tools, changing setup steps, or modifying behavior, update these READMEs alongside the root `README.md`. The MCP README uses underscore tool names (`list_graphs`), the CLI README uses hyphenated command names (`list-graphs`).
 
 ### Workspace Structure

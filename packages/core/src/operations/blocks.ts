@@ -7,12 +7,18 @@ import { textResult } from "../types.js";
 export const CreateBlockSchema = z.object({
   parentUid: z.string().describe("UID of parent block or page"),
   markdown: z.string().describe("Markdown content for the block"),
-  order: z.union([z.coerce.number(), z.enum(["first", "last"])]).optional().describe("Position (number, 'first', or 'last'). Defaults to 'last'"),
+  order: z
+    .union([z.coerce.number(), z.enum(["first", "last"])])
+    .optional()
+    .describe("Position (number, 'first', or 'last'). Defaults to 'last'"),
 });
 
 export const GetBlockSchema = z.object({
   uid: z.string().describe("Block UID"),
-  maxDepth: z.coerce.number().optional().describe("Max depth of children to include in markdown (omit for full tree)"),
+  maxDepth: z.coerce
+    .number()
+    .optional()
+    .describe("Max depth of children to include in markdown (omit for full tree)"),
 });
 
 export const UpdateBlockSchema = z.object({
@@ -29,7 +35,9 @@ export const DeleteBlockSchema = z.object({
 export const MoveBlockSchema = z.object({
   uid: z.string().describe("Block UID to move"),
   parentUid: z.string().describe("UID of the new parent block or page"),
-  order: z.union([z.coerce.number(), z.enum(["first", "last"])]).describe("Position in the new parent (number, 'first', or 'last')"),
+  order: z
+    .union([z.coerce.number(), z.enum(["first", "last"])])
+    .describe("Position in the new parent (number, 'first', or 'last')"),
 });
 
 export const GetBacklinksSchema = z.object({
@@ -37,11 +45,23 @@ export const GetBacklinksSchema = z.object({
   title: z.string().optional().describe("Page title (required if no uid)"),
   offset: z.coerce.number().optional().describe("Skip first N results (default: 0)"),
   limit: z.coerce.number().optional().describe("Max results to return (default: 20)"),
-  sort: z.enum(["created-date", "edited-date", "daily-note-date"]).optional().describe("Sort order (default: created-date)"),
+  sort: z
+    .enum(["created-date", "edited-date", "daily-note-date"])
+    .optional()
+    .describe("Sort order (default: created-date)"),
   sortOrder: z.enum(["asc", "desc"]).optional().describe("Sort direction (default: desc)"),
-  search: z.string().optional().describe("Filter results by text match (searches block, parents, children, page title)"),
-  includePath: z.boolean().optional().describe("Include breadcrumb path to each result (default: true)"),
-  maxDepth: z.coerce.number().optional().describe("Max depth of children to include in markdown (default: 2)"),
+  search: z
+    .string()
+    .optional()
+    .describe("Filter results by text match (searches block, parents, children, page title)"),
+  includePath: z
+    .boolean()
+    .optional()
+    .describe("Include breadcrumb path to each result (default: true)"),
+  maxDepth: z.coerce
+    .number()
+    .optional()
+    .describe("Max depth of children to include in markdown (default: 2)"),
 });
 
 // Types derived from schemas
@@ -65,7 +85,10 @@ export interface GetBacklinksResponse {
   results: BacklinkResult[];
 }
 
-export async function createBlock(client: RoamClient, params: CreateBlockParams): Promise<CallToolResult> {
+export async function createBlock(
+  client: RoamClient,
+  params: CreateBlockParams,
+): Promise<CallToolResult> {
   const response = await client.call<{ uids: string[] }>("data.block.fromMarkdown", [
     {
       location: {
@@ -78,7 +101,10 @@ export async function createBlock(client: RoamClient, params: CreateBlockParams)
   return textResult(response.result ?? { uids: [] });
 }
 
-export async function getBlock(client: RoamClient, params: GetBlockParams): Promise<CallToolResult> {
+export async function getBlock(
+  client: RoamClient,
+  params: GetBlockParams,
+): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = { uid: params.uid };
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
@@ -86,7 +112,10 @@ export async function getBlock(client: RoamClient, params: GetBlockParams): Prom
   return textResult(response.result ?? null);
 }
 
-export async function updateBlock(client: RoamClient, params: UpdateBlockParams): Promise<CallToolResult> {
+export async function updateBlock(
+  client: RoamClient,
+  params: UpdateBlockParams,
+): Promise<CallToolResult> {
   const block: Record<string, unknown> = { uid: params.uid };
   if (params.string !== undefined) block.string = params.string;
   if (params.open !== undefined) block.open = params.open;
@@ -96,12 +125,18 @@ export async function updateBlock(client: RoamClient, params: UpdateBlockParams)
   return textResult({ success: true });
 }
 
-export async function deleteBlock(client: RoamClient, params: DeleteBlockParams): Promise<CallToolResult> {
+export async function deleteBlock(
+  client: RoamClient,
+  params: DeleteBlockParams,
+): Promise<CallToolResult> {
   await client.call("data.block.delete", [{ block: { uid: params.uid } }]);
   return textResult({ success: true });
 }
 
-export async function moveBlock(client: RoamClient, params: MoveBlockParams): Promise<CallToolResult> {
+export async function moveBlock(
+  client: RoamClient,
+  params: MoveBlockParams,
+): Promise<CallToolResult> {
   await client.call("data.block.move", [
     {
       location: {
@@ -118,7 +153,7 @@ export async function moveBlock(client: RoamClient, params: MoveBlockParams): Pr
 
 export async function getBacklinks(
   client: RoamClient,
-  params: GetBacklinksParams
+  params: GetBacklinksParams,
 ): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = {};
 

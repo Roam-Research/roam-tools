@@ -12,13 +12,7 @@ import {
 } from "../graph-resolver.js";
 import type { GraphConfig } from "../types.js";
 import type { AvailableGraph } from "../roam-api.js";
-import {
-  fetchAvailableGraphs,
-  requestToken,
-  sleep,
-  openRoamApp,
-  slugify,
-} from "../roam-api.js";
+import { fetchAvailableGraphs, requestToken, sleep, openRoamApp, slugify } from "../roam-api.js";
 
 // ============================================================================
 // Schemas
@@ -31,12 +25,10 @@ export const SetupNewGraphSchema = z.object({
     .string()
     .regex(
       /^[A-Za-z0-9_-]+$/,
-      "Graph name must contain only letters, numbers, hyphens, and underscores"
+      "Graph name must contain only letters, numbers, hyphens, and underscores",
     )
     .optional()
-    .describe(
-      "The canonical Roam graph name. Omit graph and nickname to list available graphs."
-    ),
+    .describe("The canonical Roam graph name. Omit graph and nickname to list available graphs."),
   nickname: z
     .string()
     .min(1, "Nickname must not be empty")
@@ -44,7 +36,7 @@ export const SetupNewGraphSchema = z.object({
     .describe(
       "A short, memorable label describing what this graph is for (e.g. 'my personal graph', 'work notes', 'book club'). " +
         "Ask the user what they call this graph — use their natural language, not hyphenated format. " +
-        "Do not just copy the graph name. Required when graph is provided."
+        "Do not just copy the graph name. Required when graph is provided.",
     ),
 });
 
@@ -67,8 +59,10 @@ export async function listGraphs(): Promise<CallToolResult> {
     const graphs = await getConfiguredGraphs();
     return textResult({
       graphs,
-      instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
-      setup: "To connect additional graphs, use the setup_new_graph tool (call it without arguments to see available graphs).",
+      instruction:
+        "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
+      setup:
+        "To connect additional graphs, use the setup_new_graph tool (call it without arguments to see available graphs).",
     });
   } catch (error) {
     if (error instanceof RoamError) {
@@ -104,17 +98,14 @@ function dedupAvailableGraphs(graphs: AvailableGraph[]): AvailableGraph[] {
  * Fetch available graphs from Roam Desktop, retrying once if Roam isn't running.
  * Deduplicates by name (hosted takes priority over offline).
  */
-async function fetchAvailableGraphsWithRetry(
-  port: number
-): Promise<AvailableGraph[]> {
+async function fetchAvailableGraphsWithRetry(port: number): Promise<AvailableGraph[]> {
   let raw: AvailableGraph[];
   try {
     raw = await fetchAvailableGraphs(port);
   } catch (error: unknown) {
     const err = error as Error & { cause?: { code?: string } };
     const isConnectionError =
-      err.cause?.code === "ECONNREFUSED" ||
-      err.message?.includes("fetch failed");
+      err.cause?.code === "ECONNREFUSED" || err.message?.includes("fetch failed");
 
     if (!isConnectionError) {
       throw error;
@@ -127,7 +118,7 @@ async function fetchAvailableGraphsWithRetry(
     } catch {
       throw new RoamError(
         "Could not connect to Roam Desktop. Make sure it is running and the Local API is enabled in Settings > Local API.",
-        ErrorCodes.CONNECTION_FAILED
+        ErrorCodes.CONNECTION_FAILED,
       );
     }
   }
@@ -139,9 +130,7 @@ async function fetchAvailableGraphsWithRetry(
  * Call without arguments to list available graphs from Roam Desktop.
  * Call with graph + nickname to request a token and save the configuration.
  */
-export async function setupNewGraph(
-  args: SetupNewGraphParams
-): Promise<CallToolResult> {
+export async function setupNewGraph(args: SetupNewGraphParams): Promise<CallToolResult> {
   const { graph, nickname: rawNickname } = args;
 
   // List mode: no args → return available graphs from Roam Desktop
@@ -170,7 +159,7 @@ export async function setupNewGraph(
   if (!rawNickname) {
     throw new RoamError(
       "nickname is required when graph is provided.",
-      ErrorCodes.VALIDATION_ERROR
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -179,7 +168,7 @@ export async function setupNewGraph(
   if (!nickname) {
     throw new RoamError(
       `Nickname "${rawNickname}" produces an empty result after converting to kebab-case. Use a nickname with at least one letter or number.`,
-      ErrorCodes.VALIDATION_ERROR
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -187,9 +176,7 @@ export async function setupNewGraph(
   const existingGraphs = await getConfiguredGraphsSafe();
   const matchingConfigs = existingGraphs.filter((g) => g.name === graph);
   if (matchingConfigs.length > 0) {
-    const allRevoked = matchingConfigs.every(
-      (g) => g.lastKnownTokenStatus === "revoked"
-    );
+    const allRevoked = matchingConfigs.every((g) => g.lastKnownTokenStatus === "revoked");
     if (!allRevoked) {
       // At least one active config — return as already configured
       return textResult({
@@ -210,12 +197,12 @@ export async function setupNewGraph(
 
   // 3. Check nickname collision
   const nicknameCollision = existingGraphs.find(
-    (g) => g.nickname.toLowerCase() === nickname.toLowerCase() && g.name !== graph
+    (g) => g.nickname.toLowerCase() === nickname.toLowerCase() && g.name !== graph,
   );
   if (nicknameCollision) {
     throw new RoamError(
       `Nickname "${nickname}" is already used by graph "${nicknameCollision.name}". Please choose a different nickname.`,
-      ErrorCodes.VALIDATION_ERROR
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -231,7 +218,7 @@ export async function setupNewGraph(
       ErrorCodes.VALIDATION_ERROR,
       {
         available_graphs: availableGraphs.map((g) => g.name),
-      }
+      },
     );
   }
 
@@ -241,41 +228,36 @@ export async function setupNewGraph(
   // 7. Handle errors
   if (!result.success || !result.token) {
     const error = result.error;
-    const errorCode =
-      error && typeof error === "object" ? error.code : undefined;
-    const errorMessage =
-      error
-        ? typeof error === "string"
-          ? error
-          : error.message || "Unknown error"
-        : "Unknown error";
+    const errorCode = error && typeof error === "object" ? error.code : undefined;
+    const errorMessage = error
+      ? typeof error === "string"
+        ? error
+        : error.message || "Unknown error"
+      : "Unknown error";
 
     switch (errorCode) {
       case "USER_REJECTED":
         throw new RoamError(
           "Token request was denied in Roam. The user must approve the request in the Roam desktop app.",
-          ErrorCodes.USER_REJECTED
+          ErrorCodes.USER_REJECTED,
         );
       case "GRAPH_BLOCKED":
         throw new RoamError(
           "This graph has blocked token requests. Unblock it in Roam Settings > Graph > Local API Tokens.",
-          ErrorCodes.GRAPH_BLOCKED
+          ErrorCodes.GRAPH_BLOCKED,
         );
       case "TIMEOUT":
         throw new RoamError(
           "No response after 5 minutes. Please try again — the user needs to approve the request in the Roam desktop app.",
-          ErrorCodes.TIMEOUT
+          ErrorCodes.TIMEOUT,
         );
       case "REQUEST_IN_PROGRESS":
         throw new RoamError(
           "Another token request is already pending for this graph. The user should respond to the existing request in Roam first.",
-          ErrorCodes.REQUEST_IN_PROGRESS
+          ErrorCodes.REQUEST_IN_PROGRESS,
         );
       default:
-        throw new RoamError(
-          `Token request failed: ${errorMessage}`,
-          ErrorCodes.INTERNAL_ERROR
-        );
+        throw new RoamError(`Token request failed: ${errorMessage}`, ErrorCodes.INTERNAL_ERROR);
     }
   }
 
