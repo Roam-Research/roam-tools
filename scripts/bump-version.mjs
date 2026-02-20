@@ -49,24 +49,24 @@ console.log(`  packages/core/package.json version → ${newVersion}`);
 // 2. packages/mcp/package.json — version + core dependency
 const mcpPkg = readJson(join(root, "packages/mcp/package.json"));
 mcpPkg.version = newVersion;
-mcpPkg.dependencies["@roam-research/roam-tools-core"] = newVersion;
+mcpPkg.dependencies["@roam-research/roam-tools-core"] = `workspace:${newVersion}`;
 writeJson(join(root, "packages/mcp/package.json"), mcpPkg);
 console.log(`  packages/mcp/package.json version → ${newVersion}`);
-console.log(`  packages/mcp/package.json core dep → ${newVersion}`);
+console.log(`  packages/mcp/package.json core dep → workspace:${newVersion}`);
 
 // 3. packages/cli/package.json — version + core dependency
 const cliPkg = readJson(join(root, "packages/cli/package.json"));
 cliPkg.version = newVersion;
-cliPkg.dependencies["@roam-research/roam-tools-core"] = newVersion;
+cliPkg.dependencies["@roam-research/roam-tools-core"] = `workspace:${newVersion}`;
 writeJson(join(root, "packages/cli/package.json"), cliPkg);
 console.log(`  packages/cli/package.json version → ${newVersion}`);
-console.log(`  packages/cli/package.json core dep → ${newVersion}`);
+console.log(`  packages/cli/package.json core dep → workspace:${newVersion}`);
 
 // 4. packages/mcp/src/index.ts — McpServer version string
 replaceInFile(
   join(root, "packages/mcp/src/index.ts"),
   /version: "[^"]+"/,
-  `version: "${newVersion}"`
+  `version: "${newVersion}"`,
 );
 console.log(`  packages/mcp/src/index.ts McpServer version → ${newVersion}`);
 
@@ -74,8 +74,8 @@ console.log(`  packages/mcp/src/index.ts McpServer version → ${newVersion}`);
 replaceInFile(
   join(root, "packages/cli/src/index.ts"),
   /\.version\("[^"]+"\)/,
-  `.version("${newVersion}")`
+  `.version("${newVersion}")`,
 );
 console.log(`  packages/cli/src/index.ts Commander version → ${newVersion}`);
 
-console.log(`\nDone! Run 'npm install' to sync package-lock.json.`);
+console.log(`\nDone! Run 'pnpm install' to sync pnpm-lock.yaml.`);

@@ -68,10 +68,10 @@ function checkConfigVersion(parsed: Record<string, unknown>): void {
   if (version > CONFIG_VERSION) {
     throw new RoamError(
       `Your ~/.roam-tools.json (version ${version}) was written by a newer version of Roam tools. ` +
-      `This client only supports config version ${CONFIG_VERSION}. ` +
-      `Please update @roam-research/roam-mcp and @roam-research/roam-cli to the latest version.`,
+        `This client only supports config version ${CONFIG_VERSION}. ` +
+        `Please update @roam-research/roam-mcp and @roam-research/roam-cli to the latest version.`,
       ErrorCodes.CONFIG_TOO_NEW,
-      { configVersion: version, supportedVersion: CONFIG_VERSION }
+      { configVersion: version, supportedVersion: CONFIG_VERSION },
     );
   }
 }
@@ -91,7 +91,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
           console.error(
             `[roam-mcp] WARNING: ${CONFIG_PATH} has overly permissive permissions (0${mode.toString(8)}). ` +
               `This file contains API tokens and should not be accessible by others. ` +
-              `Run: chmod 600 ${CONFIG_PATH}`
+              `Run: chmod 600 ${CONFIG_PATH}`,
           );
         }
       } catch {
@@ -105,7 +105,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
           `or run the CLI setup command:\n\n` +
           `  npx @roam-research/roam-cli connect\n\n` +
           `After connecting, try your request again.`,
-        ErrorCodes.CONFIG_NOT_FOUND
+        ErrorCodes.CONFIG_NOT_FOUND,
       );
     }
     throw error;
@@ -117,7 +117,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
   } catch {
     throw new RoamError(
       `Invalid JSON in ${CONFIG_PATH}. Please check the file format.`,
-      ErrorCodes.VALIDATION_ERROR
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -130,7 +130,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
       .join("\n");
     throw new RoamError(
       `Invalid config in ${CONFIG_PATH}:\n${issues}`,
-      ErrorCodes.VALIDATION_ERROR
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -141,7 +141,7 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
     if (nicknames.has(lowerNickname)) {
       throw new RoamError(
         `Duplicate nickname "${graph.nickname}" in config. Nicknames must be unique (case-insensitive).`,
-        ErrorCodes.VALIDATION_ERROR
+        ErrorCodes.VALIDATION_ERROR,
       );
     }
     nicknames.add(lowerNickname);
@@ -158,16 +158,14 @@ export async function getMcpConfig(): Promise<RoamMcpConfig> {
         // If existing is offline and new is hosted, replace with hosted
         if (existing.type === "hosted") {
           console.error(
-            `[roam-mcp] Warning: Ignoring duplicate graph "${graph.name}" (${graph.type}), using hosted version`
+            `[roam-mcp] Warning: Ignoring duplicate graph "${graph.name}" (${graph.type}), using hosted version`,
           );
         } else if (graph.type === "hosted") {
           console.error(
-            `[roam-mcp] Warning: Replacing offline graph "${graph.name}" with hosted version`
+            `[roam-mcp] Warning: Replacing offline graph "${graph.name}" with hosted version`,
           );
         } else {
-          console.error(
-            `[roam-mcp] Warning: Ignoring duplicate offline graph "${graph.name}"`
-          );
+          console.error(`[roam-mcp] Warning: Ignoring duplicate offline graph "${graph.name}"`);
         }
       }
       // Apply dedup logic regardless of whether warning was shown
@@ -211,7 +209,7 @@ async function readRawConfig(): Promise<RoamMcpConfig> {
   } catch {
     throw new RoamError(
       `Invalid JSON in ${CONFIG_PATH}. Please check the file format.`,
-      ErrorCodes.VALIDATION_ERROR
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -224,7 +222,7 @@ async function readRawConfig(): Promise<RoamMcpConfig> {
       .join("\n");
     throw new RoamError(
       `Invalid config in ${CONFIG_PATH}:\n${issues}`,
-      ErrorCodes.VALIDATION_ERROR
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -243,18 +241,18 @@ export async function saveGraphToConfig(newGraph: GraphConfig): Promise<void> {
   const existingNickname = config.graphs.find(
     (g) =>
       g.nickname.toLowerCase() === newGraph.nickname.toLowerCase() &&
-      !(g.name === newGraph.name && g.type === newGraph.type)
+      !(g.name === newGraph.name && g.type === newGraph.type),
   );
   if (existingNickname) {
     throw new RoamError(
       `Nickname "${newGraph.nickname}" is already used by graph "${existingNickname.name}". Please choose a different nickname.`,
-      ErrorCodes.VALIDATION_ERROR
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
   // Check for existing graph with same name+type
   const existingIndex = config.graphs.findIndex(
-    (g) => g.name === newGraph.name && g.type === newGraph.type
+    (g) => g.name === newGraph.name && g.type === newGraph.type,
   );
 
   if (existingIndex >= 0) {
@@ -275,9 +273,7 @@ export async function removeGraphFromConfig(nickname: string): Promise<boolean> 
   const lowerNickname = nickname.toLowerCase();
 
   const initialLength = config.graphs.length;
-  config.graphs = config.graphs.filter(
-    (g) => g.nickname.toLowerCase() !== lowerNickname
-  );
+  config.graphs = config.graphs.filter((g) => g.nickname.toLowerCase() !== lowerNickname);
 
   if (config.graphs.length === initialLength) {
     return false; // Graph not found
@@ -294,12 +290,10 @@ export async function removeGraphFromConfig(nickname: string): Promise<boolean> 
  */
 export async function updateGraphTokenStatus(
   nickname: string,
-  updates: { accessLevel?: AccessLevel; lastKnownTokenStatus?: "active" | "revoked" }
+  updates: { accessLevel?: AccessLevel; lastKnownTokenStatus?: "active" | "revoked" },
 ): Promise<void> {
   const config = await readRawConfig();
-  const graph = config.graphs.find(
-    (g) => g.nickname.toLowerCase() === nickname.toLowerCase()
-  );
+  const graph = config.graphs.find((g) => g.nickname.toLowerCase() === nickname.toLowerCase());
   if (!graph) return;
 
   let changed = false;
@@ -307,7 +301,10 @@ export async function updateGraphTokenStatus(
     graph.accessLevel = updates.accessLevel;
     changed = true;
   }
-  if (updates.lastKnownTokenStatus !== undefined && graph.lastKnownTokenStatus !== updates.lastKnownTokenStatus) {
+  if (
+    updates.lastKnownTokenStatus !== undefined &&
+    graph.lastKnownTokenStatus !== updates.lastKnownTokenStatus
+  ) {
     graph.lastKnownTokenStatus = updates.lastKnownTokenStatus;
     changed = true;
   }
@@ -337,16 +334,12 @@ export async function getConfiguredGraphsSafe(): Promise<GraphConfig[]> {
 /**
  * Find a graph config by nickname (case-insensitive) or name
  */
-export async function findGraphConfig(
-  nameOrNickname: string
-): Promise<GraphConfig | undefined> {
+export async function findGraphConfig(nameOrNickname: string): Promise<GraphConfig | undefined> {
   const config = await getMcpConfig();
   const lower = nameOrNickname.toLowerCase();
 
   // First try nickname (case-insensitive)
-  const byNickname = config.graphs.find(
-    (g) => g.nickname.toLowerCase() === lower
-  );
+  const byNickname = config.graphs.find((g) => g.nickname.toLowerCase() === lower);
   if (byNickname) return byNickname;
 
   // Fall back to exact name match
@@ -376,9 +369,7 @@ export async function getConfiguredGraphs(): Promise<
  * Resolve which graph to use and return full config.
  * Stateless: explicit param → single configured graph → error
  */
-export async function resolveGraph(
-  providedGraph?: string
-): Promise<ResolvedGraph> {
+export async function resolveGraph(providedGraph?: string): Promise<ResolvedGraph> {
   const config = await getMcpConfig();
 
   // 1. Explicit graph parameter (by nickname or name)
@@ -390,8 +381,9 @@ export async function resolveGraph(
         ErrorCodes.GRAPH_NOT_CONFIGURED,
         {
           available_graphs: await getConfiguredGraphs(),
-          instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
-        }
+          instruction:
+            "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
+        },
       );
     }
     return {
@@ -423,8 +415,9 @@ export async function resolveGraph(
     ErrorCodes.GRAPH_NOT_SELECTED,
     {
       available_graphs: await getConfiguredGraphs(),
-      instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
-    }
+      instruction:
+        "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
+    },
   );
 }
 
@@ -448,9 +441,7 @@ interface GraphsResponse {
  * Note: This is NOT used for graph resolution in v2.0.0.
  * It's kept for potential future use (e.g., showing which graphs are open).
  */
-export async function getOpenGraphs(): Promise<
-  Array<{ name: string; type: string }>
-> {
+export async function getOpenGraphs(): Promise<Array<{ name: string; type: string }>> {
   const port = await getPort();
   const url = `http://127.0.0.1:${port}/api/graphs/open`;
 
@@ -462,12 +453,8 @@ export async function getOpenGraphs(): Promise<
   const data = (await response.json()) as GraphsResponse;
 
   if (!data.success) {
-    throw new RoamError(
-      data.error || "Failed to get open graphs",
-      ErrorCodes.CONNECTION_FAILED
-    );
+    throw new RoamError(data.error || "Failed to get open graphs", ErrorCodes.CONNECTION_FAILED);
   }
 
   return (data.result || []).map((g) => ({ name: g.name, type: g.type }));
 }
-

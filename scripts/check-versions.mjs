@@ -20,23 +20,20 @@ const errors = [];
 // Check all three package versions match
 if (core.version !== mcp.version || core.version !== cli.version) {
   errors.push(
-    `Package versions don't match: core=${core.version}, mcp=${mcp.version}, cli=${cli.version}`
+    `Package versions don't match: core=${core.version}, mcp=${mcp.version}, cli=${cli.version}`,
   );
 }
 
 // Check that mcp and cli depend on the correct core version
 const mcpCoreDep = mcp.dependencies?.["@roam-research/roam-tools-core"];
-if (mcpCoreDep !== core.version) {
-  errors.push(
-    `packages/mcp depends on core ${mcpCoreDep}, but core is ${core.version}`
-  );
+const expectedCoreDep = `workspace:${core.version}`;
+if (mcpCoreDep !== expectedCoreDep) {
+  errors.push(`packages/mcp depends on core ${mcpCoreDep}, but expected ${expectedCoreDep}`);
 }
 
 const cliCoreDep = cli.dependencies?.["@roam-research/roam-tools-core"];
-if (cliCoreDep !== core.version) {
-  errors.push(
-    `packages/cli depends on core ${cliCoreDep}, but core is ${core.version}`
-  );
+if (cliCoreDep !== expectedCoreDep) {
+  errors.push(`packages/cli depends on core ${cliCoreDep}, but expected ${expectedCoreDep}`);
 }
 
 // Check hardcoded version strings in source files (same patterns as bump-version.mjs)
@@ -46,7 +43,7 @@ if (!mcpMatch) {
   errors.push(`Could not find version string in packages/mcp/src/index.ts`);
 } else if (mcpMatch[1] !== core.version) {
   errors.push(
-    `packages/mcp/src/index.ts McpServer version is "${mcpMatch[1]}", expected "${core.version}"`
+    `packages/mcp/src/index.ts McpServer version is "${mcpMatch[1]}", expected "${core.version}"`,
   );
 }
 
@@ -56,7 +53,7 @@ if (!cliMatch) {
   errors.push(`Could not find version string in packages/cli/src/index.ts`);
 } else if (cliMatch[1] !== core.version) {
   errors.push(
-    `packages/cli/src/index.ts Commander version is "${cliMatch[1]}", expected "${core.version}"`
+    `packages/cli/src/index.ts Commander version is "${cliMatch[1]}", expected "${core.version}"`,
   );
 }
 
@@ -65,7 +62,7 @@ if (errors.length > 0) {
   for (const e of errors) {
     console.error(`  - ${e}`);
   }
-  console.error("\nRun: npm run version:bump <version>");
+  console.error("\nRun: pnpm version:bump <version>");
   process.exit(1);
 }
 

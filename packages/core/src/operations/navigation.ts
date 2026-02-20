@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
-import type { FocusedBlock, SelectedBlock, MainWindowView, SidebarWindowInfo, CallToolResult } from "../types.js";
+import type {
+  FocusedBlock,
+  SelectedBlock,
+  MainWindowView,
+  SidebarWindowInfo,
+  CallToolResult,
+} from "../types.js";
 import { textResult } from "../types.js";
 
 // Schemas
@@ -15,7 +21,10 @@ export const OpenMainWindowSchema = z.object({
 
 export const OpenSidebarSchema = z.object({
   uid: z.string().describe("UID of page or block"),
-  type: z.enum(["block", "outline", "mentions"]).optional().describe("View type (default: outline)"),
+  type: z
+    .enum(["block", "outline", "mentions"])
+    .optional()
+    .describe("View type (default: outline)"),
 });
 
 // Types derived from schemas
@@ -44,7 +53,10 @@ export async function getSelection(client: RoamClient): Promise<CallToolResult> 
   });
 }
 
-export async function openMainWindow(client: RoamClient, params: OpenMainWindowParams): Promise<CallToolResult> {
+export async function openMainWindow(
+  client: RoamClient,
+  params: OpenMainWindowParams,
+): Promise<CallToolResult> {
   if (params.uid) {
     // Could be a page or block - openBlock handles both
     await client.call("ui.mainWindow.openBlock", [{ block: { uid: params.uid } }]);
@@ -54,7 +66,10 @@ export async function openMainWindow(client: RoamClient, params: OpenMainWindowP
   return textResult({ success: true });
 }
 
-export async function openSidebar(client: RoamClient, params: OpenSidebarParams): Promise<CallToolResult> {
+export async function openSidebar(
+  client: RoamClient,
+  params: OpenSidebarParams,
+): Promise<CallToolResult> {
   await client.call("ui.rightSidebar.addWindow", [
     {
       window: {

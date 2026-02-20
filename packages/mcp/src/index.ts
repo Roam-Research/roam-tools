@@ -62,7 +62,13 @@ Examples:
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { tools, routeToolCall, getMcpConfig, RoamError, ErrorCodes } from "@roam-research/roam-tools-core";
+import {
+  tools,
+  routeToolCall,
+  getMcpConfig,
+  RoamError,
+  ErrorCodes,
+} from "@roam-research/roam-tools-core";
 
 const server = new McpServer({ name: "roam-mcp", version: "0.4.2" });
 
@@ -85,7 +91,7 @@ for (const tool of tools) {
           isError: true,
         };
       }
-    }
+    },
   );
 }
 

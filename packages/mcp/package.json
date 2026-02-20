@@ -29,10 +29,10 @@
     "node": ">=18"
   },
   "scripts": {
-    "prepublishOnly": "npm run --prefix ../.. build"
+    "prepublishOnly": "pnpm -C ../.. build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@roam-research/roam-tools-core": "0.4.2"
+    "@roam-research/roam-tools-core": "workspace:0.4.2"
   }
 }

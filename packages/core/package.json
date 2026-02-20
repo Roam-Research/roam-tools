@@ -33,7 +33,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "prepublishOnly": "npm run --prefix ../.. build"
+    "prepublishOnly": "pnpm -C ../.. build"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.2.0",

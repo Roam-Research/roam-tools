@@ -5,13 +5,7 @@ import {
   saveGraphToConfig,
   removeGraphFromConfig,
 } from "./graph-resolver.js";
-import {
-  fetchAvailableGraphs,
-  requestToken,
-  sleep,
-  openRoamApp,
-  slugify,
-} from "./roam-api.js";
+import { fetchAvailableGraphs, requestToken, sleep, openRoamApp, slugify } from "./roam-api.js";
 import type { GraphConfig, GraphType, AccessLevel } from "./types.js";
 import type { AvailableGraph, GraphsResponse, TokenExchangeResponse } from "./roam-api.js";
 
@@ -95,16 +89,14 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
 
     if (options.nickname) {
       const slug = slugify(options.nickname);
-      target = configuredGraphs.find(
-        (g) => g.nickname.toLowerCase() === slug.toLowerCase()
-      );
+      target = configuredGraphs.find((g) => g.nickname.toLowerCase() === slug.toLowerCase());
     } else if (options.graph) {
       target = configuredGraphs.find((g) => g.name === options.graph);
     }
 
     if (!target) {
       console.error(
-        `Error: No configured graph found matching ${options.nickname ? `nickname "${slugify(options.nickname)}"` : `name "${options.graph}"`}.`
+        `Error: No configured graph found matching ${options.nickname ? `nickname "${slugify(options.nickname)}"` : `name "${options.graph}"`}.`,
       );
       if (configuredGraphs.length > 0) {
         console.error("\nConfigured graphs:");
@@ -127,35 +119,35 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
   if (nonInteractive) {
     if (options.accessLevel && !VALID_ACCESS_LEVELS.includes(options.accessLevel)) {
       console.error(
-        `Error: Invalid access level "${options.accessLevel}". Valid options: ${VALID_ACCESS_LEVELS.join(", ")}`
+        `Error: Invalid access level "${options.accessLevel}". Valid options: ${VALID_ACCESS_LEVELS.join(", ")}`,
       );
       process.exit(1);
     }
 
     if (options.type && !VALID_TYPES.includes(options.type)) {
       console.error(
-        `Error: Invalid type "${options.type}". Valid options: ${VALID_TYPES.join(", ")}`
+        `Error: Invalid type "${options.type}". Valid options: ${VALID_TYPES.join(", ")}`,
       );
       process.exit(1);
     }
 
     if (options.public && options.type && options.type !== "hosted") {
-      console.error(
-        `Error: Public graphs are always hosted. Remove --type or set it to "hosted".`
-      );
+      console.error(`Error: Public graphs are always hosted. Remove --type or set it to "hosted".`);
       process.exit(1);
     }
 
     if (options.public && options.accessLevel && options.accessLevel !== "read-only") {
       console.error(
-        `Error: Public graphs only support read-only access. Remove --access-level or set it to "read-only".`
+        `Error: Public graphs only support read-only access. Remove --access-level or set it to "read-only".`,
       );
       process.exit(1);
     }
 
     if (!options.nickname) {
       console.error("Error: --nickname is required when using --graph.");
-      console.error('Provide a short name you\'ll use to refer to this graph, e.g. --nickname "my work graph"');
+      console.error(
+        'Provide a short name you\'ll use to refer to this graph, e.g. --nickname "my work graph"',
+      );
       process.exit(1);
     }
 
@@ -189,7 +181,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
       // Retry
       try {
         availableGraphs = await fetchAvailableGraphs(port);
-      } catch (retryError) {
+      } catch {
         console.error("\nCould not connect to Roam Desktop.");
         console.error("Please make sure Roam is running and try again.");
         process.exit(1);
@@ -217,11 +209,11 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
     const existing = configuredGraphs.find(
       (g) =>
         g.nickname === nicknameSlug &&
-        !(g.name === options.graph && (!graphType || g.type === graphType))
+        !(g.name === options.graph && (!graphType || g.type === graphType)),
     );
     if (existing) {
       console.error(
-        `Error: Nickname "${nicknameSlug}" is already used by graph "${existing.name}".`
+        `Error: Nickname "${nicknameSlug}" is already used by graph "${existing.name}".`,
       );
       console.error("Please choose a different nickname with --nickname.");
       process.exit(1);
@@ -237,7 +229,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
       // Public graph: skip available graphs lookup, construct directly
       const graphType: GraphType = (options.type as GraphType) || "hosted";
       const configured = configuredGraphs.find(
-        (c) => c.name === options.graph && c.type === graphType
+        (c) => c.name === options.graph && c.type === graphType,
       );
       finalSelectedGraph = {
         name: options.graph!,
@@ -251,9 +243,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
       // Match against available graphs
       const graphType = options.type as GraphType | undefined;
       const match = availableGraphs.find(
-        (g) =>
-          g.name === options.graph &&
-          (!graphType || g.type === graphType)
+        (g) => g.name === options.graph && (!graphType || g.type === graphType),
       );
 
       if (!match) {
@@ -269,13 +259,11 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
       }
 
       const configured = configuredGraphs.find(
-        (c) => c.name === match.name && c.type === match.type
+        (c) => c.name === match.name && c.type === match.type,
       );
       finalSelectedGraph = {
         ...match,
-        isOpen: openGraphs.some(
-          (o) => o.name === match.name && o.type === match.type
-        ),
+        isOpen: openGraphs.some((o) => o.name === match.name && o.type === match.type),
         isConnected: !!configured,
         existingNickname: configured?.nickname,
         lastKnownTokenStatus: configured?.lastKnownTokenStatus,
@@ -284,12 +272,8 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
   } else {
     // ── Interactive graph selection ──────────────────────────────────────
     const choices: GraphChoice[] = availableGraphs.map((g) => {
-      const isOpen = openGraphs.some(
-        (o) => o.name === g.name && o.type === g.type
-      );
-      const configured = configuredGraphs.find(
-        (c) => c.name === g.name && c.type === g.type
-      );
+      const isOpen = openGraphs.some((o) => o.name === g.name && o.type === g.type);
+      const configured = configuredGraphs.find((c) => c.name === g.name && c.type === g.type);
       return {
         ...g,
         isOpen,
@@ -302,7 +286,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
     // Add configured graphs that aren't in available list (e.g., public graphs)
     for (const configured of configuredGraphs) {
       const alreadyInList = choices.some(
-        (c) => c.name === configured.name && c.type === configured.type
+        (c) => c.name === configured.name && c.type === configured.type,
       );
       if (!alreadyInList) {
         choices.push({
@@ -337,13 +321,10 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
     const selectedGraph = await search<GraphChoice>({
       message: "Select a graph to connect (or type to search):",
       source: async (input) => {
-
         // Filter available graphs (exclude custom option placeholder)
         const filtered = input
           ? choices.filter(
-              (g) =>
-                !g.isCustomOption &&
-                g.name.toLowerCase().includes(input.toLowerCase())
+              (g) => !g.isCustomOption && g.name.toLowerCase().includes(input.toLowerCase()),
             )
           : choices.filter((g) => !g.isCustomOption);
 
@@ -382,8 +363,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
       const customName = await input({
         message: "Enter the graph name:",
         default: defaultName,
-        validate: (value) =>
-          value.trim() ? true : "Graph name cannot be empty",
+        validate: (value) => (value.trim() ? true : "Graph name cannot be empty"),
       });
 
       // Public graphs are always hosted
@@ -391,7 +371,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
 
       // Check if already configured
       const configured = configuredGraphs.find(
-        (c) => c.name === customName.trim() && c.type === customType
+        (c) => c.name === customName.trim() && c.type === customType,
       );
 
       finalSelectedGraph = {
@@ -412,16 +392,16 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
     if (nonInteractive) {
       // Non-interactive: error with hint to use --remove
       console.error(
-        `Error: Graph "${finalSelectedGraph.name}" is already connected as "${finalSelectedGraph.existingNickname}".`
+        `Error: Graph "${finalSelectedGraph.name}" is already connected as "${finalSelectedGraph.existingNickname}".`,
       );
       console.error(
-        `To replace the token, first remove it:\n  roam connect --remove --nickname ${finalSelectedGraph.existingNickname}`
+        `To replace the token, first remove it:\n  roam connect --remove --nickname ${finalSelectedGraph.existingNickname}`,
       );
       process.exit(1);
     }
 
     const existingConfig = configuredGraphs.find(
-      (c) => c.name === finalSelectedGraph.name && c.type === finalSelectedGraph.type
+      (c) => c.name === finalSelectedGraph.name && c.type === finalSelectedGraph.type,
     );
 
     if (existingConfig?.lastKnownTokenStatus === "revoked") {
@@ -451,9 +431,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
 
       if (action === "remove") {
         await removeGraphFromConfig(finalSelectedGraph.existingNickname!);
-        console.log(
-          `Removed "${finalSelectedGraph.existingNickname}" from config.`
-        );
+        console.log(`Removed "${finalSelectedGraph.existingNickname}" from config.`);
         return;
       }
 
@@ -485,9 +463,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
 
       if (action === "remove") {
         await removeGraphFromConfig(finalSelectedGraph.existingNickname!);
-        console.log(
-          `Removed "${finalSelectedGraph.existingNickname}" from config.`
-        );
+        console.log(`Removed "${finalSelectedGraph.existingNickname}" from config.`);
         return;
       }
 
@@ -495,7 +471,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
         console.log("\nTo change this token's permissions:");
         console.log("  1. Open Roam Desktop and open the graph");
         console.log("  2. Go to Settings > Graph > Local API Tokens");
-        console.log('  3. Find the token and adjust its permissions');
+        console.log("  3. Find the token and adjust its permissions");
         // Permission changes are synced when get_graph_guidelines calls getTokenInfo()
         console.log("\nChanges will be synced automatically next time the MCP is started.");
         return;
@@ -545,7 +521,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
         const existing = configuredGraphs.find(
           (g) =>
             g.nickname === slug &&
-            !(g.name === finalSelectedGraph.name && g.type === finalSelectedGraph.type)
+            !(g.name === finalSelectedGraph.name && g.type === finalSelectedGraph.type),
         );
         if (existing) {
           return `Nickname "${slug}" is already used by "${existing.name}"`;
@@ -566,7 +542,7 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
     port,
     finalSelectedGraph.name,
     finalSelectedGraph.type,
-    accessLevel
+    accessLevel,
   );
 
   if (!result.success) {
@@ -579,18 +555,14 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
         break;
       case "GRAPH_BLOCKED":
         console.error(
-          "\nThis graph has blocked token requests. Unblock it in Roam Settings > Graph > Local API Tokens."
+          "\nThis graph has blocked token requests. Unblock it in Roam Settings > Graph > Local API Tokens.",
         );
         break;
       case "TIMEOUT":
-        console.error(
-          "\nNo response after 5 minutes. Please try again."
-        );
+        console.error("\nNo response after 5 minutes. Please try again.");
         break;
       case "REQUEST_IN_PROGRESS":
-        console.error(
-          "\nAnother token request is already pending for this graph."
-        );
+        console.error("\nAnother token request is already pending for this graph.");
         break;
       default:
         console.error(`\nError: ${errorMessage}`);
@@ -615,12 +587,14 @@ export async function connect(options: ConnectOptions = {}): Promise<void> {
 
   await saveGraphToConfig(graphConfig);
 
-  console.log(`\nConnected! Graph ${finalSelectedGraph.name} (nickname: ${nickname}) has been saved to ~/.roam-tools.json`);
+  console.log(
+    `\nConnected! Graph ${finalSelectedGraph.name} (nickname: ${nickname}) has been saved to ~/.roam-tools.json`,
+  );
   console.log(`\nGranted permissions: ${result.grantedAccessLevel}`);
 
   if (result.grantedAccessLevel !== accessLevel) {
     console.log(
-      `(Note: You requested "${accessLevel}" but were granted "${result.grantedAccessLevel}" based on your permissions)`
+      `(Note: You requested "${accessLevel}" but were granted "${result.grantedAccessLevel}" based on your permissions)`,
     );
   }
 }

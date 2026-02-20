@@ -211,18 +211,20 @@ To work on this project from source:
 ```bash
 git clone https://github.com/Roam-Research/roam-tools.git
 cd roam-tools
-npm install
-npm run build
+pnpm install
+pnpm build
 ```
 
 Development commands:
 
 ```bash
-npm run mcp              # Run MCP server in dev mode (tsx)
-npm run cli -- connect   # Run CLI in dev mode
-npm run typecheck        # Type-check (force rebuild, checks all packages)
-npm run version:check    # Verify all package versions are consistent
-npm run version:bump 0.5.0  # Bump all packages to a new version
+pnpm mcp                    # Run MCP server in dev mode (tsx)
+pnpm cli -- connect         # Run CLI in dev mode
+pnpm typecheck              # Type-check (force rebuild, checks all packages)
+pnpm lint                   # Lint packages and scripts with Oxlint
+pnpm format:check           # Check formatting with Oxfmt
+pnpm version:check          # Verify all package versions are consistent
+pnpm version:bump 0.5.0     # Bump all packages to a new version
 ```
 
 See [npm packaging design](docs/npm-packaging-design.md) for why the packages are structured this way.
