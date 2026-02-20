@@ -3,9 +3,10 @@
 import { Command } from "commander";
 import { z } from "zod";
 import { randomUUID } from "crypto";
-import { mkdirSync, writeFileSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import { join } from "path";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import type { CallToolResult } from "@roam-research/roam-tools-core";
 import { RoamError, ErrorCodes, tools, routeToolCall } from "@roam-research/roam-tools-core";
 import { connect } from "@roam-research/roam-tools-core/connect";
@@ -61,6 +62,85 @@ program
   .description("Roam Research CLI")
   .version("0.4.2");
 
+// Override root --help with static reference card
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const helpPaths = [
+  join(__dirname, "help.txt"),
+  join(__dirname, "../src/help.txt"),
+];
+let helpText: string | undefined;
+for (const p of helpPaths) {
+  try {
+    helpText = readFileSync(p, "utf-8");
+    break;
+  } catch {}
+}
+if (helpText) {
+  const staticHelp = helpText;
+  program.helpInformation = () => staticHelp + "\n";
+}
+
+// Command aliases: full-name -> short form
+const commandAliases: Record<string, string> = {
+  "list-graphs": "lg",
+  "setup-new-graph": "sg",
+  "get-graph-guidelines": "gg",
+  "get-page": "gp",
+  "get-block": "gb",
+  "get-backlinks": "bl",
+  "search": "s",
+  "search-templates": "st",
+  "roam-query": "q",
+  "get-open-windows": "win",
+  "get-selection": "sel",
+  "create-page": "cp",
+  "create-block": "cb",
+  "update-page": "up",
+  "update-block": "ub",
+  "delete-page": "dp",
+  "delete-block": "db",
+  "move-block": "mb",
+  "open-main-window": "go",
+  "open-sidebar": "side",
+  "file-get": "fg",
+  "file-upload": "fu",
+  "file-delete": "fd",
+};
+
+// Flag aliases: camelCase param name -> single letter
+const flagAliases: Record<string, string> = {
+  // Lowercase
+  graph: "g",
+  nickname: "n",
+  uid: "u",
+  title: "t",
+  query: "q",
+  markdown: "m",
+  parentUid: "p",
+  maxDepth: "d",
+  limit: "l",
+  offset: "o",
+  scope: "s",
+  textAlign: "a",
+  base64: "b",
+  open: "e",
+  search: "f",
+  includePath: "i",
+  filename: "N",
+  sort: "r",
+  childrenViewType: "v",
+  // Uppercase (distinguishes from similar lowercase)
+  mimetype: "E",
+  filePath: "F",
+  heading: "H",
+  mergePages: "M",
+  order: "O",
+  sortOrder: "R",
+  string: "S",
+  type: "T",
+  url: "U",
+};
+
 // Helper to check if a Zod schema field is optional
 function isOptional(schema: z.ZodTypeAny): boolean {
   return schema.isOptional() || schema instanceof z.ZodOptional;
@@ -91,9 +171,14 @@ function hasBooleanType(schema: z.ZodTypeAny): boolean {
 
 // Build commands dynamically from shared tool definitions
 tools.forEach((tool) => {
+  const cmdName = tool.name.replace(/_/g, "-");
   const cmd = program
-    .command(tool.name.replace(/_/g, "-"))
+    .command(cmdName)
     .description(tool.description);
+
+  // Apply command alias
+  const alias = commandAliases[cmdName];
+  if (alias) cmd.alias(alias);
 
   // Add options from Zod schema shape
   const shape = tool.schema.shape as Record<string, z.ZodTypeAny>;
@@ -101,9 +186,11 @@ tools.forEach((tool) => {
     const isRequired = !isOptional(fieldSchema);
     const description = fieldSchema.description || "";
 
-    // Build flag string
+    // Build flag string with optional short alias
     const flagName = param.replace(/([A-Z])/g, "-$1").toLowerCase();
-    const flag = isRequired ? `--${flagName} <value>` : `--${flagName} [value]`;
+    const shortFlag = flagAliases[param];
+    const longFlag = isRequired ? `--${flagName} <value>` : `--${flagName} [value]`;
+    const flag = shortFlag ? `-${shortFlag}, ${longFlag}` : longFlag;
 
     cmd.option(flag, description);
   }
@@ -179,18 +266,18 @@ tools.forEach((tool) => {
 program
   .command("connect")
   .description("Connect to a Roam graph and obtain a token")
-  .option("--graph <name>", "Graph name (enables non-interactive mode)")
-  .option("--nickname <name>", "Short name you'll use to refer to this graph (required with --graph)")
+  .option("-g, --graph <name>", "Graph name (enables non-interactive mode)")
+  .option("-n, --nickname <name>", "Short name you'll use to refer to this graph (required with --graph)")
   .option("--access-level <level>", "Access level: full, read-append, or read-only")
   .option("--public", "Public graph (read-only, hosted)")
   .option("--type <type>", "Graph type: hosted or offline")
   .option("--remove", "Remove a graph connection (use with --graph or --nickname)")
   .addHelpText("after", `
 Examples:
-  npm run cli -- connect                                                                      Interactive setup
-  npm run cli -- connect --graph my-graph --nickname "main graph" --access-level read-append  Connect with read-append access
-  npm run cli -- connect --graph help --public --nickname "Roam Help"                         Connect to a public graph
-  npm run cli -- connect --remove --graph "help"                                              Remove a connection
+  roam connect                                      Interactive setup
+  roam connect -g my-graph -n main --access-level read-append
+  roam connect -g help --public -n "Roam Help"      Connect to public graph
+  roam connect --remove -g help                     Remove a connection
 `)
   .action((options) => connect(options));
 
