@@ -1,5 +1,7 @@
 # Roam MCP
 
+[![Install in Claude](https://img.shields.io/badge/Install_in-Claude-blue)](https://github.com/Roam-Research/roam-tools/releases/latest/download/roam-mcp.mcpb)
+
 A Model Context Protocol (MCP) server and CLI for Roam Research.
 
 > **Alpha Software**: This project is in early development and subject to breaking changes.
@@ -69,7 +71,11 @@ Run `connect` again to add more graphs or update permissions.
 
 ### 3. Connect to an MCP Client
 
-**Claude Desktop**
+**Claude Desktop (1-click install)**
+
+Download and open the latest [roam-mcp.mcpb](https://github.com/Roam-Research/roam-tools/releases/latest/download/roam-mcp.mcpb) bundle — Claude Desktop will install it automatically.
+
+**Claude Desktop (manual)**
 
 Add to your Claude Desktop config file:
 

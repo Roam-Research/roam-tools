@@ -1,0 +1,58 @@
+{
+  "manifest_version": "0.3",
+  "name": "roam-mcp",
+  "display_name": "Roam Research",
+  "version": "0.4.2",
+  "description": "Connect Claude to your Roam Research graphs for reading, writing, and searching.",
+  "long_description": "MCP server for Roam Research. Gives Claude full access to your Roam graphs — create, read, update, and delete pages and blocks, search, run queries, manage files, and navigate your graph. Requires the Roam Research desktop app and a one-time setup step to connect your graph.",
+  "author": {
+    "name": "Roam Research"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Roam-Research/roam-tools"
+  },
+  "homepage": "https://roamresearch.com/",
+  "support": "https://github.com/Roam-Research/roam-tools/issues",
+  "license": "MIT",
+  "keywords": ["roam", "roam-research", "knowledge-graph", "note-taking"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"]
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18"
+    }
+  },
+  "tools": [
+    { "name": "list_graphs", "description": "List all configured graphs with their nicknames" },
+    { "name": "setup_new_graph", "description": "Set up a new graph connection, or list available graphs" },
+    { "name": "get_graph_guidelines", "description": "Returns user-defined instructions and preferences for AI agents" },
+    { "name": "create_page", "description": "Create page with markdown content" },
+    { "name": "update_page", "description": "Update page title or children view type" },
+    { "name": "delete_page", "description": "Delete a page" },
+    { "name": "create_block", "description": "Add markdown content under a parent" },
+    { "name": "update_block", "description": "Update block content/properties" },
+    { "name": "move_block", "description": "Move a block to a new location" },
+    { "name": "delete_block", "description": "Delete a block" },
+    { "name": "search", "description": "Search pages/blocks" },
+    { "name": "search_templates", "description": "Search Roam templates by name" },
+    { "name": "roam_query", "description": "Execute a Roam query" },
+    { "name": "get_page", "description": "Get page content as markdown" },
+    { "name": "get_block", "description": "Get block content as markdown" },
+    { "name": "get_backlinks", "description": "Get references to a page/block" },
+    { "name": "get_open_windows", "description": "Main window view and all sidebar windows" },
+    { "name": "get_selection", "description": "Currently focused block and multi-selected blocks" },
+    { "name": "open_main_window", "description": "Navigate to page/block" },
+    { "name": "open_sidebar", "description": "Open in right sidebar" },
+    { "name": "file_get", "description": "Fetch a file hosted on Roam" },
+    { "name": "file_upload", "description": "Upload a file to Roam" },
+    { "name": "file_delete", "description": "Delete a file hosted on Roam" }
+  ]
+}

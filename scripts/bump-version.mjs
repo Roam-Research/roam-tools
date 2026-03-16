@@ -78,4 +78,11 @@ replaceInFile(
 );
 console.log(`  packages/cli/src/index.ts Commander version → ${newVersion}`);
 
+// 6. packages/mcp/manifest.json — MCPB bundle version
+const manifestPath = join(root, "packages/mcp/manifest.json");
+const manifest = readJson(manifestPath);
+manifest.version = newVersion;
+writeJson(manifestPath, manifest);
+console.log(`  packages/mcp/manifest.json version → ${newVersion}`);
+
 console.log(`\nDone! Run 'npm install' to sync package-lock.json.`);

@@ -17,14 +17,14 @@ npm run cli -- connect --graph <name> --nickname <name>  # Non-interactive setup
 
 ## Version Bumps
 
-The version must be updated in 7 places across three packages. Use the automated script:
+The version must be updated in 8 places across three packages. Use the automated script:
 
 ```bash
-npm run version:bump 0.5.0    # Updates all 7 locations at once
+npm run version:bump 0.5.0    # Updates all 8 locations at once
 npm install                    # Sync package-lock.json
 ```
 
-The 7 locations:
+The 8 locations:
 1. `packages/core/package.json` — `"version"` field
 2. `packages/mcp/package.json` — `"version"` field
 3. `packages/mcp/package.json` — `@roam-research/roam-tools-core` dependency version
@@ -32,6 +32,7 @@ The 7 locations:
 5. `packages/cli/package.json` — `@roam-research/roam-tools-core` dependency version
 6. `packages/mcp/src/index.ts` — `McpServer` constructor `version` string
 7. `packages/cli/src/index.ts` — Commander `.version()` call
+8. `packages/mcp/manifest.json` — MCPB bundle `"version"` field
 
 Run `npm run version:check` to verify all versions are consistent.
 
@@ -121,8 +122,9 @@ packages/
   mcp/      → @roam-research/roam-mcp (MCP server)
   cli/      → @roam-research/roam-cli (CLI)
 scripts/
-  bump-version.mjs   → Updates all 7 version locations
+  bump-version.mjs   → Updates all 8 version locations
   check-versions.mjs → Verifies version consistency
+  pack-mcpb.mjs      → Builds and packs .mcpb bundle for distribution
 ```
 
 ### Authentication Flow
