@@ -257,6 +257,35 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
+// Recently opened item (from user's navigation history)
+export interface RecentlyOpenedItem {
+  uid: string;
+  title: string;
+  type: "page" | "block";
+  string?: string;           // block content (blocks only)
+  path?: string;             // breadcrumb as markdown string (blocks only)
+  openedAt?: number;         // epoch ms (may be absent for older entries)
+  openedAtStr?: string;      // e.g. "5 minutes ago"
+}
+
+// Recently edited page (lightweight metadata + edit info)
+export interface RecentlyEditedPage {
+  uid: string;
+  title: string;
+  type: "page";
+  editedBy: string;
+  editedAt: number;          // epoch ms
+  editedAtStr: string;       // e.g. "2 hours ago"
+}
+
+// Response shape when search is called with empty query
+export interface SearchSuggestionsResponse {
+  suggestions: {
+    recentlyOpenedByUser: RecentlyOpenedItem[];
+    recentlyEditedPages: RecentlyEditedPage[];
+  };
+}
+
 // Template result
 export interface Template {
   name: string;

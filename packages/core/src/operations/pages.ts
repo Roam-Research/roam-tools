@@ -81,5 +81,9 @@ export async function getGuidelines(client: RoamClient): Promise<CallToolResult>
   }>(
     "data.ai.getGraphGuidelines", []
   );
-  return textResult(response.result ?? { guidelines: null, starredPages: [] });
+  const result = response.result ?? { guidelines: null, starredPages: [] };
+  return textResult({
+    ...result,
+    tip: "Call search with an empty query to see recently edited and viewed content.",
+  });
 }

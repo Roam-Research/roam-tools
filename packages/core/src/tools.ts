@@ -162,7 +162,7 @@ const contentTools: ClientToolDefinition[] = [
   ),
   defineTool(
     "search",
-    "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths." + GUIDELINES_NOTE,
+    "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths. Call with an empty query to get recently edited and viewed content — useful for understanding what the user is currently working on." + GUIDELINES_NOTE,
     SearchSchema,
     search
   ),

@@ -110,7 +110,7 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `get_comments` - Get comments on a block with author/date context
 
 **Read:**
-- `search` - Search pages/blocks
+- `search` - Search pages/blocks (empty query returns recently edited/viewed content)
 - `search_templates` - Search Roam templates by name
 - `roam_query` - Execute a Roam query (`{{query:}}` blocks, not Datalog)
 - `get_page` - Get page content as markdown
