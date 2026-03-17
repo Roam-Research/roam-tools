@@ -114,7 +114,7 @@ const contentTools: ClientToolDefinition[] = [
   ),
   defineTool(
     "create_block",
-    "Create a new block under a parent, using markdown content. Supports nested bulleted lists - pass a markdown string with `- ` list items and indentation to create an entire block hierarchy in a single call." + GUIDELINES_NOTE,
+    "Create blocks from markdown content. Target by parentUid, pageTitle, or dailyNotePage (page created if needed). Use nestUnder to insert under a specific child block. Supports nested bulleted lists via markdown indentation." + GUIDELINES_NOTE,
     CreateBlockSchema,
     createBlock
   ),

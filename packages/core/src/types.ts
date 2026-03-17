@@ -179,7 +179,8 @@ export interface Page {
   "children-view-type"?: "bullet" | "numbered" | "document";
 }
 
-// Location for block operations
+// Location for simple block operations (moveBlock).
+// createBlock builds its own location object to support pageTitle/dailyNotePage targets.
 export interface BlockLocation {
   "parent-uid": string;
   order: number | "first" | "last";

@@ -5,9 +5,22 @@ import { textResult, RoamError, ErrorCodes } from "../types.js";
 
 // Schemas
 export const CreateBlockSchema = z.object({
-  parentUid: z.string().describe("UID of parent block or page"),
+  parentUid: z.string().optional().describe(
+    "UID of parent block or page. Exactly one of parentUid, pageTitle, or dailyNotePage is required."
+  ),
+  pageTitle: z.string().optional().describe(
+    "Page title to create block under (creates the page if it doesn't exist). Exactly one of parentUid, pageTitle, or dailyNotePage is required."
+  ),
+  dailyNotePage: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Must be MM-DD-YYYY format (e.g. '03-17-2026')").optional().describe(
+    "Daily note date in MM-DD-YYYY format (e.g. '03-17-2026'). Targets that day's daily note page, creating it if needed. Exactly one of parentUid, pageTitle, or dailyNotePage is required."
+  ),
+  nestUnder: z.string().optional().describe(
+    "Insert under a direct child block matching this string (matches on the block's string field, including markup like **bold** or [[links]]). If no match exists, creates a new child block with this text first, then inserts under it. Works with parentUid, pageTitle, or dailyNotePage."
+  ),
   markdown: z.string().describe("Markdown content for the block"),
-  order: z.union([z.coerce.number(), z.enum(["first", "last"])]).optional().describe("Position (number, 'first', or 'last'). Defaults to 'last'"),
+  order: z.union([z.coerce.number(), z.enum(["first", "last"])]).optional().describe(
+    "Position (number, 'first', or 'last'). Defaults to 'last'"
+  ),
 });
 
 export const GetBlockSchema = z.object({
@@ -66,14 +79,37 @@ export interface GetBacklinksResponse {
 }
 
 export async function createBlock(client: RoamClient, params: CreateBlockParams): Promise<CallToolResult> {
+  // Validate: exactly one of parentUid, pageTitle, or dailyNotePage
+  const targets = [params.parentUid, params.pageTitle, params.dailyNotePage].filter(v => v !== undefined);
+  if (targets.length === 0) {
+    throw new RoamError(
+      "Either 'parentUid', 'pageTitle', or 'dailyNotePage' is required to specify where to create the block",
+      ErrorCodes.VALIDATION_ERROR
+    );
+  }
+  if (targets.length > 1) {
+    throw new RoamError(
+      "Provide only one of 'parentUid', 'pageTitle', or 'dailyNotePage'",
+      ErrorCodes.VALIDATION_ERROR
+    );
+  }
+
+  const location: Record<string, unknown> = {
+    order: params.order ?? "last",
+  };
+  if (params.parentUid !== undefined) {
+    location["parent-uid"] = params.parentUid;
+  } else if (params.dailyNotePage !== undefined) {
+    location["page-title"] = { "daily-note-page": params.dailyNotePage };
+  } else {
+    location["page-title"] = params.pageTitle;
+  }
+  if (params.nestUnder !== undefined) {
+    location["nest-under-str"] = params.nestUnder;
+  }
+
   const response = await client.call<{ uids: string[] }>("data.block.fromMarkdown", [
-    {
-      location: {
-        "parent-uid": params.parentUid,
-        order: params.order ?? "last",
-      },
-      "markdown-string": params.markdown,
-    },
+    { location, "markdown-string": params.markdown },
   ]);
   return textResult(response.result ?? { uids: [] });
 }
