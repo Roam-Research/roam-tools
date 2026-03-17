@@ -71,7 +71,14 @@ export async function updatePage(client: RoamClient, params: UpdatePageParams): 
 }
 
 export async function getGuidelines(client: RoamClient): Promise<CallToolResult> {
-  const response = await client.call<{ guidelines: string | null; starredPages: string[] }>(
+  const response = await client.call<{
+    guidelines: string | null;
+    starredPages: string[];
+    homepage: string | null;
+    aiUserDisplayName: string | null;
+    aiUserDisplayPage: string | null;
+    humanUserDisplayName: string | null;
+  }>(
     "data.ai.getGraphGuidelines", []
   );
   return textResult(response.result ?? { guidelines: null, starredPages: [] });

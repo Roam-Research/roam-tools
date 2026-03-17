@@ -95,6 +95,8 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `update-block` - Update block content/properties
 - `move-block` - Move a block to a new location
 - `delete-block` - Delete a block
+- `add-comment` - Add a comment to a block (comment thread, not child block)
+- `get-comments` - Get comments on a block with author/date context
 
 **Read:**
 - `search` - Search pages/blocks

@@ -9,7 +9,8 @@ import {
 } from "./operations/pages.js";
 import {
   CreateBlockSchema, GetBlockSchema, UpdateBlockSchema, DeleteBlockSchema, MoveBlockSchema, GetBacklinksSchema,
-  createBlock, getBlock, updateBlock, deleteBlock, moveBlock, getBacklinks,
+  AddCommentSchema, GetCommentsSchema,
+  createBlock, getBlock, updateBlock, deleteBlock, moveBlock, getBacklinks, addComment, getComments,
 } from "./operations/blocks.js";
 import { SearchSchema, SearchTemplatesSchema, search, searchTemplates } from "./operations/search.js";
 import { QuerySchema, query } from "./operations/query.js";
@@ -134,6 +135,18 @@ const contentTools: ClientToolDefinition[] = [
     "Move a block to a new location." + GUIDELINES_NOTE,
     MoveBlockSchema,
     moveBlock
+  ),
+  defineTool(
+    "add_comment",
+    "Add a comment to a block (comment thread, NOT a child block). Prefer `comment` for simple text; use `commentMarkdown` for structured content. Same-day calls on the same block append to your existing comment." + GUIDELINES_NOTE,
+    AddCommentSchema,
+    addComment
+  ),
+  defineTool(
+    "get_comments",
+    "Get comments on a block with author, timestamps, and edit info. If singleEditableUid is set, the comment can be edited with update_block. Only works for blocks, not pages." + GUIDELINES_NOTE,
+    GetCommentsSchema,
+    getComments
   ),
   defineTool(
     "delete_page",

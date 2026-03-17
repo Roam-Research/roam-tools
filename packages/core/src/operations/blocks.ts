@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
 import type { CallToolResult } from "../types.js";
-import { textResult } from "../types.js";
+import { textResult, RoamError, ErrorCodes } from "../types.js";
 
 // Schemas
 export const CreateBlockSchema = z.object({
@@ -134,4 +134,61 @@ export async function getBacklinks(
 
   const response = await client.call<GetBacklinksResponse>("data.ai.getBacklinks", [apiParams]);
   return textResult(response.result ?? { total: 0, results: [] });
+}
+
+// --- Comments ---
+
+export const AddCommentSchema = z.object({
+  blockUid: z.string().describe("UID of the block to comment on"),
+  comment: z.string().optional().describe("Plain text comment (single block, editable later via update_block). Required if commentMarkdown not provided. Preferred for simple comments."),
+  commentMarkdown: z.string().optional().describe("Markdown comment parsed into multiple blocks. Required if comment not provided. Use only when you need structure (lists, headings). Harder to edit later."),
+});
+
+export const GetCommentsSchema = z.object({
+  blockUid: z.string().describe("UID of the block to get comments for"),
+  maxDepth: z.coerce.number().optional().describe("Max depth of children to include in each comment's markdown (omit for full tree)"),
+});
+
+export type AddCommentParams = z.infer<typeof AddCommentSchema>;
+export type GetCommentsParams = z.infer<typeof GetCommentsSchema>;
+
+export interface CommentResult {
+  parentUid: string;
+  author: string;
+  createdTime: number;
+  editedTime: number;
+  markdown: string;
+  singleEditableUid: string | null;
+}
+
+export interface GetCommentsResponse {
+  total: number;
+  comments: CommentResult[];
+}
+
+export async function addComment(client: RoamClient, params: AddCommentParams): Promise<CallToolResult> {
+  // Validate: exactly one of comment or commentMarkdown must be provided
+  const hasComment = params.comment !== undefined;
+  const hasCommentMarkdown = params.commentMarkdown !== undefined;
+  if (!hasComment && !hasCommentMarkdown) {
+    throw new RoamError("Provide one of 'comment' or 'commentMarkdown'", ErrorCodes.VALIDATION_ERROR);
+  }
+  if (hasComment && hasCommentMarkdown) {
+    throw new RoamError("Provide 'comment' or 'commentMarkdown', not both", ErrorCodes.VALIDATION_ERROR);
+  }
+
+  const apiParams: Record<string, unknown> = { "block-uid": params.blockUid };
+  if (hasComment) apiParams["reply-string"] = params.comment;
+  if (hasCommentMarkdown) apiParams["reply-markdown"] = params.commentMarkdown;
+
+  const response = await client.call<{ uids: string[]; parentUid?: string }>("data.block.addComment", [apiParams]);
+  return textResult(response.result ?? { uids: [] });
+}
+
+export async function getComments(client: RoamClient, params: GetCommentsParams): Promise<CallToolResult> {
+  const apiParams: Record<string, unknown> = { uid: params.blockUid };
+  if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
+
+  const response = await client.call<GetCommentsResponse>("data.ai.getComments", [apiParams]);
+  return textResult(response.result ?? { total: 0, comments: [] });
 }

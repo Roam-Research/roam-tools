@@ -126,8 +126,17 @@ export class RoamError extends Error {
 // Bump this when the config schema changes in a breaking way.
 export const CONFIG_VERSION = 1;
 
-// API version this client expects (major.minor must match)
-export const EXPECTED_API_VERSION = "1.1.0";
+// API version this client expects. Sent as `expectedApiVersion` in every request.
+// Roam's compatibility check compares major.minor ONLY — patch is ignored.
+// So 1.1.0, 1.1.1, 1.1.2 are all compatible; 1.1.x and 1.2.x are NOT.
+//
+// When to bump:
+// - Patch bump on Roam side (e.g. 1.1.1 → 1.1.2): no change needed here, but
+//   you can bump for cosmetic alignment.
+// - Minor bump on Roam side (e.g. 1.1.x → 1.2.0): MUST bump here too, or all
+//   requests will fail with VERSION_MISMATCH.
+// - This is independent of the npm package version (0.x.y in package.json).
+export const EXPECTED_API_VERSION = "1.1.2";
 
 // Roam API error structure
 export interface RoamApiError {
