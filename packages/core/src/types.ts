@@ -254,19 +254,26 @@ export interface SearchResult {
 
 // Search response with pagination
 export interface SearchResponse {
+  queriedAt?: string;
   total: number;
   results: SearchResult[];
 }
 
-// Recently opened item (from user's navigation history)
+// Block entry within a recently opened page
+export interface RecentlyOpenedBlock {
+  uid: string;
+  string: string;
+  openedAt: string;          // ISO 8601
+  path?: string;             // breadcrumb path (present when includePath=true)
+}
+
+// Recently opened page (from user's navigation history, grouped by page)
 export interface RecentlyOpenedItem {
   uid: string;
   title: string;
-  type: "page" | "block";
-  string?: string;           // block content (blocks only)
-  path?: string;             // breadcrumb as markdown string (blocks only)
-  openedAt?: number;         // epoch ms (may be absent for older entries)
-  openedAtStr?: string;      // e.g. "5 minutes ago"
+  type: "page";
+  openedAt: string;          // ISO 8601
+  blocks?: RecentlyOpenedBlock[];  // blocks the user navigated to on this page
 }
 
 // Recently edited page (lightweight metadata + edit info)
@@ -275,12 +282,12 @@ export interface RecentlyEditedPage {
   title: string;
   type: "page";
   editedBy: string;
-  editedAt: number;          // epoch ms
-  editedAtStr: string;       // e.g. "2 hours ago"
+  editedAt: string;          // ISO 8601
 }
 
 // Response shape when search is called with empty query
 export interface SearchSuggestionsResponse {
+  queriedAt?: string;
   suggestions: {
     recentlyOpenedByUser: RecentlyOpenedItem[];
     recentlyEditedPages: RecentlyEditedPage[];
@@ -294,6 +301,27 @@ export interface Template {
   content: string;
 }
 
+// Search templates response
+export interface SearchTemplatesResponse {
+  queriedAt?: string;
+  results: Template[];
+}
+
+// getPage response
+export interface GetPageResponse {
+  uid: string;
+  markdown: string;
+  queriedAt: string;
+}
+
+// getBlock response
+export interface GetBlockResponse {
+  uid: string;
+  markdown: string;
+  path: string;         // breadcrumb path as markdown string
+  queriedAt: string;
+}
+
 // Query result (from roamQuery)
 export interface QueryResult {
   uid: string;
@@ -304,6 +332,7 @@ export interface QueryResult {
 
 // Query response with pagination
 export interface QueryResponse {
+  queriedAt?: string;
   total: number;
   results: QueryResult[];
 }

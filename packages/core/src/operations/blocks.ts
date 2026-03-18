@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
-import type { CallToolResult } from "../types.js";
+import type { CallToolResult, GetBlockResponse } from "../types.js";
 import { textResult, RoamError, ErrorCodes } from "../types.js";
 
 // Schemas
@@ -74,6 +74,7 @@ export interface BacklinkResult {
 }
 
 export interface GetBacklinksResponse {
+  queriedAt?: string;
   total: number;
   results: BacklinkResult[];
 }
@@ -118,7 +119,7 @@ export async function getBlock(client: RoamClient, params: GetBlockParams): Prom
   const apiParams: Record<string, unknown> = { uid: params.uid };
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
-  const response = await client.call<string>("data.ai.getBlock", [apiParams]);
+  const response = await client.call<GetBlockResponse | undefined>("data.ai.getBlock", [apiParams]);
   return textResult(response.result ?? null);
 }
 
@@ -191,13 +192,14 @@ export type GetCommentsParams = z.infer<typeof GetCommentsSchema>;
 export interface CommentResult {
   parentUid: string;
   author: string;
-  createdTime: number;
-  editedTime: number;
+  createdTime: string;         // ISO 8601
+  editedTime: string;          // ISO 8601
   markdown: string;
   singleEditableUid: string | null;
 }
 
 export interface GetCommentsResponse {
+  queriedAt?: string;
   total: number;
   comments: CommentResult[];
 }

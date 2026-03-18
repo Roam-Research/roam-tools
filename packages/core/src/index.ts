@@ -10,6 +10,9 @@ export type {
   FocusedBlock, SelectedBlock,
   MainWindowViewType, MainWindowView,
   SearchResultPath, SearchResult, SearchResponse,
+  RecentlyOpenedBlock, RecentlyOpenedItem, RecentlyEditedPage,
+  SearchSuggestionsResponse, SearchTemplatesResponse,
+  GetPageResponse, GetBlockResponse,
   Template, QueryResult, QueryResponse,
   TokenInfoResponse, TokenInfoResult,
 } from "./types.js";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
-import type { SearchResponse, SearchSuggestionsResponse, Template, CallToolResult } from "../types.js";
+import type { SearchResponse, SearchSuggestionsResponse, SearchTemplatesResponse, CallToolResult } from "../types.js";
 import { textResult } from "../types.js";
 
 // Schemas
@@ -39,8 +39,8 @@ export async function searchTemplates(
   client: RoamClient,
   params: SearchTemplatesParams
 ): Promise<CallToolResult> {
-  const response = await client.call<Template[]>("data.ai.searchTemplates", [
+  const response = await client.call<SearchTemplatesResponse>("data.ai.searchTemplates", [
     { query: params.query },
   ]);
-  return textResult(response.result ?? []);
+  return textResult(response.result ?? { results: [] });
 }

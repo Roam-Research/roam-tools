@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
-import type { CallToolResult } from "../types.js";
+import type { CallToolResult, GetPageResponse } from "../types.js";
 import { textResult } from "../types.js";
 
 // Schemas
@@ -49,7 +49,7 @@ export async function getPage(client: RoamClient, params: GetPageParams): Promis
   const apiParams: Record<string, unknown> = params.uid ? { uid: params.uid } : { title: params.title };
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
-  const response = await client.call<string>("data.ai.getPage", [apiParams]);
+  const response = await client.call<GetPageResponse | undefined>("data.ai.getPage", [apiParams]);
   return textResult(response.result ?? null);
 }
 
@@ -72,6 +72,7 @@ export async function updatePage(client: RoamClient, params: UpdatePageParams): 
 
 export async function getGuidelines(client: RoamClient): Promise<CallToolResult> {
   const response = await client.call<{
+    queriedAt?: string;
     guidelines: string | null;
     starredPages: string[];
     homepage: string | null;
