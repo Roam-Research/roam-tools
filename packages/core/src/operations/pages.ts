@@ -76,15 +76,22 @@ export async function getGuidelines(client: RoamClient): Promise<CallToolResult>
     guidelines: string | null;
     starredPages: string[];
     homepage: string | null;
+    todaysDailyNotePage: string | null;
     aiUserDisplayName: string | null;
     aiUserDisplayPage: string | null;
     humanUserDisplayName: string | null;
   }>(
     "data.ai.getGraphGuidelines", []
   );
-  const result = response.result ?? { guidelines: null, starredPages: [] };
+  const result = response.result ?? { guidelines: null, starredPages: [], todaysDailyNotePage: null };
+
+  const dnpTitle = result.todaysDailyNotePage;
+  const nextSteps = dnpTitle
+    ? `Start by reading today's daily note page ("${dnpTitle}") with get_page — this is the user's primary workspace for the day. If you need more context, call search with an empty query for recently edited and viewed content. Skip these orientation steps only when the user has already given you a specific task to execute (e.g. "create a page called X").`
+    : `Start by calling search with an empty query to see recently edited and viewed content. Skip this only when the user has already given you a specific task to execute.`;
+
   return textResult({
     ...result,
-    tip: "Call search with an empty query to see recently edited and viewed content.",
+    nextSteps,
   });
 }

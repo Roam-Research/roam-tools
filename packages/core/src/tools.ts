@@ -102,7 +102,7 @@ const GUIDELINES_NOTE = "\n\nNote: Call get_graph_guidelines first when starting
 const contentTools: ClientToolDefinition[] = [
   defineTool(
     "get_graph_guidelines",
-    "IMPORTANT: Call this tool first when starting to work with a graph, before performing any other operations. Returns user-defined instructions and preferences for AI agents. The user may have specified naming conventions, preferred structures, or constraints that should guide your behavior.",
+    "IMPORTANT: Call this tool first when starting to work with a graph, before performing any other operations. Returns user-defined instructions and preferences for AI agents. The user may have specified naming conventions, preferred structures, or constraints that should guide your behavior. After receiving the response, follow the nextSteps field — it contains orientation actions you should take before proceeding.",
     GetGuidelinesSchema,
     getGuidelines
   ),

@@ -67,7 +67,7 @@ export async function listGraphs(): Promise<CallToolResult> {
     const graphs = await getConfiguredGraphs();
     return textResult({
       graphs,
-      instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, very IMPORTANT that you call get_graph_guidelines to understand its conventions.",
+      instruction: "Pass the 'nickname' value as the graph parameter. After identifying which graph to use, ALWAYS call get_graph_guidelines next — it returns essential context and orientation for the session.",
       setup: "To connect additional graphs, use the setup_new_graph tool (call it without arguments to see available graphs).",
     });
   } catch (error) {
