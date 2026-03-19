@@ -102,13 +102,15 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `create_page` - Create page with markdown content
 - `update_page` - Update page title or children view type
 - `delete_page` - Delete a page
-- `create_block` - Add markdown content under a parent
+- `create_block` - Create blocks (by parent UID, page title, or daily note date; with optional nest-under)
 - `update_block` - Update block content/properties
 - `move_block` - Move a block to a new location
 - `delete_block` - Delete a block
+- `add_comment` - Add a comment to a block (comment thread, not child block)
+- `get_comments` - Get comments on a block with author/date context
 
 **Read:**
-- `search` - Search pages/blocks
+- `search` - Search pages/blocks (empty query returns recently edited/viewed content)
 - `search_templates` - Search Roam templates by name
 - `roam_query` - Execute a Roam query (`{{query:}}` blocks, not Datalog)
 - `get_page` - Get page content as markdown

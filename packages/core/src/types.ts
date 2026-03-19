@@ -126,8 +126,17 @@ export class RoamError extends Error {
 // Bump this when the config schema changes in a breaking way.
 export const CONFIG_VERSION = 1;
 
-// API version this client expects (major.minor must match)
-export const EXPECTED_API_VERSION = "1.1.0";
+// API version this client expects. Sent as `expectedApiVersion` in every request.
+// Roam's compatibility check compares major.minor ONLY — patch is ignored.
+// So 1.1.0, 1.1.1, 1.1.2 are all compatible; 1.1.x and 1.2.x are NOT.
+//
+// When to bump:
+// - Patch bump on Roam side (e.g. 1.1.1 → 1.1.2): no change needed here, but
+//   you can bump for cosmetic alignment.
+// - Minor bump on Roam side (e.g. 1.1.x → 1.2.0): MUST bump here too, or all
+//   requests will fail with VERSION_MISMATCH.
+// - This is independent of the npm package version (0.x.y in package.json).
+export const EXPECTED_API_VERSION = "1.1.2";
 
 // Roam API error structure
 export interface RoamApiError {
@@ -170,7 +179,8 @@ export interface Page {
   "children-view-type"?: "bullet" | "numbered" | "document";
 }
 
-// Location for block operations
+// Location for simple block operations (moveBlock).
+// createBlock builds its own location object to support pageTitle/dailyNotePage targets.
 export interface BlockLocation {
   "parent-uid": string;
   order: number | "first" | "last";
@@ -244,8 +254,53 @@ export interface SearchResult {
 
 // Search response with pagination
 export interface SearchResponse {
+  queriedAt?: string;
   total: number;
   results: SearchResult[];
+}
+
+// Block entry within a recently opened page
+export interface RecentlyOpenedBlock {
+  uid: string;
+  string: string;
+  openedAt: string;          // ISO 8601
+  path?: string;             // breadcrumb path (present when includePath=true)
+}
+
+// Recently opened page (from user's navigation history, grouped by page)
+export interface RecentlyOpenedItem {
+  uid: string;
+  title: string;
+  type: "page";
+  openedAt: string;                    // ISO 8601
+  visitCount: number;                  // how many times page appeared in history
+  totalDurationMs: number;             // sum of all visit durations
+  currentlyOpen?: boolean;             // true only on the page user is viewing right now
+  blocks?: RecentlyOpenedBlock[];      // blocks the user navigated to on this page
+}
+
+// Aggregate gap-time entry (time not spent on any specific page)
+export interface DailyNotePagesViewItem {
+  type: "dailyNotePagesView";
+  totalDurationMs: number;
+  currentlyOpen: boolean;              // true if the daily-notes-pages view is active (i.e., user isn't viewing any specific page)
+}
+
+// Recently edited page (lightweight metadata + edit info)
+export interface RecentlyEditedPage {
+  uid: string;
+  title: string;
+  editedBy: string;
+  editedAt: string;          // ISO 8601
+}
+
+// Response shape when search is called with empty query
+export interface SearchSuggestionsResponse {
+  queriedAt?: string;
+  suggestions: {
+    recentlyOpenedByUser: (RecentlyOpenedItem | DailyNotePagesViewItem)[];
+    recentlyEditedPages: RecentlyEditedPage[];
+  };
 }
 
 // Template result
@@ -253,6 +308,27 @@ export interface Template {
   name: string;
   uid: string;
   content: string;
+}
+
+// Search templates response
+export interface SearchTemplatesResponse {
+  queriedAt?: string;
+  results: Template[];
+}
+
+// getPage response
+export interface GetPageResponse {
+  uid: string;
+  markdown: string;
+  queriedAt: string;
+}
+
+// getBlock response
+export interface GetBlockResponse {
+  uid: string;
+  markdown: string;
+  path: string;         // breadcrumb path as markdown string
+  queriedAt: string;
 }
 
 // Query result (from roamQuery)
@@ -265,6 +341,7 @@ export interface QueryResult {
 
 // Query response with pagination
 export interface QueryResponse {
+  queriedAt?: string;
   total: number;
   results: QueryResult[];
 }

@@ -1,13 +1,26 @@
 import { z } from "zod";
 import type { RoamClient } from "../client.js";
-import type { CallToolResult } from "../types.js";
-import { textResult } from "../types.js";
+import type { CallToolResult, GetBlockResponse } from "../types.js";
+import { textResult, RoamError, ErrorCodes } from "../types.js";
 
 // Schemas
 export const CreateBlockSchema = z.object({
-  parentUid: z.string().describe("UID of parent block or page"),
+  parentUid: z.string().optional().describe(
+    "UID of parent block or page. Exactly one of parentUid, pageTitle, or dailyNotePage is required."
+  ),
+  pageTitle: z.string().optional().describe(
+    "Page title to create block under (creates the page if it doesn't exist). Exactly one of parentUid, pageTitle, or dailyNotePage is required."
+  ),
+  dailyNotePage: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Must be MM-DD-YYYY format (e.g. '03-17-2026')").optional().describe(
+    "Daily note date in MM-DD-YYYY format (e.g. '03-17-2026'). Targets that day's daily note page, creating it if needed. Exactly one of parentUid, pageTitle, or dailyNotePage is required."
+  ),
+  nestUnder: z.string().optional().describe(
+    "Insert under a direct child block matching this string (matches on the block's string field, including markup like **bold** or [[links]]). If no match exists, creates a new child block with this text first, then inserts under it. Works with parentUid, pageTitle, or dailyNotePage."
+  ),
   markdown: z.string().describe("Markdown content for the block"),
-  order: z.union([z.coerce.number(), z.enum(["first", "last"])]).optional().describe("Position (number, 'first', or 'last'). Defaults to 'last'"),
+  order: z.union([z.coerce.number(), z.enum(["first", "last"])]).optional().describe(
+    "Position (number, 'first', or 'last'). Defaults to 'last'"
+  ),
 });
 
 export const GetBlockSchema = z.object({
@@ -61,19 +74,43 @@ export interface BacklinkResult {
 }
 
 export interface GetBacklinksResponse {
+  queriedAt?: string;
   total: number;
   results: BacklinkResult[];
 }
 
 export async function createBlock(client: RoamClient, params: CreateBlockParams): Promise<CallToolResult> {
+  // Validate: exactly one of parentUid, pageTitle, or dailyNotePage
+  const targets = [params.parentUid, params.pageTitle, params.dailyNotePage].filter(v => v !== undefined);
+  if (targets.length === 0) {
+    throw new RoamError(
+      "Either 'parentUid', 'pageTitle', or 'dailyNotePage' is required to specify where to create the block",
+      ErrorCodes.VALIDATION_ERROR
+    );
+  }
+  if (targets.length > 1) {
+    throw new RoamError(
+      "Provide only one of 'parentUid', 'pageTitle', or 'dailyNotePage'",
+      ErrorCodes.VALIDATION_ERROR
+    );
+  }
+
+  const location: Record<string, unknown> = {
+    order: params.order ?? "last",
+  };
+  if (params.parentUid !== undefined) {
+    location["parent-uid"] = params.parentUid;
+  } else if (params.dailyNotePage !== undefined) {
+    location["page-title"] = { "daily-note-page": params.dailyNotePage };
+  } else {
+    location["page-title"] = params.pageTitle;
+  }
+  if (params.nestUnder !== undefined) {
+    location["nest-under-str"] = params.nestUnder;
+  }
+
   const response = await client.call<{ uids: string[] }>("data.block.fromMarkdown", [
-    {
-      location: {
-        "parent-uid": params.parentUid,
-        order: params.order ?? "last",
-      },
-      "markdown-string": params.markdown,
-    },
+    { location, "markdown-string": params.markdown },
   ]);
   return textResult(response.result ?? { uids: [] });
 }
@@ -82,7 +119,7 @@ export async function getBlock(client: RoamClient, params: GetBlockParams): Prom
   const apiParams: Record<string, unknown> = { uid: params.uid };
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
 
-  const response = await client.call<string>("data.ai.getBlock", [apiParams]);
+  const response = await client.call<GetBlockResponse | undefined>("data.ai.getBlock", [apiParams]);
   return textResult(response.result ?? null);
 }
 
@@ -134,4 +171,62 @@ export async function getBacklinks(
 
   const response = await client.call<GetBacklinksResponse>("data.ai.getBacklinks", [apiParams]);
   return textResult(response.result ?? { total: 0, results: [] });
+}
+
+// --- Comments ---
+
+export const AddCommentSchema = z.object({
+  blockUid: z.string().describe("UID of the block to comment on"),
+  comment: z.string().optional().describe("Plain text comment (single block, editable later via update_block). Required if commentMarkdown not provided. Preferred for simple comments."),
+  commentMarkdown: z.string().optional().describe("Markdown comment parsed into multiple blocks. Required if comment not provided. Use only when you need structure (lists, headings). Harder to edit later."),
+});
+
+export const GetCommentsSchema = z.object({
+  blockUid: z.string().describe("UID of the block to get comments for"),
+  maxDepth: z.coerce.number().optional().describe("Max depth of children to include in each comment's markdown (omit for full tree)"),
+});
+
+export type AddCommentParams = z.infer<typeof AddCommentSchema>;
+export type GetCommentsParams = z.infer<typeof GetCommentsSchema>;
+
+export interface CommentResult {
+  parentUid: string;
+  author: string;
+  createdTime: string;         // ISO 8601
+  editedTime: string;          // ISO 8601
+  markdown: string;
+  singleEditableUid: string | null;
+}
+
+export interface GetCommentsResponse {
+  queriedAt?: string;
+  total: number;
+  comments: CommentResult[];
+}
+
+export async function addComment(client: RoamClient, params: AddCommentParams): Promise<CallToolResult> {
+  // Validate: exactly one of comment or commentMarkdown must be provided
+  const hasComment = params.comment !== undefined;
+  const hasCommentMarkdown = params.commentMarkdown !== undefined;
+  if (!hasComment && !hasCommentMarkdown) {
+    throw new RoamError("Provide one of 'comment' or 'commentMarkdown'", ErrorCodes.VALIDATION_ERROR);
+  }
+  if (hasComment && hasCommentMarkdown) {
+    throw new RoamError("Provide 'comment' or 'commentMarkdown', not both", ErrorCodes.VALIDATION_ERROR);
+  }
+
+  const apiParams: Record<string, unknown> = { "block-uid": params.blockUid };
+  if (hasComment) apiParams["reply-string"] = params.comment;
+  if (hasCommentMarkdown) apiParams["reply-markdown"] = params.commentMarkdown;
+
+  const response = await client.call<{ uids: string[]; parentUid?: string }>("data.block.addComment", [apiParams]);
+  return textResult(response.result ?? { uids: [] });
+}
+
+export async function getComments(client: RoamClient, params: GetCommentsParams): Promise<CallToolResult> {
+  const apiParams: Record<string, unknown> = { uid: params.blockUid };
+  if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
+
+  const response = await client.call<GetCommentsResponse>("data.ai.getComments", [apiParams]);
+  return textResult(response.result ?? { total: 0, comments: [] });
 }

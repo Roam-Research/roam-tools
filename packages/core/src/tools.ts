@@ -9,7 +9,8 @@ import {
 } from "./operations/pages.js";
 import {
   CreateBlockSchema, GetBlockSchema, UpdateBlockSchema, DeleteBlockSchema, MoveBlockSchema, GetBacklinksSchema,
-  createBlock, getBlock, updateBlock, deleteBlock, moveBlock, getBacklinks,
+  AddCommentSchema, GetCommentsSchema,
+  createBlock, getBlock, updateBlock, deleteBlock, moveBlock, getBacklinks, addComment, getComments,
 } from "./operations/blocks.js";
 import { SearchSchema, SearchTemplatesSchema, search, searchTemplates } from "./operations/search.js";
 import { QuerySchema, query } from "./operations/query.js";
@@ -101,7 +102,7 @@ const GUIDELINES_NOTE = "\n\nNote: Call get_graph_guidelines first when starting
 const contentTools: ClientToolDefinition[] = [
   defineTool(
     "get_graph_guidelines",
-    "IMPORTANT: Call this tool first when starting to work with a graph, before performing any other operations. Returns user-defined instructions and preferences for AI agents. The user may have specified naming conventions, preferred structures, or constraints that should guide your behavior.",
+    "IMPORTANT: Call this tool first when starting to work with a graph, before performing any other operations. Returns user-defined instructions and preferences for AI agents. The user may have specified naming conventions, preferred structures, or constraints that should guide your behavior. After receiving the response, follow the nextSteps field — it contains orientation actions you should take before proceeding.",
     GetGuidelinesSchema,
     getGuidelines
   ),
@@ -113,7 +114,7 @@ const contentTools: ClientToolDefinition[] = [
   ),
   defineTool(
     "create_block",
-    "Create a new block under a parent, using markdown content. Supports nested bulleted lists - pass a markdown string with `- ` list items and indentation to create an entire block hierarchy in a single call." + GUIDELINES_NOTE,
+    "Create blocks from markdown content. Target by parentUid, pageTitle, or dailyNotePage (page created if needed). Use nestUnder to insert under a specific child block. Supports nested bulleted lists via markdown indentation." + GUIDELINES_NOTE,
     CreateBlockSchema,
     createBlock
   ),
@@ -136,6 +137,18 @@ const contentTools: ClientToolDefinition[] = [
     moveBlock
   ),
   defineTool(
+    "add_comment",
+    "Add a comment to a block (comment thread, NOT a child block). Prefer `comment` for simple text; use `commentMarkdown` for structured content. Same-day calls on the same block append to your existing comment." + GUIDELINES_NOTE,
+    AddCommentSchema,
+    addComment
+  ),
+  defineTool(
+    "get_comments",
+    "Get comments on a block with author, timestamps, and edit info. If singleEditableUid is set, the comment can be edited with update_block. Only works for blocks, not pages." + GUIDELINES_NOTE,
+    GetCommentsSchema,
+    getComments
+  ),
+  defineTool(
     "delete_page",
     "Delete a page and all its contents." + GUIDELINES_NOTE,
     DeletePageSchema,
@@ -149,7 +162,7 @@ const contentTools: ClientToolDefinition[] = [
   ),
   defineTool(
     "search",
-    "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths." + GUIDELINES_NOTE,
+    "Search for pages and blocks by text. Returns paginated results with markdown content and optional breadcrumb paths. Call with an empty query to get recently edited and viewed content — useful for understanding what the user is currently working on." + GUIDELINES_NOTE,
     SearchSchema,
     search
   ),

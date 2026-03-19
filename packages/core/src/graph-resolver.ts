@@ -390,7 +390,7 @@ export async function resolveGraph(
         ErrorCodes.GRAPH_NOT_CONFIGURED,
         {
           available_graphs: await getConfiguredGraphs(),
-          instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
+          instruction: "Pass the 'nickname' value as the graph parameter. After identifying which graph to use, ALWAYS call get_graph_guidelines next — it returns essential context and orientation for the session.",
         }
       );
     }
@@ -423,7 +423,7 @@ export async function resolveGraph(
     ErrorCodes.GRAPH_NOT_SELECTED,
     {
       available_graphs: await getConfiguredGraphs(),
-      instruction: "Pass the 'nickname' value as the graph parameter. Before operating on a graph, call get_graph_guidelines to understand its conventions.",
+      instruction: "Pass the 'nickname' value as the graph parameter. After identifying which graph to use, ALWAYS call get_graph_guidelines next — it returns essential context and orientation for the session.",
     }
   );
 }
