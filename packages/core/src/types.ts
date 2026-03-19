@@ -283,7 +283,7 @@ export interface RecentlyOpenedItem {
 export interface DailyNotePagesViewItem {
   type: "dailyNotePagesView";
   totalDurationMs: number;
-  currentlyOpen: boolean;              // true if user is NOT on a page right now
+  currentlyOpen: boolean;              // true if the daily-notes-pages view is active (i.e., user isn't viewing any specific page)
 }
 
 // Recently edited page (lightweight metadata + edit info)
