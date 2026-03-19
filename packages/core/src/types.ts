@@ -272,15 +272,24 @@ export interface RecentlyOpenedItem {
   uid: string;
   title: string;
   type: "page";
-  openedAt: string;          // ISO 8601
-  blocks?: RecentlyOpenedBlock[];  // blocks the user navigated to on this page
+  openedAt: string;                    // ISO 8601
+  visitCount: number;                  // how many times page appeared in history
+  totalDurationMs: number;             // sum of all visit durations
+  currentlyOpen?: boolean;             // true only on the page user is viewing right now
+  blocks?: RecentlyOpenedBlock[];      // blocks the user navigated to on this page
+}
+
+// Aggregate gap-time entry (time not spent on any specific page)
+export interface DailyNotePagesViewItem {
+  type: "dailyNotePagesView";
+  totalDurationMs: number;
+  currentlyOpen: boolean;              // true if user is NOT on a page right now
 }
 
 // Recently edited page (lightweight metadata + edit info)
 export interface RecentlyEditedPage {
   uid: string;
   title: string;
-  type: "page";
   editedBy: string;
   editedAt: string;          // ISO 8601
 }
@@ -289,7 +298,7 @@ export interface RecentlyEditedPage {
 export interface SearchSuggestionsResponse {
   queriedAt?: string;
   suggestions: {
-    recentlyOpenedByUser: RecentlyOpenedItem[];
+    recentlyOpenedByUser: (RecentlyOpenedItem | DailyNotePagesViewItem)[];
     recentlyEditedPages: RecentlyEditedPage[];
   };
 }

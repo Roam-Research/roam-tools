@@ -10,7 +10,7 @@ export type {
   FocusedBlock, SelectedBlock,
   MainWindowViewType, MainWindowView,
   SearchResultPath, SearchResult, SearchResponse,
-  RecentlyOpenedBlock, RecentlyOpenedItem, RecentlyEditedPage,
+  RecentlyOpenedBlock, RecentlyOpenedItem, DailyNotePagesViewItem, RecentlyEditedPage,
   SearchSuggestionsResponse, SearchTemplatesResponse,
   GetPageResponse, GetBlockResponse,
   Template, QueryResult, QueryResponse,
