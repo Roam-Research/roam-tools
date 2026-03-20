@@ -1,0 +1,129 @@
+roam - Roam Research CLI
+
+CLI access to Roam Research graphs via the Local API.
+Requires Roam desktop with Local API enabled on port 3333.
+
+Commands:
+  list-graphs=lg  setup-new-graph=sg  get-graph-guidelines=gg
+  get-page=gp  get-block=gb  get-backlinks=bl  search=s
+  search-templates=st  roam-query=q  get-open-windows=win
+  get-selection=sel  create-page=cp  create-block=cb  update-page=up
+  update-block=ub  delete-page=dp  delete-block=db  move-block=mb
+  open-main-window=go  open-sidebar=side  file-get=fg  file-upload=fu
+  file-delete=fd
+
+Setup:
+  roam connect                              Interactive graph setup
+  roam connect -g NAME -n NICK              Non-interactive setup
+  roam connect -g NAME --public -n NICK     Connect to public graph
+  roam connect --remove -g NAME             Remove a connection
+  roam lg                                   List configured graphs
+  roam sg                                   List available desktop graphs
+  roam sg -g NAME -n NICK                   Request token for a graph
+
+Reading:
+  roam gp -t "Page Title"                   Get page as markdown
+  roam gp -u UID                            Get page by UID
+  roam gp -u UID -d 2                       Get page, limit depth
+  roam gb -u UID                            Get block as markdown
+  roam bl -t "Page Title"                   Get backlinks for a page
+  roam bl -u UID -l 50                      Get backlinks with limit
+  roam bl -u UID -r edited-date -R asc      Sort backlinks
+  roam bl -u UID -f "search term"           Filter backlinks
+  roam gg                                   Get graph guidelines
+  roam win                                  Get open windows
+  roam sel                                  Get current selection
+
+  Pages and blocks return markdown with <roam> metadata tags
+  containing UIDs for follow-up operations.
+
+Searching:
+  roam s -q "search term"                   Search pages and blocks
+  roam s -q "term" -s pages -l 10           Search page titles only
+  roam s -q "term" -s blocks                Search block content only
+  roam s -q "term" -i false                 Search without paths
+  roam st -q "template name"                Search templates
+  roam q --query "{and: [[TODO]]}"          Run a Roam query
+  roam q -u UID                             Run existing query block
+
+  Search returns paginated results. Use -o (offset) and -l (limit)
+  to page through them.
+
+Writing:
+  roam cp -t "New Page"                     Create empty page
+  roam cp -t "Page" -m "# Content"          Create page with content
+  roam cp -t "Page" -v numbered             Create page with view type
+  roam cb -p PARENT_UID -m "Block text"     Create block
+  roam cb -p UID -m "- item 1\n- item 2"   Create nested blocks
+  roam cb -p UID -m "Text" -O first         Create block at top
+  roam up -u UID -t "New Title"             Rename page
+  roam up -u UID -v numbered                Change page view type
+  roam up -u UID -t "Existing" -M           Merge into existing page
+  roam ub -u UID -S "New text"              Update block content
+  roam ub -u UID -H 1                       Set heading level (0-3)
+  roam ub -u UID -v bullet                  Change block view type
+  roam ub -u UID -a center                  Set text alignment
+  roam ub -u UID -e false                   Collapse block
+  roam db -u UID                            Delete block
+  roam dp -u UID                            Delete page
+  roam mb -u UID -p NEW_PARENT -O first     Move block
+
+  Markdown content supports nested lists. Use '- ' prefix with
+  indentation to create block hierarchies in a single call.
+
+Navigation:
+  roam go -u UID                            Open in main window
+  roam go -t "Page Title"                   Open page by title
+  roam side -u UID                          Open in sidebar
+  roam side -u UID -T mentions              Open mentions view
+
+Files:
+  roam fg -U URL                            Download file
+  roam fu -F ./image.png                    Upload local file
+  roam fu -U https://example.com/img.png    Upload from URL
+  roam fd -U URL                            Delete file
+
+  Upload returns a Firebase URL. Create a block with ![](url)
+  to embed the image in your graph.
+
+All flags:
+  -g  --graph              Target graph (auto-selects if only one)
+  -n  --nickname           Graph nickname (setup-new-graph / connect)
+  -u  --uid                Block or page UID
+  -t  --title              Page title
+  -q  --query              Search or query string
+  -m  --markdown           Markdown content
+  -p  --parent-uid         Parent block UID
+  -d  --max-depth          Limit child depth in output
+  -l  --limit              Max results (default: 20)
+  -o  --offset             Skip first N results
+  -s  --scope              Search scope: pages, blocks, all
+  -a  --text-align         Text alignment: left, center, right, justify
+  -b  --base64             Base64-encoded image data
+  -e  --open               Expand/collapse block (true/false)
+  -f  --search             Filter backlinks by text match
+  -i  --include-path       Include breadcrumb path (true/false)
+  -r  --sort               Sort: created-date, edited-date, daily-note-date
+  -v  --children-view-type View type: document, bullet, numbered
+  -E  --mimetype           MIME type (e.g., image/png)
+  -F  --file-path          Local file path for upload
+  -H  --heading            Heading level (0-3)
+  -M  --merge-pages        Merge with existing page on rename
+  -N  --filename           Filename for uploaded file
+  -O  --order              Position: number, "first", or "last"
+  -R  --sort-order         Sort direction: asc, desc
+  -S  --string             Block text content
+  -T  --type               Sidebar view: block, outline, mentions
+  -U  --url                Firebase storage URL / remote URL
+
+Exit codes:
+  0  Success
+  1  Error (bad args, connection refused, auth failure)
+
+Config:
+  ~/.roam-tools.json       Graph tokens and connection config
+  ~/.roam-local-api.json   Roam-written port config (default: 3333)
+
+Discovery:
+  roam CMD --help          Detailed help for any command
+  roam --version           Print version

@@ -108,7 +108,7 @@ const contentTools: ClientToolDefinition[] = [
   ),
   defineTool(
     "create_page",
-    "Create a new page in Roam, optionally with markdown content." + GUIDELINES_NOTE,
+    "Create a new page in Roam, optionally with markdown content and children view type." + GUIDELINES_NOTE,
     CreatePageSchema,
     createPage
   ),
@@ -120,7 +120,7 @@ const contentTools: ClientToolDefinition[] = [
   ),
   defineTool(
     "update_block",
-    "Update an existing block's content or properties." + GUIDELINES_NOTE,
+    "Update an existing block's content, properties, or children view type (bullet/numbered/document)." + GUIDELINES_NOTE,
     UpdateBlockSchema,
     updateBlock
   ),

@@ -7,7 +7,8 @@ import { textResult } from "../types.js";
 export const CreatePageSchema = z.object({
   title: z.string().describe("Page title"),
   markdown: z.string().optional().describe("Markdown content for the page"),
-  uid: z.string().optional(),
+  uid: z.string().optional().describe("Custom UID to assign to the new page"),
+  childrenViewType: z.enum(["document", "bullet", "numbered"]).optional().describe("How children are displayed (document, bullet, or numbered)"),
 });
 
 export const GetPageSchema = z.object({
@@ -42,7 +43,20 @@ export async function createPage(client: RoamClient, params: CreatePageParams): 
       "markdown-string": params.markdown,
     },
   ]);
-  return textResult(response.result ?? { uid: "" });
+  const result = response.result ?? { uid: "" };
+
+  // Set children view type via update if requested (fromMarkdown may not accept it)
+  if (params.childrenViewType && result.uid) {
+    try {
+      await client.call("data.page.update", [
+        { page: { uid: result.uid, "children-view-type": params.childrenViewType } },
+      ]);
+    } catch {
+      return textResult({ ...result, warning: "Page created but childrenViewType could not be applied" });
+    }
+  }
+
+  return textResult(result);
 }
 
 export async function getPage(client: RoamClient, params: GetPageParams): Promise<CallToolResult> {

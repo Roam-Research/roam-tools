@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": ["packages/core", "packages/mcp", "packages/cli"],
   "scripts": {
-    "build": "tsc --build tsconfig.build.json",
+    "build": "tsc --build tsconfig.build.json && node scripts/copy-cli-help.mjs",
     "clean": "tsc --build tsconfig.build.json --clean",
     "typecheck": "tsc --build tsconfig.build.json --force",
     "mcp": "tsx --conditions development packages/mcp/src/index.ts",

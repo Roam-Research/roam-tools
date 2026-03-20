@@ -15,8 +15,8 @@ if (process.argv[2] === "connect") {
 Connect to a Roam graph and obtain a token.
 
 Options:
-  --graph <name>          Graph name (enables non-interactive mode)
-  --nickname <name>       Short name for this graph (required with --graph)
+  -g, --graph <name>      Graph name (enables non-interactive mode)
+  -n, --nickname <name>   Short name for this graph (required with --graph)
   --access-level <level>  Access level: full, read-append, or read-only
   --public                Public graph (read-only, hosted)
   --type <type>           Graph type: hosted or offline
@@ -25,26 +25,28 @@ Options:
 
 Examples:
   roam-mcp connect                                                              Interactive setup
-  roam-mcp connect --graph my-graph --nickname "main graph"                     Connect with defaults
-  roam-mcp connect --graph my-graph --nickname "main graph" --access-level full Connect with full access
-  roam-mcp connect --graph help --public --nickname "Roam Help"                 Connect to a public graph
-  roam-mcp connect --remove --graph help                                        Remove a connection`);
+  roam-mcp connect -g my-graph -n "main graph"                                  Connect with defaults
+  roam-mcp connect -g my-graph -n "main graph" --access-level full              Connect with full access
+  roam-mcp connect -g help --public -n "Roam Help"                              Connect to a public graph
+  roam-mcp connect --remove -g help                                              Remove a connection`);
     process.exit(0);
   }
 
   // These flags must stay in sync with ConnectOptions in packages/core/src/connect.ts
   // and the Commander options in packages/cli/src/index.ts.
-  function getFlag(flag: string): string | undefined {
-    const idx = args.indexOf(flag);
-    if (idx === -1 || idx + 1 >= args.length) return undefined;
-    const value = args[idx + 1];
-    if (value.startsWith("--")) return undefined;
-    return value;
+  function getFlag(...flags: string[]): string | undefined {
+    for (const flag of flags) {
+      const idx = args.indexOf(flag);
+      if (idx === -1 || idx + 1 >= args.length) continue;
+      const value = args[idx + 1];
+      if (!value.startsWith("-")) return value;
+    }
+    return undefined;
   }
 
   const options = {
-    graph: getFlag("--graph"),
-    nickname: getFlag("--nickname"),
+    graph: getFlag("--graph", "-g"),
+    nickname: getFlag("--nickname", "-n"),
     accessLevel: getFlag("--access-level"),
     public: args.includes("--public"),
     type: getFlag("--type"),
