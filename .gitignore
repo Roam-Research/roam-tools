@@ -6,6 +6,8 @@ dist/
 *.tsbuildinfo
 .claude/
 *.tgz
+*.mcpb
+.mcpb-stage/
 .env
 .env.*
 user/

@@ -1,0 +1,35 @@
+name: Release MCPB Bundle
+
+# Triggers when a version tag is pushed (e.g., v0.4.2)
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install mcpb CLI
+        run: npm install -g @anthropic-ai/mcpb
+
+      - name: Build and pack .mcpb bundle
+        run: node scripts/pack-mcpb.mjs --output roam-mcp.mcpb
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: roam-mcp.mcpb
+          generate_release_notes: true

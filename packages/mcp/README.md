@@ -1,5 +1,7 @@
 # @roam-research/roam-mcp
 
+[![Install in Claude](https://img.shields.io/badge/Install_in-Claude-blue)](https://github.com/Roam-Research/roam-tools/releases/latest/download/roam-mcp.mcpb)
+
 A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for [Roam Research](https://roamresearch.com/).
 
 Connects Claude, Cursor, and other MCP clients to your Roam graphs for reading, writing, and searching.
@@ -52,7 +54,9 @@ npx @roam-research/roam-mcp connect --remove --graph my-graph-name
 
 ### 2. Add to your MCP client
 
-**Claude Desktop** — add to your config file:
+**Claude Desktop (1-click install)** — download and open [roam-mcp.mcpb](https://github.com/Roam-Research/roam-tools/releases/latest/download/roam-mcp.mcpb). Claude Desktop will install it automatically.
+
+**Claude Desktop (manual)** — add to your config file:
 
 ```json
 {

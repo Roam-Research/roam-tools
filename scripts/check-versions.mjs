@@ -60,6 +60,14 @@ if (!cliMatch) {
   );
 }
 
+// Check manifest.json version matches
+const manifest = readJson(join(root, "packages/mcp/manifest.json"));
+if (manifest.version !== core.version) {
+  errors.push(
+    `packages/mcp/manifest.json version is "${manifest.version}", expected "${core.version}"`
+  );
+}
+
 if (errors.length > 0) {
   console.error("Version check failed:");
   for (const e of errors) {
