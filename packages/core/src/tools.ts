@@ -14,6 +14,7 @@ import {
 } from "./operations/blocks.js";
 import { SearchSchema, SearchTemplatesSchema, search, searchTemplates } from "./operations/search.js";
 import { QuerySchema, query } from "./operations/query.js";
+import { DatalogQuerySchema, datalogQuery } from "./operations/datalog.js";
 import {
   GetOpenWindowsSchema, GetSelectionSchema, OpenMainWindowSchema, OpenSidebarSchema,
   getOpenWindows, getSelection, openMainWindow, openSidebar,
@@ -177,6 +178,12 @@ const contentTools: ClientToolDefinition[] = [
     'Execute a Roam query ({{query: }} or {{[[query]]: }} blocks, NOT Datalog). Two modes: (1) UID mode - pass a block UID containing a query component to run it with saved settings/filters; (2) Query mode - pass a raw query string like "{and: [[TODO]] {not: [[DONE]]}}". Returns paginated results with markdown content.' + GUIDELINES_NOTE,
     QuerySchema,
     query
+  ),
+  defineTool(
+    "datalog_query",
+    "Execute a raw Datalog query against the graph's Datomic database. Use standard Datalog syntax with :find, :where, and optional :in clauses. Inputs are positional parameters bound to :in variables after $." + GUIDELINES_NOTE,
+    DatalogQuerySchema,
+    datalogQuery
   ),
   defineTool(
     "get_page",
