@@ -70,7 +70,7 @@ import {
   ErrorCodes,
 } from "@roam-research/roam-tools-core";
 
-const server = new McpServer({ name: "roam-mcp", version: "0.5.0" });
+const server = new McpServer({ name: "roam-mcp", version: "0.5.1" });
 
 // Register each tool with its Zod schema
 for (const tool of tools) {
