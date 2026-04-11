@@ -34,9 +34,7 @@ export interface TokenExchangeResponse {
 // API Functions
 // ============================================================================
 
-export async function fetchAvailableGraphs(
-  port: number
-): Promise<AvailableGraph[]> {
+export async function fetchAvailableGraphs(port: number): Promise<AvailableGraph[]> {
   const url = `http://127.0.0.1:${port}/api/graphs/available`;
   const response = await fetch(url, {
     method: "GET",
@@ -56,7 +54,7 @@ export async function requestToken(
   port: number,
   graph: string,
   graphType: GraphType,
-  accessLevel: string
+  accessLevel: string,
 ): Promise<TokenExchangeResponse> {
   const url = `http://127.0.0.1:${port}/api/graphs/tokens/request`;
   const response = await fetch(url, {

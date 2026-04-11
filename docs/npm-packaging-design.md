@@ -12,11 +12,11 @@ This is a monorepo with three packages that share a common core:
 
 ## Packages
 
-| Package | Bin | Purpose | Used by |
-|---------|-----|---------|---------|
-| `@roam-research/roam-tools-core` | — | Shared core library | MCP, CLI (dependency) |
-| `@roam-research/roam-mcp` | `roam-mcp` | MCP stdio server | MCP clients |
-| `@roam-research/roam-cli` | `roam` | CLI with subcommands | Humans |
+| Package                          | Bin        | Purpose              | Used by               |
+| -------------------------------- | ---------- | -------------------- | --------------------- |
+| `@roam-research/roam-tools-core` | —          | Shared core library  | MCP, CLI (dependency) |
+| `@roam-research/roam-mcp`        | `roam-mcp` | MCP stdio server     | MCP clients           |
+| `@roam-research/roam-cli`        | `roam`     | CLI with subcommands | Humans                |
 
 ### Why three packages
 

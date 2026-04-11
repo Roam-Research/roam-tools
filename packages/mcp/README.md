@@ -10,6 +10,7 @@ Connects Claude, Cursor, and other MCP clients to your Roam graphs for reading, 
 > **Full Write Access**: This MCP server gives Claude full read and write access to your Roam graph. Claude can create, modify, and delete pages and blocks. **Changes may be difficult or impossible to undo.** Roam does not have a traditional undo history that can reverse bulk operations or deletions made through the API.
 >
 > **Recommendations:**
+>
 > - Back up your graph before use
 > - Start with a test graph to understand Claude's behavior
 > - Review what Claude plans to do before confirming write operations
@@ -36,13 +37,13 @@ This walks you through selecting a graph, choosing permissions, and approving th
 npx @roam-research/roam-mcp connect --graph my-graph-name --nickname "My Team Graph" --access-level full
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--graph <name>` | — | Graph name (enables non-interactive mode) |
-| `--nickname <name>` | Required with `--graph` | Short name you'll use to refer to this graph |
-| `--access-level <level>` | `full` | `full`, `read-append`, or `read-only` |
-| `--public` | — | Public graph (read-only, hosted) |
-| `--type <type>` | `hosted` | `hosted` or `offline` |
+| Flag                     | Default                 | Description                                  |
+| ------------------------ | ----------------------- | -------------------------------------------- |
+| `--graph <name>`         | —                       | Graph name (enables non-interactive mode)    |
+| `--nickname <name>`      | Required with `--graph` | Short name you'll use to refer to this graph |
+| `--access-level <level>` | `full`                  | `full`, `read-append`, or `read-only`        |
+| `--public`               | —                       | Public graph (read-only, hosted)             |
+| `--type <type>`          | `hosted`                | `hosted` or `offline`                        |
 
 To remove a connection:
 
@@ -66,6 +67,7 @@ npx @roam-research/roam-mcp connect --remove --graph my-graph-name
 ```
 
 Config file location:
+
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
@@ -90,15 +92,18 @@ Run `connect` multiple times to add additional graphs. Each graph gets a nicknam
 ## Available Tools
 
 **Graph Management:**
+
 - `list_graphs` - List all configured graphs with their nicknames
 - `setup_new_graph` - Set up a new graph connection, or list available graphs
 
 **Graph Guidelines:**
+
 - `get_graph_guidelines` - Returns user-defined instructions and preferences for AI agents
 
 Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[roam/agent guidelines]]` with your instructions.
 
 **Content:**
+
 - `create_page` - Create page with markdown content
 - `update_page` - Update page title or children view type
 - `delete_page` - Delete a page
@@ -110,6 +115,7 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `get_comments` - Get comments on a block with author/date context
 
 **Read:**
+
 - `search` - Search pages/blocks (empty query returns recently edited/viewed content)
 - `search_templates` - Search Roam templates by name
 - `roam_query` - Execute a Roam query (`{{query:}}` blocks, not Datalog)
@@ -118,12 +124,14 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `get_backlinks` - Get references to a page/block
 
 **Navigation:**
+
 - `get_open_windows` - Main window view and all sidebar windows
 - `get_selection` - Currently focused block and multi-selected blocks
 - `open_main_window` - Navigate to page/block
 - `open_sidebar` - Open in right sidebar
 
 **Files:**
+
 - `file_get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
 - `file_upload` - Upload a file to Roam (from local path, URL, or base64)
 - `file_delete` - Delete a file hosted on Roam

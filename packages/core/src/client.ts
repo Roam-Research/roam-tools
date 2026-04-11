@@ -13,12 +13,7 @@ import type {
   TokenInfoResult,
   TokenInfoResponse,
 } from "./types.js";
-import {
-  EXPECTED_API_VERSION,
-  getErrorMessage,
-  RoamError,
-  ErrorCodes,
-} from "./types.js";
+import { EXPECTED_API_VERSION, getErrorMessage, RoamError, ErrorCodes } from "./types.js";
 
 export class RoamClient {
   private graphName: string;
@@ -31,7 +26,9 @@ export class RoamClient {
       throw new Error("graphName is required");
     }
     if (!/^[A-Za-z0-9_-]+$/.test(config.graphName)) {
-      throw new Error(`Invalid graph name "${config.graphName}". Graph names can only contain letters, numbers, hyphens, and underscores.`);
+      throw new Error(
+        `Invalid graph name "${config.graphName}". Graph names can only contain letters, numbers, hyphens, and underscores.`,
+      );
     }
     if (!config.token) {
       throw new Error("token is required");
@@ -106,8 +103,7 @@ export class RoamClient {
 
     if (serverVersion !== "unknown") {
       const [serverMajor, serverMinor] = serverVersion.split(".").map(Number);
-      const [expectedMajor, expectedMinor] =
-        EXPECTED_API_VERSION.split(".").map(Number);
+      const [expectedMajor, expectedMinor] = EXPECTED_API_VERSION.split(".").map(Number);
 
       if (
         serverMajor > expectedMajor ||
@@ -121,7 +117,7 @@ export class RoamClient {
 
     throw new RoamError(
       `Roam API version mismatch! Roam API: ${serverVersion}, MCP expected: ${EXPECTED_API_VERSION}. ${advice}`,
-      ErrorCodes.VERSION_MISMATCH
+      ErrorCodes.VERSION_MISMATCH,
     );
   }
 
@@ -163,10 +159,7 @@ export class RoamClient {
   /**
    * Get user-friendly guidance for permission errors
    */
-  private getPermissionErrorGuidance(
-    code?: string,
-    error?: RoamApiError
-  ): string {
+  private getPermissionErrorGuidance(code?: string, error?: RoamApiError): string {
     switch (code) {
       case ErrorCodes.INSUFFICIENT_SCOPE:
         return (
@@ -186,12 +179,8 @@ export class RoamClient {
   /**
    * Handle API error responses based on HTTP status and error code
    */
-  private handleApiError(
-    status: number,
-    response: RoamResponse<unknown>
-  ): never {
-    const error =
-      typeof response.error === "object" ? response.error : undefined;
+  private handleApiError(status: number, response: RoamResponse<unknown>): never {
+    const error = typeof response.error === "object" ? response.error : undefined;
     const code = error?.code;
     const message = getErrorMessage(response.error);
 
@@ -207,18 +196,12 @@ export class RoamClient {
 
     // 403 - Permission errors
     if (status === 403) {
-      throw new RoamError(
-        this.getPermissionErrorGuidance(code, error),
-        code as any
-      );
+      throw new RoamError(this.getPermissionErrorGuidance(code, error), code as any);
     }
 
     // 404 - Unknown action
     if (status === 404) {
-      throw new RoamError(
-        `Unknown API action: ${message}`,
-        ErrorCodes.UNKNOWN_ACTION
-      );
+      throw new RoamError(`Unknown API action: ${message}`, ErrorCodes.UNKNOWN_ACTION);
     }
 
     // 500 - Server errors
@@ -234,10 +217,7 @@ export class RoamClient {
     throw new RoamError(message, code as any);
   }
 
-  private checkResponse<T>(
-    response: RoamResponse<T>,
-    httpStatus: number
-  ): void {
+  private checkResponse<T>(response: RoamResponse<T>, httpStatus: number): void {
     if (!response.success) {
       this.handleApiError(httpStatus, response);
     }
@@ -250,26 +230,22 @@ export class RoamClient {
   async getTokenInfo(): Promise<TokenInfoResult> {
     try {
       const port = await this.getPort();
-      const response = await fetch(
-        `http://127.0.0.1:${port}/api/graphs/tokens/info`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token: this.token,
-            graph: this.graphName,
-            type: this.graphType,
-          }),
-        }
-      );
+      const response = await fetch(`http://127.0.0.1:${port}/api/graphs/tokens/info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: this.token,
+          graph: this.graphName,
+          type: this.graphType,
+        }),
+      });
 
       if (response.status === 401) {
         try {
           const data = (await response.json()) as {
             error?: { code?: string } | string;
           };
-          const code =
-            typeof data.error === "object" ? data.error?.code : undefined;
+          const code = typeof data.error === "object" ? data.error?.code : undefined;
           if (code === "TOKEN_NOT_FOUND") {
             return { status: "revoked" };
           }
@@ -289,10 +265,7 @@ export class RoamClient {
     }
   }
 
-  async call<T = unknown>(
-    action: string,
-    args: unknown[] = []
-  ): Promise<RoamResponse<T>> {
+  async call<T = unknown>(action: string, args: unknown[] = []): Promise<RoamResponse<T>> {
     const doRequest = async (): Promise<{
       data: RoamResponse<T>;
       status: number;
@@ -357,7 +330,7 @@ export class RoamClient {
           "Could not connect to Roam Desktop after multiple attempts. " +
             "Please restart the Roam desktop app and also this app and then retry again. " +
             "If you continue having issues, please let us know at support@roamresearch.com.",
-          ErrorCodes.CONNECTION_FAILED
+          ErrorCodes.CONNECTION_FAILED,
         );
       }
       throw error;
