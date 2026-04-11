@@ -20,6 +20,7 @@ The MCP server reads graph configuration from `~/.roam-tools.json`:
 ```
 
 Each graph requires:
+
 - `name`: The actual graph name in Roam
 - `type`: `"hosted"` (cloud) or `"offline"` (local-only)
 - `token`: Local API token from Roam settings
@@ -60,13 +61,13 @@ If the file doesn't exist, defaults to port 3333.
 
 ## Error Cases
 
-| Scenario | Result |
-|----------|--------|
-| Config file not found | Error: "Roam MCP config not found" with setup instructions |
-| Graph not in config | Error listing available graphs |
+| Scenario                          | Result                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| Config file not found             | Error: "Roam MCP config not found" with setup instructions                |
+| Graph not in config               | Error listing available graphs                                            |
 | Multiple graphs, no `graph` param | Error with `available_graphs` inline — no extra `list_graphs` call needed |
-| Invalid token | Authentication error with guidance |
-| Roam not running | Launches Roam via deep link and retries |
+| Invalid token                     | Authentication error with guidance                                        |
+| Roam not running                  | Launches Roam via deep link and retries                                   |
 
 ## Graph Type Handling
 
@@ -78,6 +79,7 @@ The MCP server handles this automatically based on the `type` field in config.
 ## Same-Name Collision
 
 If both a hosted and offline graph have the same name:
+
 - The hosted graph takes precedence
 - The offline graph is ignored
 - A warning is logged

@@ -8,6 +8,7 @@ A Model Context Protocol (MCP) server and CLI for Roam Research.
 > **Full Write Access**: This MCP server gives Claude full read and write access to your Roam graph. Claude can create, modify, and delete pages and blocks. **Changes may be difficult or impossible to undo.** Roam does not have a traditional undo history that can reverse bulk operations or deletions made through the API.
 >
 > **Recommendations:**
+>
 > - Back up your graph before use
 > - Start with a test graph to understand Claude's behavior
 > - Review what Claude plans to do before confirming write operations
@@ -48,13 +49,13 @@ npx @roam-research/roam-mcp connect --graph my-graph-name --nickname "My Team Gr
 npx @roam-research/roam-mcp connect --graph help --public --nickname "Roam official help graph"
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--graph <name>` | — | Graph name (enables non-interactive mode) |
-| `--nickname <name>` | Required with `--graph` | Short name you'll use to refer to this graph |
-| `--access-level <level>` | `full` | `full`, `read-append`, or `read-only` |
-| `--public` | — | Public graph (read-only, hosted) |
-| `--type <type>` | `hosted` | `hosted` or `offline` |
+| Flag                     | Default                 | Description                                  |
+| ------------------------ | ----------------------- | -------------------------------------------- |
+| `--graph <name>`         | —                       | Graph name (enables non-interactive mode)    |
+| `--nickname <name>`      | Required with `--graph` | Short name you'll use to refer to this graph |
+| `--access-level <level>` | `full`                  | `full`, `read-append`, or `read-only`        |
+| `--public`               | —                       | Public graph (read-only, hosted)             |
+| `--type <type>`          | `hosted`                | `hosted` or `offline`                        |
 
 **Note:** Both modes require a human to approve the token dialog in the Roam desktop app.
 
@@ -85,6 +86,7 @@ Add to your Claude Desktop config file:
 ```
 
 Config file location:
+
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
@@ -104,6 +106,7 @@ This makes Roam available in all your Claude Code sessions. To add it to a singl
 Run `connect` multiple times to add additional graphs. Each graph gets a nickname (a short name like "work" or "team acme") for easy selection.
 
 **Graph Selection:**
+
 - **Single graph configured**: Auto-selected, no action needed
 - **Multiple graphs configured**: Pass the `graph` parameter on each tool call with the nickname
 
@@ -127,26 +130,29 @@ Instead of using `connect`, you can manually create `~/.roam-tools.json`:
 
 To create a token manually: Roam Desktop → Settings → Graph → Local API Tokens → New Token.
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `name` | Yes | The actual graph name in Roam (as shown in the URL) |
-| `type` | No | `"hosted"` (default) for cloud graphs, `"offline"` for local-only |
-| `token` | Yes | Local API token from Roam settings |
-| `nickname` | Yes | Slug identifier for this graph (lowercase, hyphens, no spaces) |
-| `accessLevel` | No | `"full"` (default), `"read-only"`, or `"read-append"` |
+| Field         | Required | Description                                                       |
+| ------------- | -------- | ----------------------------------------------------------------- |
+| `name`        | Yes      | The actual graph name in Roam (as shown in the URL)               |
+| `type`        | No       | `"hosted"` (default) for cloud graphs, `"offline"` for local-only |
+| `token`       | Yes      | Local API token from Roam settings                                |
+| `nickname`    | Yes      | Slug identifier for this graph (lowercase, hyphens, no spaces)    |
+| `accessLevel` | No       | `"full"` (default), `"read-only"`, or `"read-append"`             |
 
 ## Available Tools
 
 **Graph Management:**
+
 - `list_graphs` - List all configured graphs with their nicknames
 - `setup_new_graph` - Set up a new graph connection, or list available graphs
 
 **Graph Guidelines:**
+
 - `get_graph_guidelines` - Returns user-defined instructions and preferences for AI agents
 
 Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[roam/agent guidelines]]` with your instructions. These might include naming conventions, preferred page structures, topics to focus on, or any other context that should guide how the AI interacts with your graph.
 
 **Content:**
+
 - `create_page` - Create page with markdown content
 - `update_page` - Update page title or children view type
 - `delete_page` - Delete a page
@@ -158,6 +164,7 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `get_comments` - Get comments on a block with author/date context
 
 **Read:**
+
 - `search` - Search pages/blocks (empty query returns recently edited/viewed content)
 - `search_templates` - Search Roam templates by name
 - `roam_query` - Execute a Roam query (`{{query:}}` blocks, not Datalog)
@@ -166,12 +173,14 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `get_backlinks` - Get references to a page/block
 
 **Navigation:**
+
 - `get_open_windows` - Main window view and all sidebar windows
 - `get_selection` - Currently focused block and multi-selected blocks
 - `open_main_window` - Navigate to page/block
 - `open_sidebar` - Open in right sidebar
 
 **Files:**
+
 - `file_get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
 - `file_upload` - Upload a file to Roam (from local path, URL, or base64)
 - `file_delete` - Delete a file hosted on Roam
@@ -200,11 +209,11 @@ Run `roam --help` to see all available commands. You can also use `npx @roam-res
 
 This repository is a monorepo with three packages:
 
-| Package | Description |
-|---------|-------------|
+| Package                                           | Description                                                    |
+| ------------------------------------------------- | -------------------------------------------------------------- |
 | [`@roam-research/roam-tools-core`](packages/core) | Shared core library (client, tools, operations, config, types) |
-| [`@roam-research/roam-mcp`](packages/mcp) | MCP server — connect Claude/Cursor/etc. to Roam |
-| [`@roam-research/roam-cli`](packages/cli) | CLI — setup and direct tool access |
+| [`@roam-research/roam-mcp`](packages/mcp)         | MCP server — connect Claude/Cursor/etc. to Roam                |
+| [`@roam-research/roam-cli`](packages/cli)         | CLI — setup and direct tool access                             |
 
 ## Development
 
@@ -223,6 +232,8 @@ Development commands:
 npm run mcp              # Run MCP server in dev mode (tsx)
 npm run cli -- connect   # Run CLI in dev mode
 npm run typecheck        # Type-check (force rebuild, checks all packages)
+npm run lint             # Lint with ESLint
+npm run format:check     # Check formatting with Prettier
 npm run version:check    # Verify all package versions are consistent
 npm run version:bump 0.5.0  # Bump all packages to a new version
 ```

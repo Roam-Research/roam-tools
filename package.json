@@ -1,21 +1,48 @@
 {
   "name": "roam-tools",
   "private": true,
-  "workspaces": ["packages/core", "packages/mcp", "packages/cli"],
+  "workspaces": [
+    "packages/core",
+    "packages/mcp",
+    "packages/cli"
+  ],
   "scripts": {
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean",
     "typecheck": "tsc --build tsconfig.build.json --force",
     "mcp": "tsx --conditions development packages/mcp/src/index.ts",
     "cli": "tsx --conditions development packages/cli/src/index.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "version:bump": "node scripts/bump-version.mjs",
     "version:check": "node scripts/check-versions.mjs",
+    "prepare": "husky",
     "publish:all": "npm run version:check && npm run build && npm publish -w packages/core && npm publish -w packages/mcp && npm publish -w packages/cli"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^20.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.8.2",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.58.1"
   },
-  "engines": { "node": ">=18" }
+  "lint-staged": {
+    "*.{ts,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
 }

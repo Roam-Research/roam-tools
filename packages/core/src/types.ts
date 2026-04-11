@@ -34,14 +34,27 @@ export type AccessLevel = "read-only" | "read-append" | "full";
 const GRAPH_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 export const GraphConfigSchema = z.object({
-  name: z.string().regex(GRAPH_NAME_PATTERN, "Graph name can only contain letters, numbers, hyphens, and underscores").describe("Actual graph name in Roam"),
+  name: z
+    .string()
+    .regex(
+      GRAPH_NAME_PATTERN,
+      "Graph name can only contain letters, numbers, hyphens, and underscores",
+    )
+    .describe("Actual graph name in Roam"),
   type: z.enum(["hosted", "offline"]).default("hosted").describe("Graph type"),
   token: z.string().startsWith("roam-graph-local-token-").describe("Local API token"),
-  nickname: z.string()
+  nickname: z
+    .string()
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Nickname must be lowercase letters, numbers, and hyphens")
     .describe("Short identifier for the graph (lowercase, hyphens, no spaces)"),
-  accessLevel: z.enum(["read-only", "read-append", "full"]).optional().describe("Token access level"),
-  lastKnownTokenStatus: z.enum(["active", "revoked"]).optional().describe("Token validity status from last sync with Roam"),
+  accessLevel: z
+    .enum(["read-only", "read-append", "full"])
+    .optional()
+    .describe("Token access level"),
+  lastKnownTokenStatus: z
+    .enum(["active", "revoked"])
+    .optional()
+    .describe("Token validity status from last sync with Roam"),
 });
 export type GraphConfig = z.infer<typeof GraphConfigSchema>;
 
@@ -109,7 +122,7 @@ export class RoamError extends Error {
   constructor(
     message: string,
     public readonly code?: ErrorCode,
-    public readonly context?: Record<string, unknown>
+    public readonly context?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "RoamError";
@@ -263,8 +276,8 @@ export interface SearchResponse {
 export interface RecentlyOpenedBlock {
   uid: string;
   string: string;
-  openedAt: string;          // ISO 8601
-  path?: string;             // breadcrumb path (present when includePath=true)
+  openedAt: string; // ISO 8601
+  path?: string; // breadcrumb path (present when includePath=true)
 }
 
 // Recently opened page (from user's navigation history, grouped by page)
@@ -272,18 +285,18 @@ export interface RecentlyOpenedItem {
   uid: string;
   title: string;
   type: "page";
-  openedAt: string;                    // ISO 8601
-  visitCount: number;                  // how many times page appeared in history
-  totalDurationMs: number;             // sum of all visit durations
-  currentlyOpen?: boolean;             // true only on the page user is viewing right now
-  blocks?: RecentlyOpenedBlock[];      // blocks the user navigated to on this page
+  openedAt: string; // ISO 8601
+  visitCount: number; // how many times page appeared in history
+  totalDurationMs: number; // sum of all visit durations
+  currentlyOpen?: boolean; // true only on the page user is viewing right now
+  blocks?: RecentlyOpenedBlock[]; // blocks the user navigated to on this page
 }
 
 // Aggregate gap-time entry (time not spent on any specific page)
 export interface DailyNotePagesViewItem {
   type: "dailyNotePagesView";
   totalDurationMs: number;
-  currentlyOpen: boolean;              // true if the daily-notes-pages view is active (i.e., user isn't viewing any specific page)
+  currentlyOpen: boolean; // true if the daily-notes-pages view is active (i.e., user isn't viewing any specific page)
 }
 
 // Recently edited page (lightweight metadata + edit info)
@@ -291,7 +304,7 @@ export interface RecentlyEditedPage {
   uid: string;
   title: string;
   editedBy: string;
-  editedAt: string;          // ISO 8601
+  editedAt: string; // ISO 8601
 }
 
 // Response shape when search is called with empty query
@@ -327,7 +340,7 @@ export interface GetPageResponse {
 export interface GetBlockResponse {
   uid: string;
   markdown: string;
-  path: string;         // breadcrumb path as markdown string
+  path: string; // breadcrumb path as markdown string
   queriedAt: string;
 }
 
@@ -335,8 +348,8 @@ export interface GetBlockResponse {
 export interface QueryResult {
   uid: string;
   markdown: string;
-  path?: string;  // Breadcrumb path as string (e.g., "Page > Parent > ...")
-  type?: "page";  // Only present for page results
+  path?: string; // Breadcrumb path as string (e.g., "Page > Parent > ...")
+  type?: "page"; // Only present for page results
 }
 
 // Query response with pagination

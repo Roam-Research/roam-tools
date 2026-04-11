@@ -10,6 +10,7 @@ Used for setup (connecting graphs, managing tokens) and direct tool access (sear
 > **Full Write Access**: The CLI can create, modify, and delete pages and blocks in your Roam graph. **Changes may be difficult or impossible to undo.** Roam does not have a traditional undo history that can reverse bulk operations or deletions made through the API.
 >
 > **Recommendations:**
+>
 > - Back up your graph before use
 > - Start with a test graph
 > - Be specific in your commands to avoid unintended changes
@@ -39,13 +40,13 @@ This walks you through selecting a graph, choosing permissions, and approving th
 roam connect --graph my-graph-name --nickname "My Team Graph" --access-level full
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--graph <name>` | — | Graph name (enables non-interactive mode) |
-| `--nickname <name>` | Required with `--graph` | Short name you'll use to refer to this graph |
-| `--access-level <level>` | `full` | `full`, `read-append`, or `read-only` |
-| `--public` | — | Public graph (read-only, hosted) |
-| `--type <type>` | `hosted` | `hosted` or `offline` |
+| Flag                     | Default                 | Description                                  |
+| ------------------------ | ----------------------- | -------------------------------------------- |
+| `--graph <name>`         | —                       | Graph name (enables non-interactive mode)    |
+| `--nickname <name>`      | Required with `--graph` | Short name you'll use to refer to this graph |
+| `--access-level <level>` | `full`                  | `full`, `read-append`, or `read-only`        |
+| `--public`               | —                       | Public graph (read-only, hosted)             |
+| `--type <type>`          | `hosted`                | `hosted` or `offline`                        |
 
 To remove a connection:
 
@@ -79,15 +80,18 @@ Run `connect` multiple times to add additional graphs. Each graph gets a nicknam
 All tools are available as CLI commands. Run `roam <command> --help` for details on any command.
 
 **Graph Management:**
+
 - `list-graphs` - List all configured graphs with their nicknames
 - `setup-new-graph` - Set up a new graph connection, or list available graphs
 
 **Graph Guidelines:**
+
 - `get-graph-guidelines` - Returns user-defined instructions and preferences for AI agents
 
 Graph guidelines let you store preferences and context directly in your Roam graph that AI agents will follow. Create a page called `[[roam/agent guidelines]]` with your instructions.
 
 **Content:**
+
 - `create-page` - Create page with markdown content
 - `update-page` - Update page title or children view type
 - `delete-page` - Delete a page
@@ -99,6 +103,7 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `get-comments` - Get comments on a block with author/date context
 
 **Read:**
+
 - `search` - Search pages/blocks (empty query returns recently edited/viewed content)
 - `search-templates` - Search Roam templates by name
 - `roam-query` - Execute a Roam query (`{{query:}}` blocks, not Datalog)
@@ -107,12 +112,14 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 - `get-backlinks` - Get references to a page/block
 
 **Navigation:**
+
 - `get-open-windows` - Main window view and all sidebar windows
 - `get-selection` - Currently focused block and multi-selected blocks
 - `open-main-window` - Navigate to page/block
 - `open-sidebar` - Open in right sidebar
 
 **Files:**
+
 - `file-get` - Fetch a file hosted on Roam (handles decryption for encrypted graphs)
 - `file-upload` - Upload a file to Roam (from local path, URL, or base64)
 - `file-delete` - Delete a file hosted on Roam
