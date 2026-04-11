@@ -11,11 +11,23 @@ export const FileGetSchema = z.object({
 });
 
 export const FileUploadSchema = z.object({
-  filePath: z.string().optional().describe("Local file path (preferred) - server reads the file directly"),
+  filePath: z
+    .string()
+    .optional()
+    .describe("Local file path (preferred) - server reads the file directly"),
   url: z.string().optional().describe("Remote URL to fetch the file from"),
-  base64: z.string().optional().describe("Base64-encoded file data (fallback for sandboxed clients)"),
-  mimetype: z.string().optional().describe("MIME type (e.g., image/png, image/jpeg) - auto-detected if not provided"),
-  filename: z.string().optional().describe("Original filename for reference - derived from path/url if not provided"),
+  base64: z
+    .string()
+    .optional()
+    .describe("Base64-encoded file data (fallback for sandboxed clients)"),
+  mimetype: z
+    .string()
+    .optional()
+    .describe("MIME type (e.g., image/png, image/jpeg) - auto-detected if not provided"),
+  filename: z
+    .string()
+    .optional()
+    .describe("Original filename for reference - derived from path/url if not provided"),
 });
 
 export const FileDeleteSchema = z.object({
@@ -88,7 +100,9 @@ function detectMimeTypeFromExtension(filePath: string): string | null {
 }
 
 // Read file from local path and return base64 + mimetype
-async function readLocalFile(filePath: string): Promise<{ base64: string; mimetype: string; filename: string }> {
+async function readLocalFile(
+  filePath: string,
+): Promise<{ base64: string; mimetype: string; filename: string }> {
   const buffer = await readFile(filePath);
   const base64 = buffer.toString("base64");
   const filename = basename(filePath);
@@ -106,7 +120,9 @@ async function readLocalFile(filePath: string): Promise<{ base64: string; mimety
 }
 
 // Fetch file from URL and return base64 + mimetype
-async function fetchRemoteFile(url: string): Promise<{ base64: string; mimetype: string; filename: string }> {
+async function fetchRemoteFile(
+  url: string,
+): Promise<{ base64: string; mimetype: string; filename: string }> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
@@ -122,7 +138,8 @@ async function fetchRemoteFile(url: string): Promise<{ base64: string; mimetype:
   // Try Content-Type header first, then extension, then magic bytes
   let mimetype = response.headers.get("content-type")?.split(";")[0];
   if (!mimetype || mimetype === "application/octet-stream") {
-    mimetype = detectMimeTypeFromExtension(urlPath) || detectMimeTypeFromBase64(base64) || undefined;
+    mimetype =
+      detectMimeTypeFromExtension(urlPath) || detectMimeTypeFromBase64(base64) || undefined;
   }
   if (!mimetype) {
     throw new Error(`Could not detect MIME type for URL: ${url}`);
@@ -151,7 +168,10 @@ export async function getFile(client: RoamClient, params: FileGetParams): Promis
   return textResult(response.result);
 }
 
-export async function uploadFile(client: RoamClient, params: FileUploadParams): Promise<CallToolResult> {
+export async function uploadFile(
+  client: RoamClient,
+  params: FileUploadParams,
+): Promise<CallToolResult> {
   // Validate exactly one source is provided
   const sources = [params.filePath, params.url, params.base64].filter(Boolean);
   if (sources.length === 0) {
@@ -202,7 +222,10 @@ export async function uploadFile(client: RoamClient, params: FileUploadParams): 
   return textResult({ url });
 }
 
-export async function deleteFile(client: RoamClient, params: FileDeleteParams): Promise<CallToolResult> {
+export async function deleteFile(
+  client: RoamClient,
+  params: FileDeleteParams,
+): Promise<CallToolResult> {
   await client.call<undefined>("file.delete", [{ url: params.url }]);
   return textResult({ deleted: true });
 }

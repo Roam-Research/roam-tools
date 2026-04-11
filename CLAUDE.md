@@ -8,6 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run build        # Compile TypeScript (tsc --build, builds core → mcp + cli)
 npm run clean        # Remove build artifacts (dist/ and tsbuildinfo)
 npm run typecheck    # Type-check (force rebuild, checks all packages)
+npm run lint         # Lint with ESLint
+npm run lint:fix     # Lint and auto-fix
+npm run format       # Format with Prettier
+npm run format:check # Check formatting without writing
 npm run mcp          # Run MCP server in dev mode (tsx with development condition)
 npm run mcp -- connect              # Interactive setup for graph tokens (via MCP binary)
 npm run cli -- <command> [options]  # Run CLI in dev mode
@@ -25,6 +29,7 @@ npm install                    # Sync package-lock.json
 ```
 
 The 7 locations:
+
 1. `packages/core/package.json` — `"version"` field
 2. `packages/mcp/package.json` — `"version"` field
 3. `packages/mcp/package.json` — `@roam-research/roam-tools-core` dependency version
@@ -39,11 +44,11 @@ Run `npm run version:check` to verify all versions are consistent.
 
 This is a monorepo with three npm packages for Roam Research tools:
 
-| Package | Bin | Purpose |
-|---------|-----|---------|
-| `@roam-research/roam-tools-core` | none | Shared core (client, tools, operations, config, types) |
-| `@roam-research/roam-mcp` | `roam-mcp` | MCP server only |
-| `@roam-research/roam-cli` | `roam` | CLI only |
+| Package                          | Bin        | Purpose                                                |
+| -------------------------------- | ---------- | ------------------------------------------------------ |
+| `@roam-research/roam-tools-core` | none       | Shared core (client, tools, operations, config, types) |
+| `@roam-research/roam-mcp`        | `roam-mcp` | MCP server only                                        |
+| `@roam-research/roam-cli`        | `roam`     | CLI only                                               |
 
 ### Entry Points
 
@@ -72,6 +77,7 @@ This is a monorepo with three npm packages for Roam Research tools:
 ### Operations
 
 Operations in `packages/core/src/operations/` are organized by domain:
+
 - `graphs.ts` - Graph management (list, setup new graph)
 - `pages.ts` - Create, get, update, delete pages; get graph guidelines
 - `blocks.ts` - Create, get, update, delete, move blocks; get backlinks
@@ -83,6 +89,7 @@ Operations in `packages/core/src/operations/` are organized by domain:
 ### Configuration
 
 **`~/.roam-tools.json`** - Required config file with graph tokens:
+
 ```json
 {
   "version": 1,

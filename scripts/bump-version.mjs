@@ -66,7 +66,7 @@ console.log(`  packages/cli/package.json core dep → ${newVersion}`);
 replaceInFile(
   join(root, "packages/mcp/src/index.ts"),
   /version: "[^"]+"/,
-  `version: "${newVersion}"`
+  `version: "${newVersion}"`,
 );
 console.log(`  packages/mcp/src/index.ts McpServer version → ${newVersion}`);
 
@@ -74,7 +74,7 @@ console.log(`  packages/mcp/src/index.ts McpServer version → ${newVersion}`);
 replaceInFile(
   join(root, "packages/cli/src/index.ts"),
   /\.version\("[^"]+"\)/,
-  `.version("${newVersion}")`
+  `.version("${newVersion}")`,
 );
 console.log(`  packages/cli/src/index.ts Commander version → ${newVersion}`);
 
