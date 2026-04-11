@@ -240,9 +240,10 @@ const contentTools: ClientToolDefinition[] = [
   ),
   defineTool(
     "datalog_query",
-    "Execute a raw Datalog query against the graph's Datomic database. Use standard Datalog syntax with :find, :where, and optional :in clauses. Inputs are positional parameters bound to :in variables after $." + GUIDELINES_NOTE,
+    "Execute a datomic-style datalog query against the graph's datascript database. Supported clauses: :find, :where, :in, and :timeout (ms). Inputs are positional parameters bound to :in variables after $. Write specific :where clauses to keep results bounded." +
+      GUIDELINES_NOTE,
     DatalogQuerySchema,
-    datalogQuery
+    datalogQuery,
   ),
   defineTool(
     "get_page",
