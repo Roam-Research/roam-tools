@@ -40,6 +40,7 @@ import {
   searchTemplates,
 } from "./operations/search.js";
 import { QuerySchema, query } from "./operations/query.js";
+import { DatalogQuerySchema, datalogQuery } from "./operations/datalog.js";
 import {
   GetOpenWindowsSchema,
   GetSelectionSchema,
@@ -236,6 +237,13 @@ const contentTools: ClientToolDefinition[] = [
       GUIDELINES_NOTE,
     QuerySchema,
     query,
+  ),
+  defineTool(
+    "datalog_query",
+    "Execute a datomic-style datalog query against the graph's datascript database. Supported clauses: :find, :where, :in, and :timeout (ms). Inputs are positional parameters bound to :in variables after $. Write specific :where clauses to keep results bounded." +
+      GUIDELINES_NOTE,
+    DatalogQuerySchema,
+    datalogQuery,
   ),
   defineTool(
     "get_page",
