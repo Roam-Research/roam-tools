@@ -187,10 +187,10 @@ program
   .option("--remove", "Remove a graph connection (use with --graph or --nickname)")
   .addHelpText("after", `
 Examples:
-  npm run cli -- connect                                                                      Interactive setup
-  npm run cli -- connect --graph my-graph --nickname "main graph" --access-level read-append  Connect with read-append access
-  npm run cli -- connect --graph help --public --nickname "Roam Help"                         Connect to a public graph
-  npm run cli -- connect --remove --graph "help"                                              Remove a connection
+  roam connect                                                                      Interactive setup
+  roam connect --graph my-graph --nickname "main graph" --access-level read-append  Connect with read-append access
+  roam connect --graph help --public --nickname "Roam Help"                         Connect to a public graph
+  roam connect --remove --graph "help"                                              Remove a connection
 `)
   .action((options) => connect(options));
 

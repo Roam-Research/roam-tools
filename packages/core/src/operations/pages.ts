@@ -7,7 +7,8 @@ import { textResult } from "../types.js";
 export const CreatePageSchema = z.object({
   title: z.string().describe("Page title"),
   markdown: z.string().optional().describe("Markdown content for the page"),
-  uid: z.string().optional(),
+  uid: z.string().optional().describe("Custom UID to assign to the new page. Omit to let Roam auto-generate one (recommended)"),
+  childrenViewType: z.enum(["document", "bullet", "numbered"]).optional().describe("How children are displayed (document, bullet, or numbered)"),
 });
 
 export const GetPageSchema = z.object({
@@ -36,11 +37,12 @@ export type DeletePageParams = z.infer<typeof DeletePageSchema>;
 export type UpdatePageParams = z.infer<typeof UpdatePageSchema>;
 
 export async function createPage(client: RoamClient, params: CreatePageParams): Promise<CallToolResult> {
+  const page: Record<string, unknown> = { title: params.title };
+  if (params.uid !== undefined) page.uid = params.uid;
+  if (params.childrenViewType !== undefined) page["children-view-type"] = params.childrenViewType;
+
   const response = await client.call<{ uid: string }>("data.page.fromMarkdown", [
-    {
-      page: { title: params.title, uid: params.uid },
-      "markdown-string": params.markdown,
-    },
+    { page, "markdown-string": params.markdown },
   ]);
   return textResult(response.result ?? { uid: "" });
 }
