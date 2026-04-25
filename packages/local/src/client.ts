@@ -7,13 +7,18 @@ import { join } from "path";
 import open from "open";
 import type {
   RoamResponse,
-  RoamClientConfig,
   RoamApiError,
   GraphType,
   TokenInfoResult,
   TokenInfoResponse,
-} from "./types.js";
-import { EXPECTED_API_VERSION, getErrorMessage, RoamError, ErrorCodes } from "./types.js";
+} from "@roam-research/roam-tools-core";
+import {
+  EXPECTED_API_VERSION,
+  getErrorMessage,
+  RoamError,
+  ErrorCodes,
+} from "@roam-research/roam-tools-core";
+import type { RoamClientConfig } from "./types.js";
 
 export class RoamClient {
   private graphName: string;

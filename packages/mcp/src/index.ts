@@ -32,7 +32,7 @@ Examples:
     process.exit(0);
   }
 
-  // These flags must stay in sync with ConnectOptions in packages/core/src/connect.ts
+  // These flags must stay in sync with ConnectOptions in packages/local/src/connect.ts
   // and the Commander options in packages/cli/src/index.ts.
   function getFlag(flag: string): string | undefined {
     const idx = args.indexOf(flag);
@@ -51,7 +51,7 @@ Examples:
     remove: args.includes("--remove"),
   };
 
-  const { connect } = await import("@roam-research/roam-tools-core/connect");
+  const { connect } = await import("@roam-research/roam-tools-local/connect");
   await connect(options);
   process.exit(0);
 }
@@ -68,9 +68,9 @@ import {
   getMcpConfig,
   RoamError,
   ErrorCodes,
-} from "@roam-research/roam-tools-core";
+} from "@roam-research/roam-tools-local";
 
-const server = new McpServer({ name: "roam-mcp", version: "0.5.1" });
+const server = new McpServer({ name: "roam-mcp", version: "0.6.0" });
 
 // Register each tool with its Zod schema
 for (const tool of tools) {

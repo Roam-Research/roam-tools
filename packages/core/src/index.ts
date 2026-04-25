@@ -1,4 +1,10 @@
 // Barrel export for @roam-research/roam-tools-core
+//
+// Core is transport-agnostic — it does NOT export RoamClient, the
+// ~/.roam-tools.json reader, or the connect command. Those live in
+// @roam-research/roam-tools-local. Hosted MCP transports depend on this
+// package directly and supply their own resolveGraph + createClient via
+// routeToolCall's options.
 
 // Types, schemas, error handling, and constants
 export type {
@@ -9,11 +15,12 @@ export type {
   AccessLevel,
   GraphConfig,
   RoamMcpConfig,
+  ToolGraph,
   ResolvedGraph,
+  RoamActionClient,
   ErrorCode,
   RoamApiError,
   RoamResponse,
-  RoamClientConfig,
   Block,
   Page,
   BlockLocation,
@@ -54,27 +61,20 @@ export {
   getErrorMessage,
 } from "./types.js";
 
-// Client
-export { RoamClient } from "./client.js";
-
-// Graph resolution and config management
+// Tool definitions, helpers, and routing
 export {
-  getPort,
-  resolveGraph,
-  saveGraphToConfig,
-  removeGraphFromConfig,
-  updateGraphTokenStatus,
-  getConfiguredGraphsSafe,
-  getConfiguredGraphs,
-  findGraphConfig,
-  getMcpConfig,
-  getOpenGraphs,
-} from "./graph-resolver.js";
-
-// Shared Roam API functions
-export { fetchAvailableGraphs, requestToken, sleep, openRoamApp, slugify } from "./roam-api.js";
-export type { AvailableGraph, GraphsResponse, TokenExchangeResponse } from "./roam-api.js";
-
-// Tool definitions and routing
-export { tools, findTool, routeToolCall } from "./tools.js";
-export type { ToolDefinition, ClientToolDefinition, StandaloneToolDefinition } from "./tools.js";
+  tools,
+  findTool,
+  routeToolCall,
+  contentTools,
+  dataTools,
+  desktopUiTools,
+  defineTool,
+  defineStandaloneTool,
+} from "./tools.js";
+export type {
+  ToolDefinition,
+  ClientToolDefinition,
+  StandaloneToolDefinition,
+  RouteToolCallOptions,
+} from "./tools.js";

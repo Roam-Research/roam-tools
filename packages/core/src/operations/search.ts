@@ -1,10 +1,10 @@
 import { z } from "zod";
-import type { RoamClient } from "../client.js";
 import type {
   SearchResponse,
   SearchSuggestionsResponse,
   SearchTemplatesResponse,
   CallToolResult,
+  RoamActionClient,
 } from "../types.js";
 import { textResult } from "../types.js";
 
@@ -44,7 +44,10 @@ export const SearchTemplatesSchema = z.object({
 export type SearchParams = z.infer<typeof SearchSchema>;
 export type SearchTemplatesParams = z.infer<typeof SearchTemplatesSchema>;
 
-export async function search(client: RoamClient, params: SearchParams): Promise<CallToolResult> {
+export async function search(
+  client: RoamActionClient,
+  params: SearchParams,
+): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = {
     query: params.query,
     scope: params.scope ?? "all",
@@ -61,7 +64,7 @@ export async function search(client: RoamClient, params: SearchParams): Promise<
 }
 
 export async function searchTemplates(
-  client: RoamClient,
+  client: RoamActionClient,
   params: SearchTemplatesParams,
 ): Promise<CallToolResult> {
   const response = await client.call<SearchTemplatesResponse>("data.ai.searchTemplates", [

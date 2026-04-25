@@ -2,15 +2,14 @@
 // Graph management operations
 
 import { z } from "zod";
-import type { CallToolResult } from "../types.js";
-import { textResult, RoamError, ErrorCodes } from "../types.js";
+import type { CallToolResult, GraphConfig } from "@roam-research/roam-tools-core";
+import { textResult, RoamError, ErrorCodes } from "@roam-research/roam-tools-core";
 import {
   getConfiguredGraphs,
   getConfiguredGraphsSafe,
   getPort,
   saveGraphToConfig,
 } from "../graph-resolver.js";
-import type { GraphConfig } from "../types.js";
 import type { AvailableGraph } from "../roam-api.js";
 import { fetchAvailableGraphs, requestToken, sleep, openRoamApp, slugify } from "../roam-api.js";
 

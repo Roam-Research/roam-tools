@@ -1,11 +1,11 @@
 {
-  "name": "@roam-research/roam-tools-core",
+  "name": "@roam-research/roam-tools-local",
   "version": "0.6.0",
-  "description": "Transport-agnostic core for Roam Research MCP and CLI tools",
+  "description": "Local Roam Desktop API transport for @roam-research/roam-tools-core",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Roam-Research/roam-tools.git",
-    "directory": "packages/core"
+    "directory": "packages/local"
   },
   "type": "module",
   "main": "dist/index.js",
@@ -15,6 +15,11 @@
       "types": "./dist/index.d.ts",
       "development": "./src/index.ts",
       "import": "./dist/index.js"
+    },
+    "./connect": {
+      "types": "./dist/connect.d.ts",
+      "development": "./src/connect.ts",
+      "import": "./dist/connect.js"
     }
   },
   "files": [
@@ -32,7 +37,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@roam-research/roam-tools-core": "0.6.0",
+    "@inquirer/prompts": "^8.2.0",
+    "open": "^11.0.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
