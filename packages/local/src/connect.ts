@@ -6,7 +6,7 @@ import {
   removeGraphFromConfig,
 } from "./graph-resolver.js";
 import { fetchAvailableGraphs, requestToken, sleep, openRoamApp, slugify } from "./roam-api.js";
-import type { GraphConfig, GraphType, AccessLevel } from "./types.js";
+import type { GraphConfig, GraphType, AccessLevel } from "@roam-research/roam-tools-core";
 import type { AvailableGraph, GraphsResponse, TokenExchangeResponse } from "./roam-api.js";
 
 // ============================================================================

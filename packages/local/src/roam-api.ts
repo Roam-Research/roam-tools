@@ -3,7 +3,7 @@
 // Used by both the CLI (connect command) and the MCP tool (setup_new_graph).
 
 import open from "open";
-import type { GraphType } from "./types.js";
+import type { GraphType } from "@roam-research/roam-tools-core";
 
 // ============================================================================
 // Types

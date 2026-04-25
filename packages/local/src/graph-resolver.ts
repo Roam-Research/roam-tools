@@ -13,7 +13,7 @@ import {
   ErrorCodes,
   AccessLevel,
   CONFIG_VERSION,
-} from "./types.js";
+} from "@roam-research/roam-tools-core";
 
 // Warning suppression flags (prevent spamming on every tool call)
 let permissionCheckDone = false;

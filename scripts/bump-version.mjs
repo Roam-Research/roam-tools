@@ -10,7 +10,7 @@ const root = join(__dirname, "..");
 const newVersion = process.argv[2];
 if (!newVersion) {
   console.error("Usage: node scripts/bump-version.mjs <version>");
-  console.error("Example: node scripts/bump-version.mjs 0.5.0");
+  console.error("Example: node scripts/bump-version.mjs 0.6.0");
   process.exit(1);
 }
 
@@ -46,23 +46,31 @@ corePkg.version = newVersion;
 writeJson(join(root, "packages/core/package.json"), corePkg);
 console.log(`  packages/core/package.json version → ${newVersion}`);
 
-// 2. packages/mcp/package.json — version + core dependency
+// 2. packages/local/package.json — version + core dependency
+const localPkg = readJson(join(root, "packages/local/package.json"));
+localPkg.version = newVersion;
+localPkg.dependencies["@roam-research/roam-tools-core"] = newVersion;
+writeJson(join(root, "packages/local/package.json"), localPkg);
+console.log(`  packages/local/package.json version → ${newVersion}`);
+console.log(`  packages/local/package.json core dep → ${newVersion}`);
+
+// 3. packages/mcp/package.json — version + local dependency
 const mcpPkg = readJson(join(root, "packages/mcp/package.json"));
 mcpPkg.version = newVersion;
-mcpPkg.dependencies["@roam-research/roam-tools-core"] = newVersion;
+mcpPkg.dependencies["@roam-research/roam-tools-local"] = newVersion;
 writeJson(join(root, "packages/mcp/package.json"), mcpPkg);
 console.log(`  packages/mcp/package.json version → ${newVersion}`);
-console.log(`  packages/mcp/package.json core dep → ${newVersion}`);
+console.log(`  packages/mcp/package.json local dep → ${newVersion}`);
 
-// 3. packages/cli/package.json — version + core dependency
+// 4. packages/cli/package.json — version + local dependency
 const cliPkg = readJson(join(root, "packages/cli/package.json"));
 cliPkg.version = newVersion;
-cliPkg.dependencies["@roam-research/roam-tools-core"] = newVersion;
+cliPkg.dependencies["@roam-research/roam-tools-local"] = newVersion;
 writeJson(join(root, "packages/cli/package.json"), cliPkg);
 console.log(`  packages/cli/package.json version → ${newVersion}`);
-console.log(`  packages/cli/package.json core dep → ${newVersion}`);
+console.log(`  packages/cli/package.json local dep → ${newVersion}`);
 
-// 4. packages/mcp/src/index.ts — McpServer version string
+// 5. packages/mcp/src/index.ts — McpServer version string
 replaceInFile(
   join(root, "packages/mcp/src/index.ts"),
   /version: "[^"]+"/,
@@ -70,7 +78,7 @@ replaceInFile(
 );
 console.log(`  packages/mcp/src/index.ts McpServer version → ${newVersion}`);
 
-// 5. packages/cli/src/index.ts — Commander .version() call
+// 6. packages/cli/src/index.ts — Commander .version() call
 replaceInFile(
   join(root, "packages/cli/src/index.ts"),
   /\.version\("[^"]+"\)/,

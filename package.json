@@ -3,6 +3,7 @@
   "private": true,
   "workspaces": [
     "packages/core",
+    "packages/local",
     "packages/mcp",
     "packages/cli"
   ],
@@ -19,7 +20,7 @@
     "version:bump": "node scripts/bump-version.mjs",
     "version:check": "node scripts/check-versions.mjs",
     "prepare": "husky",
-    "publish:all": "npm run version:check && npm run build && npm publish -w packages/core && npm publish -w packages/mcp && npm publish -w packages/cli"
+    "publish:all": "npm run version:check && npm run build && npm publish -w packages/core && npm publish -w packages/local && npm publish -w packages/mcp && npm publish -w packages/cli"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

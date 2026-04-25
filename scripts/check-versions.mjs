@@ -12,27 +12,38 @@ function readJson(path) {
 }
 
 const core = readJson(join(root, "packages/core/package.json"));
+const local = readJson(join(root, "packages/local/package.json"));
 const mcp = readJson(join(root, "packages/mcp/package.json"));
 const cli = readJson(join(root, "packages/cli/package.json"));
 
 const errors = [];
 
-// Check all three package versions match
-if (core.version !== mcp.version || core.version !== cli.version) {
+// Check all four package versions match
+if (
+  core.version !== local.version ||
+  core.version !== mcp.version ||
+  core.version !== cli.version
+) {
   errors.push(
-    `Package versions don't match: core=${core.version}, mcp=${mcp.version}, cli=${cli.version}`,
+    `Package versions don't match: core=${core.version}, local=${local.version}, mcp=${mcp.version}, cli=${cli.version}`,
   );
 }
 
-// Check that mcp and cli depend on the correct core version
-const mcpCoreDep = mcp.dependencies?.["@roam-research/roam-tools-core"];
-if (mcpCoreDep !== core.version) {
-  errors.push(`packages/mcp depends on core ${mcpCoreDep}, but core is ${core.version}`);
+// Check that local depends on the correct core version
+const localCoreDep = local.dependencies?.["@roam-research/roam-tools-core"];
+if (localCoreDep !== core.version) {
+  errors.push(`packages/local depends on core ${localCoreDep}, but core is ${core.version}`);
 }
 
-const cliCoreDep = cli.dependencies?.["@roam-research/roam-tools-core"];
-if (cliCoreDep !== core.version) {
-  errors.push(`packages/cli depends on core ${cliCoreDep}, but core is ${core.version}`);
+// Check that mcp + cli depend on the correct local version
+const mcpLocalDep = mcp.dependencies?.["@roam-research/roam-tools-local"];
+if (mcpLocalDep !== local.version) {
+  errors.push(`packages/mcp depends on local ${mcpLocalDep}, but local is ${local.version}`);
+}
+
+const cliLocalDep = cli.dependencies?.["@roam-research/roam-tools-local"];
+if (cliLocalDep !== local.version) {
+  errors.push(`packages/cli depends on local ${cliLocalDep}, but local is ${local.version}`);
 }
 
 // Check hardcoded version strings in source files (same patterns as bump-version.mjs)

@@ -6,9 +6,9 @@ import { randomUUID } from "crypto";
 import { mkdirSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import type { CallToolResult } from "@roam-research/roam-tools-core";
-import { RoamError, ErrorCodes, tools, routeToolCall } from "@roam-research/roam-tools-core";
-import { connect } from "@roam-research/roam-tools-core/connect";
+import type { CallToolResult } from "@roam-research/roam-tools-local";
+import { RoamError, ErrorCodes, tools, routeToolCall } from "@roam-research/roam-tools-local";
+import { connect } from "@roam-research/roam-tools-local/connect";
 
 // Get file extension from MIME type
 function getExtensionFromMimeType(mimeType: string): string {
@@ -61,7 +61,7 @@ function writeImageToTemp(
 
 const program = new Command();
 
-program.name("roam").description("Roam Research CLI").version("0.5.2");
+program.name("roam").description("Roam Research CLI").version("0.6.0");
 
 // Helper to check if a Zod schema field is optional
 function isOptional(schema: z.ZodTypeAny): boolean {
@@ -177,7 +177,7 @@ tools.forEach((tool) => {
 // Interactive Setup Command
 // ============================================================================
 
-// These options must stay in sync with ConnectOptions in packages/core/src/connect.ts
+// These options must stay in sync with ConnectOptions in packages/local/src/connect.ts
 // and the manual arg parsing in packages/mcp/src/index.ts.
 program
   .command("connect")

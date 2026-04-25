@@ -382,18 +382,11 @@ export type TokenInfoResult =
   | { status: "revoked" }
   | { status: "unknown" }; // network error, 404, etc.
 
-// Client config (v2.0.0 - requires token and type)
-export interface RoamClientConfig {
-  graphName: string;
-  graphType: GraphType;
-  token: string;
-  port?: number;
-}
-
-// Structural client interface used by all operations and routeToolCall. RoamClient
-// satisfies this. A hosted RoamCloudClient (out-of-repo) implements the same shape,
-// using a different transport. getTokenInfo is optional — the routing layer only
-// invokes it in tokenInfoMode === "local-sync".
+// Structural client interface used by all operations and routeToolCall. The local
+// RoamClient (in @roam-research/roam-tools-local) satisfies this. A hosted
+// RoamCloudClient (out-of-repo) implements the same shape using a different
+// transport. getTokenInfo is optional — the routing layer only invokes it in
+// tokenInfoMode === "local-sync".
 export interface RoamActionClient {
   call<T = unknown>(action: string, args?: unknown[]): Promise<RoamResponse<T>>;
   getTokenInfo?(): Promise<TokenInfoResult>;
