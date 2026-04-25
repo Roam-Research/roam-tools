@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { RoamClient } from "../client.js";
-import type { QueryResponse, CallToolResult } from "../types.js";
+import type { QueryResponse, CallToolResult, RoamActionClient } from "../types.js";
 import { textResult } from "../types.js";
 
 // Schema for executing Roam queries ({{query: }} or {{[[query]]: }} blocks, NOT Datalog)
@@ -40,7 +39,10 @@ export const QuerySchema = z.object({
 
 export type QueryParams = z.infer<typeof QuerySchema>;
 
-export async function query(client: RoamClient, params: QueryParams): Promise<CallToolResult> {
+export async function query(
+  client: RoamActionClient,
+  params: QueryParams,
+): Promise<CallToolResult> {
   // Validate: exactly one of uid or query must be provided
   const hasUid = params.uid !== undefined;
   const hasQuery = params.query !== undefined;

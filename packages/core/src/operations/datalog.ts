@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { RoamClient } from "../client.js";
-import type { CallToolResult } from "../types.js";
+import type { CallToolResult, RoamActionClient } from "../types.js";
 import { textResult } from "../types.js";
 
 export const DatalogQuerySchema = z.object({
@@ -16,7 +15,7 @@ export const DatalogQuerySchema = z.object({
 export type DatalogQueryParams = z.infer<typeof DatalogQuerySchema>;
 
 export async function datalogQuery(
-  client: RoamClient,
+  client: RoamActionClient,
   params: DatalogQueryParams,
 ): Promise<CallToolResult> {
   const args = params.inputs ? [params.query, ...params.inputs] : [params.query];

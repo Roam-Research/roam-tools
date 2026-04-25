@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { readFile } from "fs/promises";
 import { basename, extname } from "path";
-import type { RoamClient } from "../client.js";
-import type { CallToolResult } from "../types.js";
+import type { CallToolResult, RoamActionClient } from "../types.js";
 import { imageResult, textResult } from "../types.js";
 
 // Schemas
@@ -148,7 +147,10 @@ async function fetchRemoteFile(
   return { base64, mimetype, filename };
 }
 
-export async function getFile(client: RoamClient, params: FileGetParams): Promise<CallToolResult> {
+export async function getFile(
+  client: RoamActionClient,
+  params: FileGetParams,
+): Promise<CallToolResult> {
   const response = await client.call<FileGetResponse>("file.get", [
     { url: params.url, format: "base64" },
   ]);
@@ -169,7 +171,7 @@ export async function getFile(client: RoamClient, params: FileGetParams): Promis
 }
 
 export async function uploadFile(
-  client: RoamClient,
+  client: RoamActionClient,
   params: FileUploadParams,
 ): Promise<CallToolResult> {
   // Validate exactly one source is provided
@@ -223,7 +225,7 @@ export async function uploadFile(
 }
 
 export async function deleteFile(
-  client: RoamClient,
+  client: RoamActionClient,
   params: FileDeleteParams,
 ): Promise<CallToolResult> {
   await client.call<undefined>("file.delete", [{ url: params.url }]);

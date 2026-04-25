@@ -1,11 +1,11 @@
 import { z } from "zod";
-import type { RoamClient } from "../client.js";
 import type {
   FocusedBlock,
   SelectedBlock,
   MainWindowView,
   SidebarWindowInfo,
   CallToolResult,
+  RoamActionClient,
 } from "../types.js";
 import { textResult } from "../types.js";
 
@@ -31,7 +31,7 @@ export const OpenSidebarSchema = z.object({
 export type OpenMainWindowParams = z.infer<typeof OpenMainWindowSchema>;
 export type OpenSidebarParams = z.infer<typeof OpenSidebarSchema>;
 
-export async function getOpenWindows(client: RoamClient): Promise<CallToolResult> {
+export async function getOpenWindows(client: RoamActionClient): Promise<CallToolResult> {
   const [mainResponse, sidebarResponse] = await Promise.all([
     client.call<MainWindowView>("ui.mainWindow.getOpenView", []),
     client.call<SidebarWindowInfo[]>("ui.rightSidebar.getWindows", []),
@@ -42,7 +42,7 @@ export async function getOpenWindows(client: RoamClient): Promise<CallToolResult
   });
 }
 
-export async function getSelection(client: RoamClient): Promise<CallToolResult> {
+export async function getSelection(client: RoamActionClient): Promise<CallToolResult> {
   const [focusedResponse, multiSelectedResponse] = await Promise.all([
     client.call<FocusedBlock>("ui.getFocusedBlock", []),
     client.call<SelectedBlock[]>("ui.multiselect.getSelected", []),
@@ -54,7 +54,7 @@ export async function getSelection(client: RoamClient): Promise<CallToolResult> 
 }
 
 export async function openMainWindow(
-  client: RoamClient,
+  client: RoamActionClient,
   params: OpenMainWindowParams,
 ): Promise<CallToolResult> {
   if (params.uid) {
@@ -67,7 +67,7 @@ export async function openMainWindow(
 }
 
 export async function openSidebar(
-  client: RoamClient,
+  client: RoamActionClient,
   params: OpenSidebarParams,
 ): Promise<CallToolResult> {
   await client.call("ui.rightSidebar.addWindow", [

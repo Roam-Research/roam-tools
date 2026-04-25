@@ -64,13 +64,20 @@ export const RoamMcpConfigSchema = z.object({
 });
 export type RoamMcpConfig = z.infer<typeof RoamMcpConfigSchema>;
 
-// Resolved graph info (returned by resolveGraph)
-export interface ResolvedGraph {
+// Cross-transport graph identity. Local resolver populates `token`;
+// hosted resolver (out-of-repo) omits it because auth lives elsewhere.
+export interface ToolGraph {
   name: string;
   type: GraphType;
-  token: string;
   nickname: string;
   accessLevel?: AccessLevel;
+  token?: string;
+}
+
+// Resolved graph info (returned by the local resolveGraph). Token is required;
+// lastKnownTokenStatus is a local-config-only field driven by ~/.roam-tools.json.
+export interface ResolvedGraph extends ToolGraph {
+  token: string;
   lastKnownTokenStatus?: "active" | "revoked";
 }
 
@@ -381,4 +388,13 @@ export interface RoamClientConfig {
   graphType: GraphType;
   token: string;
   port?: number;
+}
+
+// Structural client interface used by all operations and routeToolCall. RoamClient
+// satisfies this. A hosted RoamCloudClient (out-of-repo) implements the same shape,
+// using a different transport. getTokenInfo is optional — the routing layer only
+// invokes it in tokenInfoMode === "local-sync".
+export interface RoamActionClient {
+  call<T = unknown>(action: string, args?: unknown[]): Promise<RoamResponse<T>>;
+  getTokenInfo?(): Promise<TokenInfoResult>;
 }

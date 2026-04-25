@@ -9,7 +9,9 @@ export type {
   AccessLevel,
   GraphConfig,
   RoamMcpConfig,
+  ToolGraph,
   ResolvedGraph,
+  RoamActionClient,
   ErrorCode,
   RoamApiError,
   RoamResponse,
@@ -76,5 +78,18 @@ export { fetchAvailableGraphs, requestToken, sleep, openRoamApp, slugify } from 
 export type { AvailableGraph, GraphsResponse, TokenExchangeResponse } from "./roam-api.js";
 
 // Tool definitions and routing
-export { tools, findTool, routeToolCall } from "./tools.js";
-export type { ToolDefinition, ClientToolDefinition, StandaloneToolDefinition } from "./tools.js";
+export {
+  tools,
+  findTool,
+  routeToolCall,
+  graphManagementTools,
+  contentTools,
+  dataTools,
+  desktopUiTools,
+} from "./tools.js";
+export type {
+  ToolDefinition,
+  ClientToolDefinition,
+  StandaloneToolDefinition,
+  RouteToolCallOptions,
+} from "./tools.js";

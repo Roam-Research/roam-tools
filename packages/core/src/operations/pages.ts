@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { RoamClient } from "../client.js";
-import type { CallToolResult, GetPageResponse } from "../types.js";
+import type { CallToolResult, GetPageResponse, RoamActionClient } from "../types.js";
 import { textResult } from "../types.js";
 
 // Schemas
@@ -56,7 +55,7 @@ export type DeletePageParams = z.infer<typeof DeletePageSchema>;
 export type UpdatePageParams = z.infer<typeof UpdatePageSchema>;
 
 export async function createPage(
-  client: RoamClient,
+  client: RoamActionClient,
   params: CreatePageParams,
 ): Promise<CallToolResult> {
   const page: Record<string, unknown> = { title: params.title };
@@ -69,7 +68,10 @@ export async function createPage(
   return textResult(response.result ?? { uid: "" });
 }
 
-export async function getPage(client: RoamClient, params: GetPageParams): Promise<CallToolResult> {
+export async function getPage(
+  client: RoamActionClient,
+  params: GetPageParams,
+): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = params.uid
     ? { uid: params.uid }
     : { title: params.title };
@@ -80,7 +82,7 @@ export async function getPage(client: RoamClient, params: GetPageParams): Promis
 }
 
 export async function deletePage(
-  client: RoamClient,
+  client: RoamActionClient,
   params: DeletePageParams,
 ): Promise<CallToolResult> {
   await client.call("data.page.delete", [{ page: { uid: params.uid } }]);
@@ -88,7 +90,7 @@ export async function deletePage(
 }
 
 export async function updatePage(
-  client: RoamClient,
+  client: RoamActionClient,
   params: UpdatePageParams,
 ): Promise<CallToolResult> {
   const page: Record<string, unknown> = { uid: params.uid };
@@ -102,7 +104,7 @@ export async function updatePage(
   return textResult({ success: true });
 }
 
-export async function getGuidelines(client: RoamClient): Promise<CallToolResult> {
+export async function getGuidelines(client: RoamActionClient): Promise<CallToolResult> {
   const response = await client.call<{
     queriedAt?: string;
     guidelines: string | null;

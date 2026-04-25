@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { RoamClient } from "../client.js";
-import type { CallToolResult, GetBlockResponse } from "../types.js";
+import type { CallToolResult, GetBlockResponse, RoamActionClient } from "../types.js";
 import { textResult, RoamError, ErrorCodes } from "../types.js";
 
 // Schemas
@@ -116,7 +115,7 @@ export interface GetBacklinksResponse {
 }
 
 export async function createBlock(
-  client: RoamClient,
+  client: RoamActionClient,
   params: CreateBlockParams,
 ): Promise<CallToolResult> {
   // Validate: exactly one of parentUid, pageTitle, or dailyNotePage
@@ -157,7 +156,7 @@ export async function createBlock(
 }
 
 export async function getBlock(
-  client: RoamClient,
+  client: RoamActionClient,
   params: GetBlockParams,
 ): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = { uid: params.uid };
@@ -168,7 +167,7 @@ export async function getBlock(
 }
 
 export async function updateBlock(
-  client: RoamClient,
+  client: RoamActionClient,
   params: UpdateBlockParams,
 ): Promise<CallToolResult> {
   const block: Record<string, unknown> = { uid: params.uid };
@@ -183,7 +182,7 @@ export async function updateBlock(
 }
 
 export async function deleteBlock(
-  client: RoamClient,
+  client: RoamActionClient,
   params: DeleteBlockParams,
 ): Promise<CallToolResult> {
   await client.call("data.block.delete", [{ block: { uid: params.uid } }]);
@@ -191,7 +190,7 @@ export async function deleteBlock(
 }
 
 export async function moveBlock(
-  client: RoamClient,
+  client: RoamActionClient,
   params: MoveBlockParams,
 ): Promise<CallToolResult> {
   await client.call("data.block.move", [
@@ -209,7 +208,7 @@ export async function moveBlock(
 }
 
 export async function getBacklinks(
-  client: RoamClient,
+  client: RoamActionClient,
   params: GetBacklinksParams,
 ): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = {};
@@ -273,7 +272,7 @@ export interface GetCommentsResponse {
 }
 
 export async function addComment(
-  client: RoamClient,
+  client: RoamActionClient,
   params: AddCommentParams,
 ): Promise<CallToolResult> {
   // Validate: exactly one of comment or commentMarkdown must be provided
@@ -304,7 +303,7 @@ export async function addComment(
 }
 
 export async function getComments(
-  client: RoamClient,
+  client: RoamActionClient,
   params: GetCommentsParams,
 ): Promise<CallToolResult> {
   const apiParams: Record<string, unknown> = { uid: params.blockUid };

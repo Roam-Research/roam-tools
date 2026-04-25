@@ -1,6 +1,13 @@
 import { z } from "zod";
-import type { CallToolResult, TokenInfoResponse, AccessLevel } from "./types.js";
-import { RoamError } from "./types.js";
+import type {
+  CallToolResult,
+  TokenInfoResponse,
+  AccessLevel,
+  RoamActionClient,
+  ToolGraph,
+  ResolvedGraph,
+} from "./types.js";
+import { RoamError, ErrorCodes } from "./types.js";
 import { RoamClient } from "./client.js";
 import { resolveGraph, getPort, updateGraphTokenStatus } from "./graph-resolver.js";
 import {
@@ -84,7 +91,7 @@ export interface ClientToolDefinition {
   name: string;
   description: string;
   schema: z.ZodObject<z.ZodRawShape>;
-  action: (client: RoamClient, args: unknown) => Promise<CallToolResult>;
+  action: (client: RoamActionClient, args: unknown) => Promise<CallToolResult>;
   type: "client";
 }
 
@@ -104,7 +111,7 @@ function defineTool<T extends z.ZodRawShape>(
   name: string,
   description: string,
   schema: z.ZodObject<T>,
-  action: (client: RoamClient, args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>,
+  action: (client: RoamActionClient, args: z.infer<z.ZodObject<T>>) => Promise<CallToolResult>,
 ): ClientToolDefinition {
   return {
     name,
@@ -132,7 +139,7 @@ function defineStandaloneTool<T extends z.ZodRawShape>(
 }
 
 // Graph Management Tools (standalone - handle their own resolution)
-const graphManagementTools: StandaloneToolDefinition[] = [
+export const graphManagementTools: StandaloneToolDefinition[] = [
   defineStandaloneTool(
     "list_graphs",
     "List all configured graphs with their nicknames. Also provides setup instructions for connecting additional graphs.",
@@ -151,8 +158,8 @@ const graphManagementTools: StandaloneToolDefinition[] = [
 const GUIDELINES_NOTE =
   "\n\nNote: Call get_graph_guidelines first when starting to work with a graph.";
 
-// Content Tools (require graph/client)
-const contentTools: ClientToolDefinition[] = [
+// Data Tools (require graph/client; reusable across local + hosted MCP transports)
+export const dataTools: ClientToolDefinition[] = [
   defineTool(
     "get_graph_guidelines",
     "IMPORTANT: Call this tool first when starting to work with a graph, before performing any other operations. Returns user-defined instructions and preferences for AI agents. The user may have specified naming conventions, preferred structures, or constraints that should guide your behavior. After receiving the response, follow the nextSteps field — it contains orientation actions you should take before proceeding.",
@@ -266,6 +273,11 @@ const contentTools: ClientToolDefinition[] = [
     GetBacklinksSchema,
     getBacklinks,
   ),
+];
+
+// Desktop UI Tools (require local Roam Desktop — file ops + window/selection introspection;
+// hosted MCP omits these because the parameters/effects assume a local environment).
+export const desktopUiTools: ClientToolDefinition[] = [
   defineTool(
     "get_open_windows",
     "Get the current view in the main window and all open sidebar windows." + GUIDELINES_NOTE,
@@ -310,6 +322,9 @@ const contentTools: ClientToolDefinition[] = [
     deleteFile,
   ),
 ];
+
+// Backwards-compatible aggregate of all client tools.
+export const contentTools: ClientToolDefinition[] = [...dataTools, ...desktopUiTools];
 
 export const tools: ToolDefinition[] = [...graphManagementTools, ...contentTools];
 
@@ -402,9 +417,67 @@ function roamErrorResult(error: RoamError): CallToolResult {
   };
 }
 
+// ============================================================================
+// Default injection points for routeToolCall. Overridable via RouteToolCallOptions
+// to support hosted MCP transports (e.g., RoamCloudClient + WorkOS-backed resolver).
+// ============================================================================
+
+async function defaultResolveGraph(graph?: string): Promise<ResolvedGraph> {
+  return resolveGraph(graph);
+}
+
+async function defaultCreateClient(graph: ToolGraph): Promise<RoamActionClient> {
+  if (!graph.token) {
+    throw new RoamError(
+      "Local createClient requires graph.token. " +
+        "If you injected a custom resolveGraph that omits token, also inject createClient.",
+      ErrorCodes.INTERNAL_ERROR,
+    );
+  }
+  const port = await getPort();
+  return new RoamClient({
+    graphName: graph.name,
+    graphType: graph.type,
+    token: graph.token,
+    port,
+  });
+}
+
+export interface RouteToolCallOptions {
+  /** Override graph resolution. Default: read ~/.roam-tools.json. */
+  resolveGraph?: (providedGraph?: string) => Promise<ToolGraph>;
+  /**
+   * Override client construction. Default: local RoamClient via getPort().
+   * Should be paired with resolveGraph (the default createClient requires graph.token,
+   * which a custom resolveGraph may omit).
+   */
+  createClient?: (graph: ToolGraph) => Promise<RoamActionClient> | RoamActionClient;
+  /**
+   * Override standalone tool handlers (e.g., hosted list_graphs reads grants from a
+   * remote store instead of disk). Tools not present here fall back to local handlers.
+   */
+  standaloneHandlers?: Partial<Record<string, (args: unknown) => Promise<CallToolResult>>>;
+  /**
+   * "local-sync" (default) runs the desktop token-info side-flow on get_graph_guidelines:
+   * parallel getTokenInfo, access-level validation, config writes, and result enrichment.
+   * "skip" disables that side-flow entirely. Graph-name prefix (prependGraphInfo) is
+   * unaffected by this mode and runs in both.
+   */
+  tokenInfoMode?: "local-sync" | "skip";
+  /**
+   * Only consulted in local-sync mode. Default: write to ~/.roam-tools.json via
+   * updateGraphTokenStatus. Hosted callers can swap to write to their own store.
+   */
+  onTokenStatusUpdate?: (
+    nickname: string,
+    patch: { accessLevel?: AccessLevel; lastKnownTokenStatus?: "active" | "revoked" },
+  ) => Promise<void>;
+}
+
 export async function routeToolCall(
   toolName: string,
   args: Record<string, unknown>,
+  options: RouteToolCallOptions = {},
 ): Promise<CallToolResult> {
   const tool = findTool(toolName);
   if (!tool) {
@@ -417,10 +490,12 @@ export async function routeToolCall(
     throw new Error(`Invalid arguments: ${parsed.error.message}`);
   }
 
-  // Handle standalone tools (graph management)
+  // Handle standalone tools (graph management). Hosted callers can override
+  // individual handlers via options.standaloneHandlers.
   if (tool.type === "standalone") {
+    const handler = options.standaloneHandlers?.[tool.name] ?? tool.action;
     try {
-      return await tool.action(parsed.data);
+      return await handler(parsed.data);
     } catch (error) {
       if (error instanceof RoamError) {
         return roamErrorResult(error);
@@ -429,26 +504,31 @@ export async function routeToolCall(
     }
   }
 
-  // Handle client tools (require graph resolution)
+  // Resolve injection points (or fall back to defaults).
+  const resolve = options.resolveGraph ?? defaultResolveGraph;
+  const createClient = options.createClient ?? defaultCreateClient;
+  const tokenInfoMode = options.tokenInfoMode ?? "local-sync";
+  const updateTokenStatus = options.onTokenStatusUpdate ?? updateGraphTokenStatus;
+
+  // Handle client tools (require graph + client)
   try {
-    // Extract graph from validated args and resolve it
-    const { graph, ...restArgs } = parsed.data;
-    const resolvedGraph = await resolveGraph(graph as string | undefined);
-    const port = await getPort();
+    const { graph: graphArg, ...restArgs } = parsed.data;
+    const graph = await resolve(graphArg as string | undefined);
+    const client = await createClient(graph);
 
-    // Create client with full config
-    const client = new RoamClient({
-      graphName: resolvedGraph.name,
-      graphType: resolvedGraph.type,
-      token: resolvedGraph.token,
-      port,
-    });
+    // Special handling for get_graph_guidelines: sync token info in parallel.
+    // Only fires in local-sync mode AND when the client implements getTokenInfo.
+    // Bind early so TS narrows the optional method through the truthy check.
+    const getTokenInfoFn = client.getTokenInfo?.bind(client);
+    if (tool.name === "get_graph_guidelines" && tokenInfoMode === "local-sync" && getTokenInfoFn) {
+      // In local-sync mode the default resolver returns ResolvedGraph (with
+      // lastKnownTokenStatus). A custom resolver here is unusual; if it omits
+      // the field, the read returns undefined and behavior is identical.
+      const resolvedGraph = graph as ResolvedGraph;
 
-    // Special handling for get_graph_guidelines: sync token info in parallel
-    if (tool.name === "get_graph_guidelines") {
       const [actionSettled, tokenInfoSettled] = await Promise.allSettled([
         tool.action(client, restArgs),
-        client.getTokenInfo(),
+        getTokenInfoFn(),
       ]);
 
       // getTokenInfo() never throws, so always fulfilled
@@ -461,7 +541,7 @@ export async function routeToolCall(
       if (tokenInfoResult.status === "revoked") {
         if (resolvedGraph.lastKnownTokenStatus !== "revoked") {
           try {
-            await updateGraphTokenStatus(resolvedGraph.nickname, {
+            await updateTokenStatus(resolvedGraph.nickname, {
               lastKnownTokenStatus: "revoked",
             });
           } catch {
@@ -498,7 +578,7 @@ export async function routeToolCall(
         const tokenStatusChanged = resolvedGraph.lastKnownTokenStatus !== "active";
         if (accessLevelChanged || tokenStatusChanged) {
           try {
-            await updateGraphTokenStatus(resolvedGraph.nickname, {
+            await updateTokenStatus(resolvedGraph.nickname, {
               ...(accessLevelChanged ? { accessLevel: level } : {}),
               lastKnownTokenStatus: "active",
             });
@@ -517,7 +597,7 @@ export async function routeToolCall(
       // status === "unknown" — action succeeded, so token isn't revoked; clear stale status
       if (resolvedGraph.lastKnownTokenStatus !== "active") {
         try {
-          await updateGraphTokenStatus(resolvedGraph.nickname, { lastKnownTokenStatus: "active" });
+          await updateTokenStatus(resolvedGraph.nickname, { lastKnownTokenStatus: "active" });
         } catch {
           // best-effort status update
         }
@@ -528,12 +608,11 @@ export async function routeToolCall(
       return result;
     }
 
-    // Normal flow for all other tools
+    // Normal flow for all other tools (and get_graph_guidelines when token-info
+    // sync is skipped or unavailable). Graph-name prefix runs in both modes.
     const result = await tool.action(client, restArgs);
-
-    // Prepend graph info to successful responses
     if (!result.isError) {
-      return prependGraphInfo(result, resolvedGraph.nickname);
+      return prependGraphInfo(result, graph.nickname);
     }
     return result;
   } catch (error) {
