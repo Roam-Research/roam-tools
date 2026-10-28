@@ -15,8 +15,9 @@
   enabled", so the agent is not sent to `search` for a fixable argument.
 - **Older Roam Desktop builds ignore the filters, and the tool says so.** A build that takes
   them names the ones it applied in the response's `filters`; when a filter that was sent is
-  missing there, the result starts with a `WARNING:` line naming it, so an agent does not
-  read unfiltered results as filtered. `EXPECTED_API_VERSION` is unchanged.
+  missing there, the result carries a `warning` naming it (inside the JSON object, so the
+  graph and token fields are still added), and an agent does not read unfiltered results as
+  filtered. `EXPECTED_API_VERSION` is unchanged.
 - Local-only, like the tool itself: `semantic_search` is in `desktopUiTools`, so the hosted
   MCP surface is unchanged. The keyword `search` tool does not get these filters, since its
   hosted transport's backend has no date filtering yet.

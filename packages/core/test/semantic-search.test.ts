@@ -56,8 +56,8 @@ describe("semanticSearch warns when Roam did not apply the filters it was sent",
   const respond = (result: unknown): RoamActionClient => ({
     call: vi.fn().mockResolvedValue({ result }),
   });
-  const text = (r: Awaited<ReturnType<typeof semanticSearch>>) =>
-    (r.content[0] as { text: string }).text;
+  const json = (r: Awaited<ReturnType<typeof semanticSearch>>) =>
+    JSON.parse((r.content[0] as { text: string }).text);
 
   it("names every filter an older Roam dropped (no `filters` in its response)", async () => {
     const r = await semanticSearch(respond({ results: [] }), {
@@ -65,8 +65,8 @@ describe("semanticSearch warns when Roam did not apply the filters it was sent",
       editedAfter: "2026-03-01",
       dailyNotes: "only",
     });
-    expect(text(r)).toMatch(/^WARNING: This version of Roam ignored editedAfter, dailyNotes,/);
-    expect(text(r)).toContain('"results": []');
+    expect(json(r).warning).toMatch(/^This version of Roam ignored editedAfter, dailyNotes, /);
+    expect(json(r).results).toEqual([]);
   });
 
   it("stays quiet when Roam reports every filter it was sent", async () => {
@@ -74,7 +74,7 @@ describe("semanticSearch warns when Roam did not apply the filters it was sent",
       respond({ results: [], filters: { editedAfter: "2026-03-01", dailyNotes: "only" } }),
       { query: "q", editedAfter: "2026-03-01", dailyNotes: "only" },
     );
-    expect(text(r)).not.toContain("WARNING");
+    expect(json(r)).not.toHaveProperty("warning");
   });
 
   it("names only the filters missing from what Roam reports", async () => {
@@ -83,14 +83,35 @@ describe("semanticSearch warns when Roam did not apply the filters it was sent",
       editedBefore: "2026-03-17",
       dailyNotes: "only",
     });
-    expect(text(r)).toMatch(
-      /^WARNING: This version of Roam ignored editedBefore, so these results are not filtered by it\./,
+    expect(json(r).warning).toMatch(
+      /^This version of Roam ignored editedBefore, so these results are not filtered by it\./,
     );
   });
 
   it("stays quiet when no filter was sent", async () => {
     const r = await semanticSearch(respond({ results: [] }), { query: "q" });
-    expect(text(r)).not.toContain("WARNING");
+    expect(json(r)).not.toHaveProperty("warning");
+  });
+
+  // The transports add the graph by parsing the text as a JSON object; a
+  // warning outside the JSON would drop it.
+  it("keeps the routed result a JSON object that carries the graph", async () => {
+    const result = await routeToolCall(
+      "semantic_search",
+      { query: "q", editedAfter: "2026-03-01", graph: "test" },
+      {
+        resolveGraph: async () => ({
+          name: "test-graph",
+          type: "offline" as const,
+          nickname: "test",
+        }),
+        createClient: () => ({ call: vi.fn().mockResolvedValue({ result: { results: [] } }) }),
+        tokenInfoMode: "skip" as const,
+      },
+    );
+    const parsed = JSON.parse((result.content[0] as { text: string }).text);
+    expect(parsed.graph).toBe("test");
+    expect(parsed.warning).toMatch(/ignored editedAfter/);
   });
 });
 

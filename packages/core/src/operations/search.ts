@@ -159,20 +159,17 @@ export async function semanticSearch(
     ]);
     const result = response.result ?? { results: [] };
     // An older Roam drops the filters without a word, and its results would
-    // read as filtered. Name the ones it did not report applying.
+    // read as filtered. Name the ones it did not report applying, in the
+    // result itself: it must stay a JSON object, which the transports parse
+    // to add the graph and token fields.
     const ignored = SEMANTIC_FILTER_KEYS.filter(
       (key) => params[key] !== undefined && result.filters?.[key] === undefined,
     );
-    const toolResult = textResult(result);
-    const first = toolResult.content[0];
-    if (ignored.length === 0 || first?.type !== "text") return toolResult;
+    if (ignored.length === 0) return textResult(result);
     const warning =
-      `WARNING: This version of Roam ignored ${ignored.join(", ")}, so these results ` +
-      `are not filtered by ${ignored.length === 1 ? "it" : "them"}. Updating Roam enables the filters.\n`;
-    return {
-      ...toolResult,
-      content: [{ ...first, text: warning + "\n" + first.text }, ...toolResult.content.slice(1)],
-    };
+      `This version of Roam ignored ${ignored.join(", ")}, so these results are not ` +
+      `filtered by ${ignored.length === 1 ? "it" : "them"}. Updating Roam enables the filters.`;
+    return textResult({ warning, ...result });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     // Only reframe the "semantic search isn't set up for this graph" case — an
