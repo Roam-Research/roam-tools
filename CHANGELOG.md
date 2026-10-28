@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+- **`semantic_search` gains three optional filters**, each forwarded to
+  `data.ai.semanticSearch` only when provided: `editedAfter` and `editedBefore` (a
+  `YYYY-MM-DD` day in the user's local calendar, inclusive, matched against each result's
+  last edit, so a daily note written one day and edited later counts as the later day) and
+  `dailyNotes` (`"only"` or `"exclude"`; omitted means no daily-note filter). The tool
+  description gains one sentence pointing at them; the param descriptions carry the detail.
+- **Validation is split.** Core checks only the date shape (and the `dailyNotes` enum), so
+  `03-17-2026` fails Zod validation before any call. Roam validates the calendar day itself
+  (`2026-02-31` passes the shape check) and rejects bad values with an `Input error: ...`
+  message, which reaches the agent unchanged: it is not reframed as "semantic search isn't
+  enabled", so the agent is not sent to `search` for a fixable argument.
+- **Older Roam Desktop builds ignore the filters, and the tool says so.** A build that takes
+  them names the ones it applied in the response's `filters`; when a filter that was sent is
+  missing there, the result starts with a `WARNING:` line naming it, so an agent does not
+  read unfiltered results as filtered. `EXPECTED_API_VERSION` is unchanged.
+- Local-only, like the tool itself: `semantic_search` is in `desktopUiTools`, so the hosted
+  MCP surface is unchanged. The keyword `search` tool does not get these filters, since its
+  hosted transport's backend has no date filtering yet.
+- Minor-version bump intended: additive optional params on an existing tool.
+
 ## 0.11.0 - 2026-08-26
 
 - **`delete_block` / `delete_page` can now report failure**: Roam servers (from the
