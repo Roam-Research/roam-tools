@@ -169,7 +169,7 @@ Graph guidelines let you store preferences and context directly in your Roam gra
 **Read:**
 
 - `search` - Search pages/blocks (empty query returns recently edited/viewed content)
-- `semantic_search` - Semantic (embeddings) search by meaning; requires embeddings enabled and a signed-in user
+- `semantic_search` - Semantic (embeddings) search by meaning, optionally filtered by last-edited day or daily notes; requires embeddings enabled and a signed-in user
 - `suggest_links` - Suggest existing pages worth linking to from a passage of text (does not create links)
 - `search_templates` - Search Roam templates by name
 - `roam_query` - Execute a Roam query (`{{query:}}` blocks, not Datalog)

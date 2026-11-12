@@ -8,6 +8,11 @@ import type {
 } from "../types.js";
 import { textResult, RoamError, ErrorCodes } from "../types.js";
 
+// Shape-only check for semantic_search's edited-date filters. Calendar validity
+// (e.g. "2026-02-30") is left to the renderer, which rejects it with an
+// "Input error: ..." message.
+const YYYY_MM_DD = /^\d{4}-\d{2}-\d{2}$/;
+
 // Schemas
 export const SearchSchema = z.object({
   query: z
@@ -64,6 +69,26 @@ export const SemanticSearchSchema = z.object({
     .number()
     .optional()
     .describe("Max depth of children to include in markdown per result (default: 2)"),
+  editedAfter: z
+    .string()
+    .regex(YYYY_MM_DD, "Must be YYYY-MM-DD format (e.g. '2026-03-17')")
+    .optional()
+    .describe(
+      "Only return results last edited on or after this day (inclusive). A date in YYYY-MM-DD format, read as a day in the user's local calendar. Edited means last edited: a daily note written on one day but edited later counts as the later day.",
+    ),
+  editedBefore: z
+    .string()
+    .regex(YYYY_MM_DD, "Must be YYYY-MM-DD format (e.g. '2026-03-17')")
+    .optional()
+    .describe(
+      "Only return results last edited on or before this day (inclusive). A date in YYYY-MM-DD format, read as a day in the user's local calendar. Edited means last edited: a daily note written on one day but edited later counts as the later day.",
+    ),
+  dailyNotes: z
+    .enum(["only", "exclude"])
+    .optional()
+    .describe(
+      "Filter by daily notes: 'only' restricts results to daily-note pages and their blocks; 'exclude' leaves them out. Omit to include everything (default).",
+    ),
 });
 
 // Types derived from schemas
@@ -72,10 +97,15 @@ export type SearchTemplatesParams = z.infer<typeof SearchTemplatesSchema>;
 export type SemanticSearchParams = z.infer<typeof SemanticSearchSchema>;
 
 // Response shape from data.ai.semanticSearch (array order is the ranking).
+// `filters` names the filters Roam applied, as given; a Roam that predates
+// them ignores them and omits it.
 interface SemanticSearchResponse {
   results: unknown[];
   queriedAt?: string;
+  filters?: Record<string, unknown>;
 }
+
+const SEMANTIC_FILTER_KEYS = ["editedAfter", "editedBefore", "dailyNotes"] as const;
 
 export async function search(
   client: RoamActionClient,
@@ -112,18 +142,35 @@ export async function semanticSearch(
 ): Promise<CallToolResult> {
   // Single object arg, same call style as data.ai.search. Only forward provided
   // fields; the backend supplies defaults (k=25, scope="all", includePath=true,
-  // maxDepth=2).
+  // maxDepth=2). The filters (editedAfter, editedBefore, dailyNotes) have no
+  // default: absent means unfiltered.
   const apiParams: Record<string, unknown> = { query: params.query };
   if (params.k !== undefined) apiParams.k = params.k;
   if (params.scope !== undefined) apiParams.scope = params.scope;
   if (params.includePath !== undefined) apiParams.includePath = params.includePath;
   if (params.maxDepth !== undefined) apiParams.maxDepth = params.maxDepth;
+  if (params.editedAfter !== undefined) apiParams.editedAfter = params.editedAfter;
+  if (params.editedBefore !== undefined) apiParams.editedBefore = params.editedBefore;
+  if (params.dailyNotes !== undefined) apiParams.dailyNotes = params.dailyNotes;
 
   try {
     const response = await client.call<SemanticSearchResponse>("data.ai.semanticSearch", [
       apiParams,
     ]);
-    return textResult(response.result ?? { results: [] });
+    const result = response.result ?? { results: [] };
+    // An older Roam drops the filters without a word, and its results would
+    // read as filtered. Name the ones it did not report applying, in the
+    // result itself: it must stay a JSON object, which the transports parse
+    // to add the graph and token fields.
+    const ignored = SEMANTIC_FILTER_KEYS.filter(
+      (key) => params[key] !== undefined && result.filters?.[key] === undefined,
+    );
+    if (ignored.length === 0) return textResult(result);
+    const warning =
+      `This version of Roam ignored ${ignored.join(", ")}, so these results are not ` +
+      `filtered by ${ignored.length === 1 ? "it" : "them"}. Updating Roam enables the filters.`;
+    // After the spread, so a `warning` from the server can't hide this one.
+    return textResult({ ...result, warning });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     // Only reframe the "semantic search isn't set up for this graph" case — an
