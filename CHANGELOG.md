@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.11.1 - 2026-11-12
 
 - **`semantic_search` gains three optional filters**, each forwarded to
   `data.ai.semanticSearch` only when provided: `editedAfter` and `editedBefore` (a
@@ -21,7 +21,6 @@
 - Local-only, like the tool itself: `semantic_search` is in `desktopUiTools`, so the hosted
   MCP surface is unchanged. The keyword `search` tool does not get these filters, since its
   hosted transport's backend has no date filtering yet.
-- Minor-version bump intended: additive optional params on an existing tool.
 
 ## 0.11.0 - 2026-08-26
 
