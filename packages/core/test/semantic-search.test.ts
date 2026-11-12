@@ -93,6 +93,14 @@ describe("semanticSearch warns when Roam did not apply the filters it was sent",
     expect(json(r)).not.toHaveProperty("warning");
   });
 
+  it("keeps its warning when the server sends a `warning` of its own", async () => {
+    const r = await semanticSearch(respond({ results: [], warning: "index is rebuilding" }), {
+      query: "q",
+      editedAfter: "2026-03-01",
+    });
+    expect(json(r).warning).toMatch(/^This version of Roam ignored editedAfter, /);
+  });
+
   // The transports add the graph by parsing the text as a JSON object; a
   // warning outside the JSON would drop it.
   it("keeps the routed result a JSON object that carries the graph", async () => {

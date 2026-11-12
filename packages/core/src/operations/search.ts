@@ -169,7 +169,8 @@ export async function semanticSearch(
     const warning =
       `This version of Roam ignored ${ignored.join(", ")}, so these results are not ` +
       `filtered by ${ignored.length === 1 ? "it" : "them"}. Updating Roam enables the filters.`;
-    return textResult({ warning, ...result });
+    // After the spread, so a `warning` from the server can't hide this one.
+    return textResult({ ...result, warning });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     // Only reframe the "semantic search isn't set up for this graph" case — an
